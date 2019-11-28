@@ -1,0 +1,61 @@
+(defproject test-reagent "0.1.0-SNAPSHOT"
+  :dependencies [[org.clojure/clojure "1.8.0"]
+                 [org.clojure/clojurescript "1.9.946"]
+                 [javax.xml.bind/jaxb-api "2.2.11"]
+                 [reagent "0.7.0"]
+                 [dvlopt/linux.gpio "1.0.0"]
+                 [bidi "2.1.6"]
+                 [ring "1.7.1"]
+                 [ring-cors "0.1.12"]
+                 [ring/ring-json "0.4.0"]
+                 [ring/ring-defaults "0.3.2"]
+                 [clj-http "3.9.1"]
+                 [cljs-http "0.1.46"]
+                 [ring/ring-jetty-adapter "1.7.1"]]
+
+  :main test-reagent.core
+
+  :min-lein-version "2.5.3"
+
+  :source-paths ["src/clj"]
+
+  :plugins [[lein-cljsbuild "1.1.4"]
+            [lein-ring "0.12.5"]]
+
+  :ring {:handler test-reagent.core/app}
+  
+  :clean-targets ^{:protect false} ["resources/public/js"
+                                    "target"]
+
+  :figwheel {:css-dirs ["resources/public/css"]}
+
+  :profiles
+  {:dev
+   {:dependencies []
+
+    :plugins      [[lein-figwheel "0.5.15"]]
+    }}
+
+  :cljsbuild
+  {:builds
+   [{:id           "dev"
+     :source-paths ["src/cljs"]
+     :figwheel     {:on-jsload "test-reagent.core/reload"}
+     :compiler     {:main                 test-reagent.core
+                    :optimizations        :none
+                    :output-to            "resources/public/js/app.js"
+                    :output-dir           "resources/public/js/dev"
+                    :asset-path           "js/dev"
+                    :source-map-timestamp true}}
+
+    {:id           "min"
+     :source-paths ["src/cljs"]
+     :compiler     {:main            test-reagent.core
+                    :optimizations   :advanced
+                    :output-to       "resources/public/js/app.js"
+                    :output-dir      "resources/public/js/min"
+                    :elide-asserts   true
+                    :closure-defines {goog.DEBUG false}
+                    :pretty-print    false}}
+
+    ]})
