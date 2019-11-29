@@ -15,14 +15,15 @@
 
 (defn led-button [name num]
   [:div {:style {:background-color :red
-                  :color :white
-                  :font-size "40px"
-                  :width "100px"
-                  :height "100px"}
+                 :color :white
+                 :font-size "40px"
+                 :margin "5px"
+                 :width "100px"
+                 :height "100px"}
          :on-click (fn [e]
                      (console.log "Click!")
                      (go (let [resp (http/post "http://localhost:3000/blink"
-                                               {:json-params num}
+                                               {:json-params {:port num}}
                                                :with-credentials? false)]
                            (println "POST Resp: " resp))))
          } name])
@@ -33,9 +34,8 @@
 (defn page [ratom]
   [:div
    "Welcome to reagent-figwheel!!!!!!!!!!!"
-   [led-button "LED" 17]])
-
-
+   [led-button "LED" 17]
+   [led-button 18 18]])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Initialize App

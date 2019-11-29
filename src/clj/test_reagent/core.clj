@@ -4,31 +4,35 @@
             [bidi.ring :refer [make-handler]]
             [ring.middleware.cors :refer [wrap-cors]]
             [ring.util.response :as response :refer [file-response content-type]]
-            [ring.util.request :as request])
+            [ring.util.request :as request]
+            [clojure.data.json :as json]
+            [clojure.walk :refer [keywordize-keys]])
   (:gen-class))
 
 (defn led-handler [req]
-  "foo")
+  (println req))
 
-(defn blink []
+(defn blink [pin_num]
   (let [device (gpio/device 0)
         handle (gpio/handle device
-                            {17 {::gpio/tag :red}}
+                            {pin_num {::gpio/tag :red}}
                             {::gpio/direction :output})
         buff (gpio/buffer handle)]
-    (println "Setting 17 high")
+    (println "Setting " pin_num " high")
     (gpio/write handle (-> buff (gpio/set-line :red true)))
-    (println (gpio/describe-line device 17))
+ ;   (println (gpio/describe-line device 17))
     (Thread/sleep 2000)
-    (println "Setting 17 low")
+    (println "Setting " pin_num " low")
     (gpio/write handle (-> buff (gpio/set-line :red false)))
-    (println (gpio/describe-line device 17))
+;    (println (gpio/describe-line device 17))
     (gpio/close handle)
     (gpio/close device)))
 
 (defn blink-handler [req]
-  (blink)
-  (content-type (response/response "<h1>Success.</h1>") "text/html")
+  (let [body (keywordize-keys (json/read-str (request/body-string req)))]
+    (println body)
+    (blink (:port body))
+    (content-type (response/response "<h1>Success.</h1>") "text/html"))
   )
 
 (defn alternating-leds
