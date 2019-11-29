@@ -2,6 +2,7 @@
   (:require [dvlopt.linux.gpio :as gpio]
             [bidi.bidi :as bidi]
             [bidi.ring :refer [make-handler]]
+            [ring.middleware.cors :refer [wrap-cors]]
             [ring.util.response :as response :refer [file-response content-type]]
             [ring.util.request :as request])
   (:gen-class))
@@ -69,4 +70,9 @@
         [true (fn [req] (content-type (response/response "<h1>Hi from Pi.</h1>") "text/html"))]]])
 
 (def app
-  (make-handler api-routes))
+  (-> (make-handler api-routes)
+      (wrap-cors
+       :access-control-allow-origin [#".*"]
+       :access-control-allow-methods [:get :put :post :delete]
+       :access-control-allow-credentials ["true"]
+       :access-control-allow-headers ["X-Requested-With","Content-Type","Cache-Control"])))

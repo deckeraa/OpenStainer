@@ -1,7 +1,10 @@
 (ns test-reagent.core
   (:require
    [reagent.core :as reagent]
-   ))
+   [cljs-http.client :as http]
+   )
+  (:require-macros
+   [cljs.core.async.macros :refer [go go-loop]]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -10,7 +13,19 @@
 (defonce app-state
   (reagent/atom {}))
 
-
+(defn led-button [name num]
+  [:div {:style {:background-color :red
+                  :color :white
+                  :font-size "40px"
+                  :width "100px"
+                  :height "100px"}
+         :on-click (fn [e]
+                     (console.log "Click!")
+                     (go (let [resp (http/post "http://localhost:3000/blink"
+                                               {:json-params num}
+                                               :with-credentials? false)]
+                           (println "POST Resp: " resp))))
+         } name])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Page
@@ -18,12 +33,7 @@
 (defn page [ratom]
   [:div
    "Welcome to reagent-figwheel!!!!!!!!!!!"
-   [:div {:style {:background-color :red
-                  :color :white
-                  :font-size "54px"
-                  :width "100px"
-                  :height "100px"}
-          :on-click (fn [e] (console.log "Click!"))} "Foo"]])
+   [led-button "LED" 17]])
 
 
 
