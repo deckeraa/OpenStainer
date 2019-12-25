@@ -48,9 +48,9 @@
 (defn pulse [pin-tag wait-ms num-pulses]
   (loop [i num-pulses]
     (when (> i 0)
-      (set-pin pin-tag true)
-      (java.util.concurrent.locks.LockSupport/parkNanos (* 1000 wait-ms))
       (set-pin pin-tag false)
+      (java.util.concurrent.locks.LockSupport/parkNanos (* 1000 wait-ms))
+      (set-pin pin-tag true)
       (java.util.concurrent.locks.LockSupport/parkNanos (* 1000 wait-ms))
 ;      (Thread/sleep wait-ms)
       (recur (- i 1)))))
@@ -58,7 +58,9 @@
 (defn pulse-handler [req]
   (let [body (keywordize-keys (json/read-str (request/body-string req)))]
     (println body)
-    (pulse (keyword (:pin-tag body)) (Integer/parseInt (:wait-ms body)) (Integer/parseInt (:num-pulses body)))
+    (pulse (keyword (:pin-tag body))
+           (Integer/parseInt (:wait-ms body))
+           (Integer/parseInt (:num-pulses body)))
     (content-type (response/response "<h1>Success.</h1>") "text/html")))
 
 (defn blink [pin_num]

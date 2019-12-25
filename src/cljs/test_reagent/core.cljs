@@ -31,11 +31,11 @@
 
 (defn pin-control [pin-tag]
   (let [style {:background-color :red
-                   :color :white
-                   :font-size "40px"
-                   :margin "5px"
-                   :width "50px"
-               :height "50px"}]
+               :color :white
+               :font-size "40px"
+               :margin "5px"
+               :width "75px"
+               :height "75px"}]
     [:tr
      [:td (str pin-tag)]
      [:td
@@ -45,22 +45,23 @@
                                                    {:json-params {:pin-tag pin-tag :state true}}
                                                    :with-credentials? false)]
                                (println "POST Resp: " resp))))
-             } "On"]]
+             } "Off"]]
      [:td
-      [:div {:style style
+      [:div {:style (assoc style :background-color :green)
              :on-click (fn [e]
                          (go (let [resp (http/post "http://localhost:3000/pin"
                                                    {:json-params {:pin-tag pin-tag :state false}}
                                                    :with-credentials? false)]
                                (println "POST Resp: " resp))))
-             } "Off"]]]))
+             } "On"]]]))
 
 (defn pulse-control [pin-tag]
-  (let [wait-ms    (reagent/atom 1)
-        num-pulses (reagent/atom 480)]
+  (let [wait-ms    (reagent/atom "100")
+        num-pulses (reagent/atom "400")]
     (fn []
       [:tr (str pin-tag)
        [:td [:input {:type "button" :value "Pulse"
+                     :style {:height 100}
                      :on-click (fn [e]
                                  (go (let [resp (http/post "http://localhost:3000/pulse"
                                                            {:json-params {:pin-tag pin-tag :wait-ms @wait-ms :num-pulses @num-pulses}}
