@@ -3,12 +3,11 @@
   {:description "An IO pin."
    :fields
    {:id {:type (non-null ID)}
-    :board-value {:type Boolean}}}}
+    :board_value {:type Boolean}}}}
  :queries
- {:pins
-  {:type (list :pin)                             ; this might not work
+ {:pin_by_id
+  {:type :pin
    :description "The pins on the Raspberry Pi."
-   :resolve :query/pins
-   }
-  
-  }}
+   :args {:id {:type ID}}
+   :resolve :query/pin_by_id
+   }}}

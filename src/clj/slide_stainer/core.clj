@@ -11,8 +11,67 @@
             [clojure.java.io :as io]
             [com.walmartlabs.lacinia.util :as util]
             [com.walmartlabs.lacinia.schema :as schema]
-            [clojure.edn :as edn])
+            [com.walmartlabs.lacinia :as lacinia]
+            [clojure.edn :as edn]
+            [clojure.walk :as walk])
+  (:import (clojure.lang IPersistentMap))
   (:gen-class))
+
+(defn resolve-pins-by-id [context args value]
+  {:id 123 :board_value true})
+
+(defn simplify
+  "Converts all ordered maps nested within the map into standard hash maps, and
+   sequences into vectors, which makes for easier constants in the tests, and eliminates ordering problems."
+  [m]
+  (walk/postwalk
+    (fn [node]
+      (cond
+        (instance? IPersistentMap node)
+        (into {} node)
+
+        (seq? node)
+        (vec node)
+
+        :else
+        node))
+    m))
+
+
+(defn resolver-map []
+  {:query/pin_by_id resolve-pins-by-id})
+
+(defn load-schema
+  []
+  (-> "schema.edn"
+      slurp
+      edn/read-string
+      (util/attach-resolvers (resolver-map))
+      schema/compile))
+
+(def schema (load-schema))
+
+(defn simplify
+  "Converts all ordered maps nested within the map into standard hash maps, and
+   sequences into vectors, which makes for easier constants in the tests, and eliminates ordering problems. https://lacinia.readthedocs.io/en/latest/tutorial/game-data.html"
+  [m]
+  (walk/postwalk
+    (fn [node]
+      (cond
+        (instance? IPersistentMap node)
+        (into {} node)
+
+        (seq? node)
+        (vec node)
+
+        :else
+        node))
+    m))
+
+(defn q
+  [query-string]
+  (-> (lacinia/execute schema query-string nil nil)
+      (simplify)))
 
 (defn get-ip-address []
   (-> (sh "ifconfig" "wlan0")
@@ -143,6 +202,7 @@
         ["pin" pin-handler]
         ["pulse" pulse-handler]
         ["ip" get-ip-address-handler]
+;        ["graphql" graphql-handler]
         [true (fn [req] (content-type (response/response "<h1>Hi from Pi.</h1>") "text/html"))]]])
 
 (def app
