@@ -1,4 +1,4 @@
-(ns test-reagent.core
+(ns slide-stainer.core
   (:require [dvlopt.linux.gpio :as gpio]
             [bidi.bidi :as bidi]
             [bidi.ring :refer [make-handler]]
@@ -6,8 +6,19 @@
             [ring.util.response :as response :refer [file-response content-type]]
             [ring.util.request :as request]
             [clojure.data.json :as json]
-            [clojure.walk :refer [keywordize-keys]])
+            [clojure.walk :refer [keywordize-keys]]
+            [clojure.java.shell :refer [sh]])
   (:gen-class))
+
+(defn get-ip-address []
+  (-> (sh "ifconfig" "wlan0")
+      (clojure.string/split-lines) ; split up the various lines of ifconfig output
+      (map #(re-find #"inet\s+\d+\.\d+\.\d+\.\d+" %)) ; find things matching the inet ip
+      (filter (complement nil?)) ; filter out the non-matching lines
+      (first)))
+
+(defn get-ip-address-handler [req]
+  (content-type (response/response (get-ip-address)) "text/html"))
 
 (defn led-handler [req]
   (println req))
@@ -127,6 +138,7 @@
         ["blink" blink-handler]
         ["pin" pin-handler]
         ["pulse" pulse-handler]
+        ["ip" get-ip-address-handler]
         [true (fn [req] (content-type (response/response "<h1>Hi from Pi.</h1>") "text/html"))]]])
 
 (def app

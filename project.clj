@@ -1,4 +1,4 @@
-(defproject test-reagent "0.1.0-SNAPSHOT"
+(defproject slide-stainer "0.1.0-SNAPSHOT"
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/clojurescript "1.9.946"]
                  [javax.xml.bind/jaxb-api "2.2.11"]
@@ -13,7 +13,7 @@
                  [cljs-http "0.1.46"]
                  [ring/ring-jetty-adapter "1.7.1"]]
 
-  :main test-reagent.core
+  :main slide-stainer.core
 
   :min-lein-version "2.5.3"
 
@@ -22,7 +22,7 @@
   :plugins [[lein-cljsbuild "1.1.4"]
             [lein-ring "0.12.5"]]
 
-  :ring {:handler test-reagent.core/app}
+  :ring {:handler slide-stainer.core/app}
   
   :clean-targets ^{:protect false} ["resources/public/js"
                                     "target"]
@@ -40,8 +40,8 @@
   {:builds
    [{:id           "dev"
      :source-paths ["src/cljs"]
-     :figwheel     {:on-jsload "test-reagent.core/reload"}
-     :compiler     {:main                 test-reagent.core
+     :figwheel     {:on-jsload "slide-stainer.core/reload"}
+     :compiler     {:main                 slide-stainer.core
                     :optimizations        :none
                     :output-to            "resources/public/js/app.js"
                     :output-dir           "resources/public/js/dev"
@@ -50,7 +50,7 @@
 
     {:id           "min"
      :source-paths ["src/cljs"]
-     :compiler     {:main            test-reagent.core
+     :compiler     {:main            slide-stainer.core
                     :optimizations   :advanced
                     :output-to       "resources/public/js/app.js"
                     :output-dir      "resources/public/js/min"

@@ -1,4 +1,4 @@
-(ns test-reagent.core
+(ns slide-stainer.core
   (:require
    [reagent.core :as reagent]
    [cljs-http.client :as http]
@@ -77,6 +77,11 @@
    [:table [pulse-control :pul]]
    (map pin-control [:ena :dir]))
   )
+
+;; (defn ip-control []
+;;   (let [ip (reagent/atom nil)]
+;;     (fn []
+;;       )))
 
 
 
