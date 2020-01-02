@@ -1,0 +1,14 @@
+{:objects
+ {:pin
+  {:description "An IO pin."
+   :fields
+   {:id {:type (non-null ID)}
+    :board-value {:type Boolean}}}}
+ :queries
+ {:pins
+  {:type (list :pin)                             ; this might not work
+   :description "The pins on the Raspberry Pi."
+   :resolve :query/pins
+   }
+  
+  }}
