@@ -17,7 +17,7 @@
   (reset! atm (-> evt .-target .-value)))
 
 (defn graphql-control []
-  (let [input  (reagent/atom "{pin_by_id(id:123){board_value},ip{inet4}}")
+  (let [input  (reagent/atom "{pin_by_id(id:\":stepperX-ena\"){board_value,logical_value,pin_number},ip{inet4}}")
         output-data (reagent/atom "")
         output-status (reagent/atom "")]
     (fn []
@@ -105,8 +105,8 @@
 
 (defn pins-control []
   (into
-   [:table [pulse-control :pul]]
-   (map pin-control [:ena :dir]))
+   [:table [pulse-control :stepperX-pul]]
+   (map pin-control [:stepperX-ena :stepperX-dir]))
   )
 
 ;; (defn ip-control []

@@ -22,11 +22,11 @@
 
 (def pin-defs
   {:stepperX {:pins
-              {17 {::gpio/tag :ena
+              {17 {::gpio/tag :stepperX-ena
                    :inverted? true}
-               18 {::gpio/tag :dir
+               18 {::gpio/tag :stepperX-dir
                    :inverted? true}
-               19 {::gpio/tag :pul
+               19 {::gpio/tag :stepperX-pul
                    :inverted? true}}
               :pos nil
               :pos-limit-inches 9}})
@@ -66,12 +66,16 @@
     (is (= sample-index (index-pin-defs sample-pin-defs)))))
 
 (swap! state-atom assoc :setup pin-defs)
+(swap! state-atom assoc :setup-index (index-pin-defs pin-defs))
 
 (defn resolve-pin-by-id [context args value]
-  (println "resolve-pin-by-id" (str @state-atom))
-  {:id 123
-   :board_value (gpio/get-line (:buffer @state-atom) :ena)
-   })
+  (let [id (keyword (:id args))
+        pin-info (id (:setup-index @state-atom))
+        board_value (gpio/get-line (:buffer @state-atom) id)]
+    {:board_value board_value
+     :logical_value (if (:inverted? pin-info) (not board_value) board_value)
+     :pin_number (:pin_number pin-info)
+     }))
 
 (defn get-ip-address []
   (as-> (sh "ifconfig" "wlan0") $
@@ -159,9 +163,9 @@
   ([state-atom]
    (swap! state-atom assoc :device (gpio/device 0))
    (swap! state-atom assoc :handle (gpio/handle (:device @state-atom)
-                                                {17 {::gpio/tag :ena}
-                                                 18 {::gpio/tag :dir}
-                                                 19 {::gpio/tag :pul}}
+                                                {17 {::gpio/tag :stepperX-ena}
+                                                 18 {::gpio/tag :stepperX-dir}
+                                                 19 {::gpio/tag :stepperX-pul}}
                                                 {::gpio/direction :output}))
    (swap! state-atom assoc :buffer (gpio/buffer (:handle @state-atom)))))
 
