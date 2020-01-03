@@ -17,7 +17,7 @@
   (reset! atm (-> evt .-target .-value)))
 
 (defn graphql-control []
-  (let [input  (reagent/atom "{pin_by_id(id:123){board_value}}")
+  (let [input  (reagent/atom "{pin_by_id(id:123){board_value},ip{inet4}}")
         output-data (reagent/atom "")
         output-status (reagent/atom "")]
     (fn []

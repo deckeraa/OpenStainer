@@ -3,11 +3,19 @@
   {:description "An IO pin."
    :fields
    {:id {:type (non-null ID)}
-    :board_value {:type Boolean}}}}
+    :board_value {:type Boolean}}}
+  :ip
+  {:description "The Raspberry Pi's IP address."
+   :fields
+   {:inet4 {:type String}}}}
+ 
  :queries
  {:pin_by_id
   {:type :pin
    :description "The pins on the Raspberry Pi."
    :args {:id {:type ID}}
-   :resolve :query/pin_by_id
-   }}}
+   :resolve :query/pin_by_id}
+  :ip
+  {:type :ip
+   :description "The Raspberry Pi's IP address."
+   :resolve :query/ip}}}

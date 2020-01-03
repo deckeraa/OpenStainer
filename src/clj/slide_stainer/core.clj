@@ -20,6 +20,22 @@
 (defn resolve-pin-by-id [context args value]
   {:id 123 :board_value true})
 
+(defn get-ip-address []
+  (as-> (sh "ifconfig" "wlan0") $
+      (:out $)
+      (clojure.string/split-lines $) ; split up the various lines of ifconfig output
+      (map #(re-find #"inet\s+\d+\.\d+\.\d+\.\d+" %) $) ; find things matching the inet ip
+      (filter (complement nil?) $) ; filter out the non-matching lines
+      (first $) ; grab the first one (there should only be one
+      (clojure.string/replace $ #"inet\s+" "") ; take out the inet portion
+      ))
+
+(defn resolve-ip [context args value]
+;  (println (sh "ifconfig" "wlan0"))
+;  (println (str "resolve-ip: " (get-ip-address)))
+  {:inet4 (get-ip-address)
+   })
+
 (defn simplify
   "Converts all ordered maps nested within the map into standard hash maps, and
    sequences into vectors, which makes for easier constants in the tests, and eliminates ordering problems."
@@ -39,7 +55,8 @@
 
 
 (defn resolver-map []
-  {:query/pin_by_id resolve-pin-by-id})
+  {:query/pin_by_id resolve-pin-by-id
+   :query/ip resolve-ip})
 
 (defn load-schema
   []
@@ -72,13 +89,6 @@
   [query-string]
   (-> (lacinia/execute schema query-string nil nil)
       (simplify)))
-
-(defn get-ip-address []
-  (-> (sh "ifconfig" "wlan0")
-      (clojure.string/split-lines) ; split up the various lines of ifconfig output
-      (map #(re-find #"inet\s+\d+\.\d+\.\d+\.\d+" %)) ; find things matching the inet ip
-      (filter (complement nil?)) ; filter out the non-matching lines
-      (first)))
 
 (defn get-ip-address-handler [req]
   (content-type (response/response (get-ip-address)) "text/html"))
