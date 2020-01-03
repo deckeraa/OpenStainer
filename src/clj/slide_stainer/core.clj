@@ -19,6 +19,19 @@
 
 (defonce state-atom (atom {}))
 
+(def pin-defs
+  {:stepperX {:pins
+              {17 {::gpio/tag :ena
+                   :inverted? true}
+               18 {::gpio/tag :dir
+                   :inverted? true}
+               19 {::gpio/tag :pul
+                   :inverted? true}}
+              :pos nil
+              :pos-limit-inches 9}})
+
+(swap! state-atom assoc :setup pin-defs)
+
 (defn resolve-pin-by-id [context args value]
   (println "resolve-pin-by-id" (str @state-atom))
   {:id 123

@@ -121,7 +121,6 @@
 
 (defn page [ratom]
   [:div
-   "Welcome to reagent-figwheel!!!!!!!!!!!"
    [graphql-control]
    [pins-control]
 ;   [led-button "LED" 17]
