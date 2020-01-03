@@ -17,7 +17,7 @@
   (:import (clojure.lang IPersistentMap))
   (:gen-class))
 
-(defn resolve-pins-by-id [context args value]
+(defn resolve-pin-by-id [context args value]
   {:id 123 :board_value true})
 
 (defn simplify
@@ -39,7 +39,7 @@
 
 
 (defn resolver-map []
-  {:query/pin_by_id resolve-pins-by-id})
+  {:query/pin_by_id resolve-pin-by-id})
 
 (defn load-schema
   []
@@ -82,6 +82,11 @@
 
 (defn get-ip-address-handler [req]
   (content-type (response/response (get-ip-address)) "text/html"))
+
+(defn graphql-handler [req]
+  (let [body (keywordize-keys (json/read-str (request/body-string req)))]
+    (println "graphql query: " body)
+    (content-type (response/response (str (q (:query body)))) "text/html"))) 
 
 (defn led-handler [req]
   (println req))
@@ -202,7 +207,7 @@
         ["pin" pin-handler]
         ["pulse" pulse-handler]
         ["ip" get-ip-address-handler]
-;        ["graphql" graphql-handler]
+        ["graphql" graphql-handler]
         [true (fn [req] (content-type (response/response "<h1>Hi from Pi.</h1>") "text/html"))]]])
 
 (def app

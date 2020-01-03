@@ -13,6 +13,37 @@
 (defonce app-state
   (reagent/atom {}))
 
+(defn on-change-handler [atm evt]
+  (reset! atm (-> evt .-target .-value)))
+
+(defn graphql-control []
+  (let [input  (reagent/atom "{pin_by_id(id:123){board_value}}")
+        output-data (reagent/atom "")
+        output-status (reagent/atom "")]
+    (fn []
+      [:div
+       [:h1 "GraphQL Control"]
+       [:textarea {:type "text" :value @input
+                   :rows 8 :cols 40
+                :on-change #(on-change-handler input %)
+                }]
+       [:textarea {:type "text" :value @output-data
+                   :rows 12 :cols 40
+                   :on-change #(on-change-handler output-data %)
+                   }]
+       [:textarea {:type "text" :value @output-status
+                   :rows 4 :cols 40
+                   :on-change #(on-change-handler output-data %)
+                }]
+       [:button {:on-click (fn [e]
+                             (go (let [resp (<! (http/post "http://localhost:3000/graphql"
+                                                           {:json-params {:query @input}}
+                                                           :with-credentials? false))]
+                                   (reset! output-status (str resp))
+                                   (reset! output-data   (:body resp))
+                                   (println resp))))}
+        "Run query"]])))
+
 (defn led-button [name num]
   [:div {:style {:background-color :red
                  :color :white
@@ -91,6 +122,7 @@
 (defn page [ratom]
   [:div
    "Welcome to reagent-figwheel!!!!!!!!!!!"
+   [graphql-control]
    [pins-control]
 ;   [led-button "LED" 17]
 ;   [led-button 18 18]
