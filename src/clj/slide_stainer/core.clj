@@ -14,6 +14,7 @@
             [com.walmartlabs.lacinia :as lacinia]
             [clojure.edn :as edn]
             [clojure.walk :as walk])
+  (:use clojure.test)
   (:import (clojure.lang IPersistentMap))
   (:gen-class))
 
@@ -29,6 +30,40 @@
                    :inverted? true}}
               :pos nil
               :pos-limit-inches 9}})
+
+(with-test
+  (defn index-pin-defs [pin-defs]
+    (apply merge
+           (map (fn [[device {pins :pins}]]
+                  (as-> pins $
+                    (map (fn [[pin_number {tag :dvlopt.linux.gpio/tag inverted? :inverted?}]]
+                           {tag {:inverted? inverted? :pin_number pin_number :device device}}) $)
+                    (apply merge $))) pin-defs)))
+  (let [sample-pin-defs {:stepperX {:pins
+                                    {17 {::gpio/tag :stepperX-ena
+                                         :inverted? true}
+                                     18 {::gpio/tag :stepperX-dir
+                                         :inverted? true}
+                                     19 {::gpio/tag :stepperX-pul
+                                         :inverted? true}}
+                                    :pos nil
+                                    :pos-limit-inches 9}
+                         :stepperZ {:pins
+                                    {20 {::gpio/tag :stepperZ-ena
+                                         :inverted? true}
+                                     21 {::gpio/tag :stepperZ-dir
+                                         :inverted? true}
+                                     22 {::gpio/tag :stepperZ-pul
+                                         :inverted? true}}
+                                    :pos nil
+                                    :pos-limit-inches 4}}
+        sample-index {:stepperX-ena {:pin_number 17 :inverted? true :device :stepperX}
+                      :stepperX-dir {:pin_number 18 :inverted? true :device :stepperX}
+                      :stepperX-pul {:pin_number 19 :inverted? true :device :stepperX}
+                      :stepperZ-ena {:pin_number 20 :inverted? true :device :stepperZ}
+                      :stepperZ-dir {:pin_number 21 :inverted? true :device :stepperZ}
+                      :stepperZ-pul {:pin_number 22 :inverted? true :device :stepperZ}}]
+    (is (= sample-index (index-pin-defs sample-pin-defs)))))
 
 (swap! state-atom assoc :setup pin-defs)
 
