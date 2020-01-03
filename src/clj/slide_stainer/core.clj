@@ -29,7 +29,9 @@
                19 {::gpio/tag :stepperX-pul
                    :inverted? true}}
               :pos nil
-              :pos-limit-inches 9}})
+              :pos-limit-inches 9}
+   :led13 {:pins
+           {13 {::gpio/tag :led13-led}}}})
 
 (with-test
   (defn index-pin-defs [pin-defs]
