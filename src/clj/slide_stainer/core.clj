@@ -65,6 +65,41 @@
                       :stepperZ-pul {:pin_number 22 :inverted? true :device :stepperZ}}]
     (is (= sample-index (index-pin-defs sample-pin-defs)))))
 
+(with-test
+  (defn get-pin-defs-for-gpio-lib [pin-defs]
+    (apply merge (map (fn [[device {pins :pins}]]
+                        (apply merge (map (fn [[pin_num {tag ::gpio/tag}]]
+                                            {pin_num {::gpio/tag tag}}) pins))) pin-defs)))
+  (let [sample-pin-defs {:stepperX {:pins
+                                    {17 {::gpio/tag :stepperX-ena
+                                         :inverted? true}
+                                     18 {::gpio/tag :stepperX-dir
+                                         :inverted? true}
+                                     19 {::gpio/tag :stepperX-pul
+                                         :inverted? true}}
+                                    :pos nil
+                                    :pos-limit-inches 9}
+                         :stepperZ {:pins
+                                    {20 {::gpio/tag :stepperZ-ena
+                                         :inverted? true}
+                                     21 {::gpio/tag :stepperZ-dir
+                                         :inverted? true}
+                                     22 {::gpio/tag :stepperZ-pul
+                                         :inverted? true}}
+                                    :pos nil
+                                    :pos-limit-inches 4}
+                         :led12 {:pins
+                                 {12 {::gpio/tag :led12-led
+                                      :inverted? true}}}}
+        pin-defs-for-lib {12 {::gpio/tag :led12-led}
+                          17 {::gpio/tag :stepperX-ena}
+                          18 {::gpio/tag :stepperX-dir}
+                          19 {::gpio/tag :stepperX-pul}
+                          20 {::gpio/tag :stepperZ-ena}
+                          21 {::gpio/tag :stepperZ-dir}
+                          22 {::gpio/tag :stepperZ-pul}}]
+    (is (= pin-defs-for-lib (get-pin-defs-for-gpio-lib sample-pin-defs)))))
+
 (swap! state-atom assoc :setup pin-defs)
 (swap! state-atom assoc :setup-index (index-pin-defs pin-defs))
 
@@ -163,9 +198,7 @@
   ([state-atom]
    (swap! state-atom assoc :device (gpio/device 0))
    (swap! state-atom assoc :handle (gpio/handle (:device @state-atom)
-                                                {17 {::gpio/tag :stepperX-ena}
-                                                 18 {::gpio/tag :stepperX-dir}
-                                                 19 {::gpio/tag :stepperX-pul}}
+                                                (get-pin-defs-for-gpio-lib (:setup @state-atom))
                                                 {::gpio/direction :output}))
    (swap! state-atom assoc :buffer (gpio/buffer (:handle @state-atom)))))
 
