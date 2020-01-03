@@ -3,7 +3,9 @@
   {:description "An IO pin."
    :fields
    {:id {:type (non-null ID)}
-    :board_value {:type Boolean}}}
+    :board_value {:type Boolean}
+    :logical_value {:type Boolean}
+    :pin_number {:type Int}}}
   :ip
   {:description "The Raspberry Pi's IP address."
    :fields

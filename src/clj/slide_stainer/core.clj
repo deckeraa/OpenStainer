@@ -17,8 +17,13 @@
   (:import (clojure.lang IPersistentMap))
   (:gen-class))
 
+(defonce state-atom (atom {}))
+
 (defn resolve-pin-by-id [context args value]
-  {:id 123 :board_value true})
+  (println "resolve-pin-by-id" (str @state-atom))
+  {:id 123
+   :board_value (gpio/get-line (:buffer @state-atom) :ena)
+   })
 
 (defn get-ip-address []
   (as-> (sh "ifconfig" "wlan0") $
@@ -100,8 +105,6 @@
 
 (defn led-handler [req]
   (println req))
-
-(defonce state-atom (atom {}))
 
 (defn init-pins
   ([] (init-pins state-atom))
@@ -218,6 +221,9 @@
         ["pulse" pulse-handler]
         ["ip" get-ip-address-handler]
         ["graphql" graphql-handler]
+        ["cleanup" (fn [req]
+                     (clean-up-pins)
+                     (content-type (response/response "Pins cleaned up") "text/html"))]
         [true (fn [req] (content-type (response/response "<h1>Hi from Pi.</h1>") "text/html"))]]])
 
 (def app
