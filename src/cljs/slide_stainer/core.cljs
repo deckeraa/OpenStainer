@@ -136,24 +136,20 @@
    (map pin-control [:stepperX-ena :stepperX-dir]))
   )
 
-;; (defn ip-control []
-;;   (let [ip (reagent/atom nil)]
-;;     (fn []
-;;       )))
-
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Page
 
 (defn page [ratom]
-  [:div
-   [graphql-control]
-   [pins-control-graphql]
-   [pins-control]
-;   [led-button "LED" 17]
-;   [led-button 18 18]
-   ])
+  (let [screen (or (:screen @ratom) :main)]
+    [:div
+     [:div {:class "header"}
+      [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :main)))} "Main"]
+      [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :graphql)))} "GraphQL"]
+      [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :classic)))} "Classic"]]
+     (when (= :graphql screen) [graphql-control])
+     (when (= :main screen) [pins-control-graphql])
+     (when (= :classic screen) [pins-control])
+     ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Initialize App
