@@ -164,6 +164,20 @@
   (map #(resolve-pin-by-id context {:id %} value)
        (vec (keys (:setup-index @state-atom)))))
 
+(defn set_pin [context args value]
+  (println "setting " (:id args) "to " (:logical_value args))
+  (when (not (:device @state-atom)) (init-pins))
+  (let [id (normalize-pin-tag (:id args))
+        pin-info (id (:setup-index @state-atom))
+        requested-val (if (:inverted? pin-info)
+                        (not (:logical_value args))
+                        (:logical_value args))]
+    (gpio/write (:handle @state-atom) (-> (:buffer @state-atom) (gpio/set-line id requested-val))))
+  (resolve-pin-by-id context args value))
+
+(defn resolve-state [context args value]
+  {:contents (str @state-atom)})
+
 (defn simplify
   "Converts all ordered maps nested within the map into standard hash maps, and
    sequences into vectors, which makes for easier constants in the tests, and eliminates ordering problems."
@@ -185,7 +199,9 @@
 (defn resolver-map []
   {:query/pin_by_id resolve-pin-by-id
    :query/ip resolve-ip
-   :query/pins resolve-pins})
+   :query/pins resolve-pins
+   :mutation/set_pin set_pin
+   :query/state resolve-state})
 
 (defn load-schema
   []
@@ -225,12 +241,13 @@
 (defn graphql-handler [req]
   (let [body (keywordize-keys (json/read-str (request/body-string req)))]
     (println "graphql query: " body)
-    (content-type (response/response (str (q (:query body)))) "text/html"))) 
+    (content-type (response/response (str (q (:query body)))) "text/html")))
 
 (defn led-handler [req]
   (println req))
 
 (defn set-pin [pin-tag state]
+  (println "set-pin" pin-tag state)
   (when (not (:device @state-atom)) (init-pins))
   (gpio/write (:handle @state-atom) (-> (:buffer @state-atom) (gpio/set-line pin-tag state))))
 

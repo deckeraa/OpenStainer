@@ -9,7 +9,12 @@
   :ip
   {:description "The Raspberry Pi's IP address."
    :fields
-   {:inet4 {:type String}}}}
+   {:inet4 {:type String}}}
+  :state
+  {:description "State atom that stores configuration info, for internal use only."
+   :fields
+   {:contents {:type String}}}
+  }
  
  :queries
  {:pin_by_id
@@ -25,4 +30,14 @@
   :ip
   {:type :ip
    :description "The Raspberry Pi's IP address."
-   :resolve :query/ip}}}
+   :resolve :query/ip}
+  :state
+  {:type :state
+   :resolve :query/state}}
+ :mutations
+ {:set_pin
+  {:type :pin
+   :description "Sets values of a pin"
+   :args {:id {:type ID}
+          :logical_value {:type Boolean}}
+   :resolve :mutation/set_pin}}}
