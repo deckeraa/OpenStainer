@@ -102,11 +102,37 @@
                           22 {::gpio/tag :stepperZ-pul}}]
     (is (= pin-defs-for-lib (get-pin-defs-for-gpio-lib sample-pin-defs)))))
 
+(defn init-pins
+  ([] (init-pins state-atom))
+  ([state-atom]
+   (swap! state-atom assoc :device (gpio/device 0))
+   (swap! state-atom assoc :handle (gpio/handle (:device @state-atom)
+                                                (get-pin-defs-for-gpio-lib (:setup @state-atom))
+                                                {::gpio/direction :output}))
+   (swap! state-atom assoc :buffer (gpio/buffer (:handle @state-atom)))))
+
+(defn clean-up-pins
+  ([] (clean-up-pins state-atom))
+  ([state-atom]
+   (gpio/close (:handle @state-atom))
+   (gpio/close (:device @state-atom))
+   (swap! state-atom dissoc :handle)
+   (swap! state-atom dissoc :device)
+   (swap! state-atom dissoc :buffer)))
+
 (swap! state-atom assoc :setup pin-defs)
 (swap! state-atom assoc :setup-index (index-pin-defs pin-defs))
 
+(with-test
+  (defn normalize-pin-tag [tag]
+    "Take tag names and convert them to a keyword consistently."
+    (keyword (clojure.string/replace tag #"^:" "")))
+  (is (= (normalize-pin-tag ":foo") :foo))
+  (is (= (normalize-pin-tag "foo")  :foo)))
+
 (defn resolve-pin-by-id [context args value]
-  (let [id (keyword (:id args))
+  (when (not (:device @state-atom)) (init-pins))
+  (let [id (normalize-pin-tag (:id args))
         pin-info (id (:setup-index @state-atom))
         board_value (gpio/get-line (:buffer @state-atom) id)]
     {:board_value board_value
@@ -194,24 +220,6 @@
 
 (defn led-handler [req]
   (println req))
-
-(defn init-pins
-  ([] (init-pins state-atom))
-  ([state-atom]
-   (swap! state-atom assoc :device (gpio/device 0))
-   (swap! state-atom assoc :handle (gpio/handle (:device @state-atom)
-                                                (get-pin-defs-for-gpio-lib (:setup @state-atom))
-                                                {::gpio/direction :output}))
-   (swap! state-atom assoc :buffer (gpio/buffer (:handle @state-atom)))))
-
-(defn clean-up-pins
-  ([] (clean-up-pins state-atom))
-  ([state-atom]
-   (gpio/close (:handle @state-atom))
-   (gpio/close (:device @state-atom))
-   (swap! state-atom dissoc :handle)
-   (swap! state-atom dissoc :device)
-   (swap! state-atom dissoc :buffer)))
 
 (defn set-pin [pin-tag state]
   (when (not (:device @state-atom)) (init-pins))
