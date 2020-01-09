@@ -143,7 +143,7 @@
      }))
 
 (defn get-ip-address []
-  (as-> (sh "ifconfig" "wlan0") $
+  (as-> (sh "ifconfig" "wlan0") $ ; why not use hostname -I instead? Less parsing would be needed.
       (:out $)
       (clojure.string/split-lines $) ; split up the various lines of ifconfig output
       (map #(re-find #"inet\s+\d+\.\d+\.\d+\.\d+" %) $) ; find things matching the inet ip
