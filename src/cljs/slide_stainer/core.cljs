@@ -2,6 +2,7 @@
   (:require
    [reagent.core :as reagent]
    [cljs-http.client :as http]
+   [clojure.edn :as edn]
    )
   (:require-macros
    [cljs.core.async.macros :refer [go go-loop]]))
@@ -53,11 +54,37 @@
                  :height "100px"}
          :on-click (fn [e]
                      (console.log "Click!")
-                     (go (let [resp (http/post "http://localhost:3000/blink"
-                                               {:json-params {:port num}}
-                                               :with-credentials? false)]
+                     (go (let [resp (<! (http/post "http://localhost:3000/blink"
+                                                   {:json-params {:port num}}
+                                                   :with-credentials? false))]
                            (println "POST Resp: " resp))))
          } name])
+
+(defn pins-control-graphql []
+  (let [pins (reagent/atom [])
+        update-fn (fn []
+                    (go (let [resp (<! (http/post "http://localhost:3000/graphql"
+                                                  {:json-params {:query "{pins{id,pin_number,board_value,logical_value}}"}}
+                                                  :with-credentials? false))]
+                          (println "pins-control-graphql" resp)
+                          (println "line 2" (:data (edn/read-string (:body resp))))
+                          (reset! pins (:pins (:data (edn/read-string (:body resp)))))))
+                    )]
+    (fn []
+      (when (empty? @pins) (update-fn))
+      [:div
+       [:p (str @pins)]
+       [:table
+        [:tr [:th "ID"] [:th "Pin #"] [:th "Board Value"] [:th "Logical Value"]]
+        (map (fn [pin]
+               [:tr
+                [:td (:id pin)]
+                [:td (:pin_number pin)]
+                [:td (str (:board_value pin))]
+                [:td (str (:logical_value pin))]
+                ])
+             @pins)]
+       [:button {:on-click update-fn} "Refresh"]])))
 
 
 (defn pin-control [pin-tag]
@@ -122,6 +149,7 @@
 (defn page [ratom]
   [:div
    [graphql-control]
+   [pins-control-graphql]
    [pins-control]
 ;   [led-button "LED" 17]
 ;   [led-button 18 18]

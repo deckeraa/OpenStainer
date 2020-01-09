@@ -1,6 +1,6 @@
 (defproject slide-stainer "0.1.0-SNAPSHOT"
   :dependencies [[org.clojure/clojure "1.10.1"]
-                 [org.clojure/clojurescript "1.9.946"]
+                 [org.clojure/clojurescript "1.10.520"]
                  [javax.xml.bind/jaxb-api "2.2.11"]
                  [reagent "0.7.0"]
                  [dvlopt/linux.gpio "1.0.0"]
@@ -12,6 +12,7 @@
                  [clj-http "3.9.1"]
                  [cljs-http "0.1.46"]
                  [ring/ring-jetty-adapter "1.7.1"]
+                 [org.clojure/data.json "0.2.6"]
                  [clojure-future-spec "1.9.0"]
                  [com.walmartlabs/lacinia "0.36.0-alpha-2"]]
 
