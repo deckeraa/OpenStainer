@@ -14,9 +14,14 @@
  :queries
  {:pin_by_id
   {:type :pin
-   :description "The pins on the Raspberry Pi."
+   :description "A pin on the Raspberry Pi."
    :args {:id {:type ID}}
    :resolve :query/pin_by_id}
+  :pins
+  {
+   :type (list :pin)
+   :description "All pins utilized by the slide stainer app."
+   :resolve :query/pins}
   :ip
   {:type :ip
    :description "The Raspberry Pi's IP address."

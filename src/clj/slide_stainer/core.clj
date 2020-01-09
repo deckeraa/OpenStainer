@@ -131,11 +131,13 @@
   (is (= (normalize-pin-tag "foo")  :foo)))
 
 (defn resolve-pin-by-id [context args value]
+  (println "resolve-pin-by-id" args value)
   (when (not (:device @state-atom)) (init-pins))
   (let [id (normalize-pin-tag (:id args))
         pin-info (id (:setup-index @state-atom))
         board_value (gpio/get-line (:buffer @state-atom) id)]
-    {:board_value board_value
+    {:id (str id)
+     :board_value board_value
      :logical_value (if (:inverted? pin-info) (not board_value) board_value)
      :pin_number (:pin_number pin-info)
      }))
@@ -152,9 +154,15 @@
 
 (defn resolve-ip [context args value]
 ;  (println (sh "ifconfig" "wlan0"))
-;  (println (str "resolve-ip: " (get-ip-address)))
+                                        ;  (println (str "resolve-ip: " (get-ip-address)))
+  (println "get-ip-address" args value)
   {:inet4 (get-ip-address)
    })
+
+(defn resolve-pins [context args value]
+  (println "resolve-pins" args value)
+  (map #(resolve-pin-by-id context {:id %} value)
+       (vec (keys (:setup-index @state-atom)))))
 
 (defn simplify
   "Converts all ordered maps nested within the map into standard hash maps, and
@@ -176,7 +184,8 @@
 
 (defn resolver-map []
   {:query/pin_by_id resolve-pin-by-id
-   :query/ip resolve-ip})
+   :query/ip resolve-ip
+   :query/pins resolve-pins})
 
 (defn load-schema
   []
