@@ -62,13 +62,18 @@
 
 (defn pins-control-graphql []
   (let [pins (reagent/atom [])
+        update-from-resp (fn [raw-resp]
+                           (reset! pins (:pins (:data (edn/read-string (:body raw-resp)))))
+                           )
         update-fn (fn []
                     (go (let [resp (<! (http/post "http://localhost:3000/graphql"
                                                   {:json-params {:query "{pins{id,pin_number,board_value,logical_value}}"}}
                                                   :with-credentials? false))]
                           (println "pins-control-graphql" resp)
-                          (println "line 2" (:data (edn/read-string (:body resp))))
-                          (reset! pins (:pins (:data (edn/read-string (:body resp)))))))
+;                          (println "line 2" (:data (edn/read-string (:body resp))))
+                                        ;                          (reset! pins (:pins (:data (edn/read-string (:body resp)))))
+                          (update-from-resp resp)
+                          ))
                     )]
     (fn []
       (when (empty? @pins) (update-fn))
@@ -81,7 +86,14 @@
                 [:td (:id pin)]
                 [:td (:pin_number pin)]
                 [:td (str (:board_value pin))]
-                [:td (str (:logical_value pin))]
+                (let [val (:logical_value pin)]
+                  [:td [:button {:style {:height 75 :width 75}
+                                 :on-click (fn [e]
+                                             (go (let [resp (<! (http/post "http://localhost:3000/graphql" {:json-params {:query (str "mutation {set_pin(id:\"" (:id pin) "\",logical_value:" (not val) "){id,pin_number,board_value,logical_value}}")}} :with-credentials? false))]
+                                                   (println "mutate RESP" (str resp))
+                                                   (update-from-resp resp)))
+                                             )}
+                        (str val)]])
                 ])
              @pins)]
        [:button {:on-click update-fn} "Refresh"]])))
