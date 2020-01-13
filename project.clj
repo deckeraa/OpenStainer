@@ -14,6 +14,7 @@
                  [ring/ring-jetty-adapter "1.7.1"]
                  [org.clojure/data.json "0.2.6"]
                  [clojure-future-spec "1.9.0"]
+                 [incanter "1.9.3"]
                  [com.walmartlabs/lacinia "0.36.0-alpha-2"]]
 
   :main slide-stainer.core

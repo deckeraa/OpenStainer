@@ -13,6 +13,9 @@
             [com.walmartlabs.lacinia.schema :as schema]
             [com.walmartlabs.lacinia :as lacinia]
             [clojure.edn :as edn]
+            [incanter.core :refer :all]
+            [incanter.io :refer :all]
+            [incanter.stats :refer :all]
             [clojure.walk :as walk])
   (:use clojure.test)
   (:import (clojure.lang IPersistentMap))
@@ -229,6 +232,61 @@
         ]
     (swap! axis-cursor assoc :position (:position args))))
 
+(defn pulse-step-fn
+  "Stepper pulse generation function that always outputs a 40kHz signal"
+  [step]
+  40000)
+
+(defn pulse-linear-fn
+  "Stepper pulse generation function that uses a linear ramp-up"
+  [step]
+  (let [slope 100
+        initial_offset 80]
+    (min
+     (+ (* step slope) initial_offset) ; y = mx+b
+     240000                            ; max 80 kHz
+     )))
+
+(defn pulse-logistic-fn
+  "Stepper pulse generaiton function that uses a logistic-function shape for ramp-up"
+  [step]
+  (let [e 2.71828
+        L 120000 ; maximum value for the curve
+        x_0 (/ 800 2)                  ; x-value of the sigmoid's midpoint
+        k 0.01 ; logistic growth rate / steepness of curve
+        ]
+    ;; f(x) = L / (1 + e^(-k(x-x_0
+    ;; https://en.wikipedia.org/wiki/Logistic_function
+    (- (/ L
+          (+ 1 (pow e (* (- k) (- step x_0)))))
+       80)))
+
+(with-test
+  (defn hz-to-ns
+    "Converts from hertz to nanoseconds. For usage with stepper signal generation."
+    [hertz]
+    (* 1000000000 (/ 1 hertz)))
+  (is (= (double (hz-to-ns 1)) (pow 10 9)))
+  (is (< (- (hz-to-ns 60000) 16667) ; technically 50000/3, so check that it's close enough to 16667 ns
+         1)))
+
+(with-test
+  (defn precompute-pulse
+    "Takes a pulse-generation function and turns it into a vector with the given number of steps"
+    [pulse-fn steps]
+    (let [halfway (vec (map pulse-fn (range 1 (inc (/ steps 2))))) ; split up the steps in half so that we can have acceleration and then deceleration. The purpose of this is to provide smooth motion and avoid missed steps.
+          second-half (-> (if (odd? steps)
+                            (pop halfway) ; if it's an odd number drop off the first step (the one that will end up in the middle) before reversing. This is so that we end up with the correct number of steps.
+                            halfway)
+                          (reverse))
+          ]
+      (vec (concat halfway second-half))
+      ))
+  (let [testing-fn (fn [step] (- step)) ; simple testing function the negative is so that we can easily observer that the testing-fn actually got called.
+        ]
+    (is (= (precompute-pulse testing-fn 4) [-1 -2 -2 -1]))
+    (is (= (precompute-pulse testing-fn 5) [-1 -2 -3 -2 -1]))))
+
 (defn move-by-pulses [context args value]
   (when (not (:device @state-atom)) (init-pins))
   (let [id (normalize-pin-tag (:id args))
@@ -239,7 +297,8 @@
         num-pulses (if dir-val
                      (:pulses args)
                      (* -1 (:pulses args)))
-        nanosecond-wait (max 10000 7500)
+        nanosecond-wait 1000000 ;(max 1000000 7500)
+        precomputed-pulses (precompute-pulse pulse-logistic-fn num-pulses)
         ] ; friendly reminder not to take it lower than 7.5us
     (println "move-by-pulses" ena)
     (if (compare-and-set! pulse-lock false true)
@@ -249,13 +308,12 @@
         (java.util.concurrent.locks.LockSupport/parkNanos 5000) ; 5us wait required by driver
         (set-pin dir dir-val)
         (java.util.concurrent.locks.LockSupport/parkNanos (max 300000000 5000)) ; 5us wait required by driver
-        (loop [i num-pulses]
-          (when (> i 0)
+        (doseq [pulse-val precomputed-pulses]
+          (do
             (set-pin pul true)
-            (java.util.concurrent.locks.LockSupport/parkNanos nanosecond-wait)
+            (java.util.concurrent.locks.LockSupport/parkNanos (hz-to-ns pulse-val))
             (set-pin pul false)
-            (java.util.concurrent.locks.LockSupport/parkNanos nanosecond-wait)
-            (recur (- i 1))))
+            (java.util.concurrent.locks.LockSupport/parkNanos (hz-to-ns pulse-val))))
         (java.util.concurrent.locks.LockSupport/parkNanos nanosecond-wait)
         (set-pin ena false)
         (when (not (compare-and-set! pulse-lock true false)) (println "Someone messed with the lock"))
@@ -263,6 +321,41 @@
       (println "Couldn't get the lock on pulse"))
     (resolve-axis context args value)
     ))
+
+;; (defn move-by-pulses [context args value]
+;;   (when (not (:device @state-atom)) (init-pins))
+;;   (let [id (normalize-pin-tag (:id args))
+;;         ena (normalize-pin-tag (str id "-ena"))
+;;         pul (normalize-pin-tag (str id "-pul"))
+;;         dir (normalize-pin-tag (str id "-dir"))
+;;         dir-val (pos? (:pulses args))
+;;         num-pulses (if dir-val
+;;                      (:pulses args)
+;;                      (* -1 (:pulses args)))
+;;         nanosecond-wait 1000000 ;(max 1000000 7500)
+;;         ] ; friendly reminder not to take it lower than 7.5us
+;;     (println "move-by-pulses" ena)
+;;     (if (compare-and-set! pulse-lock false true)
+;;       (do
+;;         (println "Got the lock")
+;;         (set-pin ena true)
+;;         (java.util.concurrent.locks.LockSupport/parkNanos 5000) ; 5us wait required by driver
+;;         (set-pin dir dir-val)
+;;         (java.util.concurrent.locks.LockSupport/parkNanos (max 300000000 5000)) ; 5us wait required by driver
+;;         (loop [i num-pulses]
+;;           (when (> i 0)
+;;             (set-pin pul true)
+;;             (java.util.concurrent.locks.LockSupport/parkNanos nanosecond-wait)
+;;             (set-pin pul false)
+;;             (java.util.concurrent.locks.LockSupport/parkNanos nanosecond-wait)
+;;             (recur (- i 1))))
+;;         (java.util.concurrent.locks.LockSupport/parkNanos nanosecond-wait)
+;;         (set-pin ena false)
+;;         (when (not (compare-and-set! pulse-lock true false)) (println "Someone messed with the lock"))
+;;         (println "Dropped the lock"))
+;;       (println "Couldn't get the lock on pulse"))
+;;     (resolve-axis context args value)
+;;     ))
 
 (defn move-relative [context args value]
   (let [id (normalize-pin-tag (:id args))
