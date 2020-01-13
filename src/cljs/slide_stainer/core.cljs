@@ -18,14 +18,17 @@
   (reset! atm (-> evt .-target .-value)))
 
 (defn graphql-control []
-  (let [input  (reagent/atom "{pin_by_id(id:\":stepperX-ena\"){board_value,logical_value,pin_number},ip{inet4}}")
+  (let [input  (reagent/atom
+                "mutation {move_by_pulses(id:\":stepperX\",pulses:1000){id}}"
+                ;"{pin_by_id(id:\":stepperX-ena\"){board_value,logical_value,pin_number},ip{inet4}}"
+                )
         output-data (reagent/atom "")
         output-status (reagent/atom "")]
     (fn []
       [:div
        [:h1 "GraphQL Control"]
        [:textarea {:type "text" :value @input
-                   :rows 8 :cols 40
+                   :rows 8 :cols 80
                 :on-change #(on-change-handler input %)
                 }]
        [:textarea {:type "text" :value @output-data
@@ -91,7 +94,7 @@
                                  :on-click (fn [e]
                                              (go (let [resp (<! (http/post "http://localhost:3000/graphql" {:json-params {:query (str "mutation {set_pin(id:\"" (:id pin) "\",logical_value:" (not val) "){id,pin_number,board_value,logical_value}}")}} :with-credentials? false))]
                                                    (println "mutate RESP" (str resp))
-                                                   (update-from-resp resp)))
+                                                   ))
                                              )}
                         (str val)]])
                 ])
@@ -127,7 +130,7 @@
 
 (defn pulse-control [pin-tag]
   (let [wait-ms    (reagent/atom "100")
-        num-pulses (reagent/atom "400")]
+        num-pulses (reagent/atom "40000")]
     (fn []
       [:tr (str pin-tag)
        [:td [:input {:type "button" :value "Pulse"

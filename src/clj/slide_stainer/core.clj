@@ -19,19 +19,28 @@
   (:gen-class))
 
 (defonce state-atom (atom {}))
+(defonce pulse-lock
+  (atom false))
+
+; z dir - true = DOWN
 
 (def pin-defs
-  {:stepperX {:pins
+  {:stepperZ {:pins
               {17 {::gpio/tag :stepperX-ena
-                   :inverted? true}
+                   :inverted? false}
                18 {::gpio/tag :stepperX-dir
-                   :inverted? true}
+                   :inverted? false}
                19 {::gpio/tag :stepperX-pul
-                   :inverted? true}}
-              :pos nil
-              :pos-limit-inches 9}
+                   :inverted? false}}
+              :travel_distance_per_turn 0.063
+              :position nil
+              :position_limit 9
+              :pulses_per_revolution 800}
+   ;; :stepperX {:pins
+   ;;            }
    :led13 {:pins
            {13 {::gpio/tag :led13-led}}}})
+
 
 (with-test
   (defn index-pin-defs [pin-defs]
@@ -102,6 +111,9 @@
                           22 {::gpio/tag :stepperZ-pul}}]
     (is (= pin-defs-for-lib (get-pin-defs-for-gpio-lib sample-pin-defs)))))
 
+;; (with-test
+;;   (defn append-to-tag ))
+
 (defn init-pins
   ([] (init-pins state-atom))
   ([state-atom]
@@ -152,6 +164,33 @@
       (clojure.string/replace $ #"inet\s+" "") ; take out the inet portion
       ))
 
+(defn set-pin [pin-tag state]
+;  (when (not (:device @state-atom)) (init-pins))
+  (gpio/write (:handle @state-atom) (-> (:buffer @state-atom) (gpio/set-line pin-tag state))))
+
+(defn pin-handler [req]
+  (let [body (keywordize-keys (json/read-str (request/body-string req)))]
+    (println body)
+    (set-pin (keyword (:pin-tag body)) (:state body))
+    (content-type (response/response "<h1>Success.</h1>") "text/html"))
+  )
+
+(defn pulse [pin-tag wait-ms num-pulses]
+  (println "Starting pulse" wait-ms num-pulses)
+  (if (compare-and-set! pulse-lock false true)
+    (do
+      (println "Grabbed the lock" wait-ms num-pulses)
+      (loop [i num-pulses]
+        (when (> i 0)
+          (set-pin pin-tag true)
+          (java.util.concurrent.locks.LockSupport/parkNanos wait-ms)
+          (set-pin pin-tag false)
+          (java.util.concurrent.locks.LockSupport/parkNanos wait-ms)
+          (recur (- i 1))))
+      (when (not (compare-and-set! pulse-lock true false)) (println "Someone mess with the lock"))
+      (println "Finishing pulsing" wait-ms num-pulses))
+    (println "Couldn't get the lock on pulse")))
+
 (defn resolve-ip [context args value]
 ;  (println (sh "ifconfig" "wlan0"))
                                         ;  (println (str "resolve-ip: " (get-ip-address)))
@@ -178,6 +217,65 @@
 (defn resolve-state [context args value]
   {:contents (str @state-atom)})
 
+(defn resolve-axis [context args value]
+  (let [id (normalize-pin-tag (:id args))]
+    {:id (str id)
+     :position (get-in state-atom [:axis id :position])}))
+
+(defn set-axis [context args value]
+  (let [id (normalize-pin-tag (:id args))
+        axis-cursor nil
+;        axis-cursor (reagent/cursor state-atom [:axis id])
+        ]
+    (swap! axis-cursor assoc :position (:position args))))
+
+(defn move-by-pulses [context args value]
+  (when (not (:device @state-atom)) (init-pins))
+  (let [id (normalize-pin-tag (:id args))
+        ena (normalize-pin-tag (str id "-ena"))
+        pul (normalize-pin-tag (str id "-pul"))
+        dir (normalize-pin-tag (str id "-dir"))
+        dir-val (pos? (:pulses args))
+        num-pulses (if dir-val
+                     (:pulses args)
+                     (* -1 (:pulses args)))
+        nanosecond-wait (max 10000 7500)
+        ] ; friendly reminder not to take it lower than 7.5us
+    (println "move-by-pulses" ena)
+    (if (compare-and-set! pulse-lock false true)
+      (do
+        (println "Got the lock")
+        (set-pin ena true)
+        (java.util.concurrent.locks.LockSupport/parkNanos 5000) ; 5us wait required by driver
+        (set-pin dir dir-val)
+        (java.util.concurrent.locks.LockSupport/parkNanos (max 300000000 5000)) ; 5us wait required by driver
+        (loop [i num-pulses]
+          (when (> i 0)
+            (set-pin pul true)
+            (java.util.concurrent.locks.LockSupport/parkNanos nanosecond-wait)
+            (set-pin pul false)
+            (java.util.concurrent.locks.LockSupport/parkNanos nanosecond-wait)
+            (recur (- i 1))))
+        (java.util.concurrent.locks.LockSupport/parkNanos nanosecond-wait)
+        (set-pin ena false)
+        (when (not (compare-and-set! pulse-lock true false)) (println "Someone messed with the lock"))
+        (println "Dropped the lock"))
+      (println "Couldn't get the lock on pulse"))
+    (resolve-axis context args value)
+    ))
+
+(defn move-relative [context args value]
+  (let [id (normalize-pin-tag (:id args))
+        increment (:increment args)
+        axis-config (get-in state-atom [:setup :pin-defs id ])
+        num-pulses-req (/ (* increment (:pulses_per_revolution axis-config))
+                          (:travel_distance_per_turn axis-config))]
+    nil))
+
+(defn move-to-position [context args value]
+  nil
+  )
+
 (defn simplify
   "Converts all ordered maps nested within the map into standard hash maps, and
    sequences into vectors, which makes for easier constants in the tests, and eliminates ordering problems."
@@ -201,7 +299,13 @@
    :query/ip resolve-ip
    :query/pins resolve-pins
    :mutation/set_pin set_pin
-   :query/state resolve-state})
+   :query/state resolve-state
+   :query/axis resolve-axis
+   :mutation/set_axis set-axis
+   :mutation/move_by_pulses move-by-pulses
+   :mutation/move_relative move-relative
+   :mutation/move_to_position move-to-position
+})
 
 (defn load-schema
   []
@@ -245,28 +349,6 @@
 
 (defn led-handler [req]
   (println req))
-
-(defn set-pin [pin-tag state]
-  (println "set-pin" pin-tag state)
-  (when (not (:device @state-atom)) (init-pins))
-  (gpio/write (:handle @state-atom) (-> (:buffer @state-atom) (gpio/set-line pin-tag state))))
-
-(defn pin-handler [req]
-  (let [body (keywordize-keys (json/read-str (request/body-string req)))]
-    (println body)
-    (set-pin (keyword (:pin-tag body)) (:state body))
-    (content-type (response/response "<h1>Success.</h1>") "text/html"))
-  )
-
-(defn pulse [pin-tag wait-ms num-pulses]
-  (loop [i num-pulses]
-    (when (> i 0)
-      (set-pin pin-tag false)
-      (java.util.concurrent.locks.LockSupport/parkNanos (* 1000 wait-ms))
-      (set-pin pin-tag true)
-      (java.util.concurrent.locks.LockSupport/parkNanos (* 1000 wait-ms))
-;      (Thread/sleep wait-ms)
-      (recur (- i 1)))))
 
 (defn pulse-handler [req]
   (let [body (keywordize-keys (json/read-str (request/body-string req)))]
