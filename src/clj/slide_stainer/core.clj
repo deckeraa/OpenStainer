@@ -340,13 +340,19 @@
    (:pulses args))
   (resolve-axis context args value))
 
-(defn move-relative [context args value]
-  (let [id (normalize-pin-tag (:id args))
-        increment (:increment args)
-        axis-config (get-in state-atom [:setup :pin-defs id ])
-        num-pulses-req (/ (* increment (:pulses_per_revolution axis-config))
-                          (:travel_distance_per_turn axis-config))]
-    num-pulses-req))
+(defn move-relative [id increment]
+  (let [axis-config (get-in @state-atom [:setup id])
+        pulses-by-revolution (or (:pulses_per_revolution axis-config) 400)
+        travel-distance-per-turn (or (:travel_distance_per_turn axis-config) 0.063)
+        num-pulses-req (int (/ (* increment pulses-by-revolution)
+                               travel-distance-per-turn))]
+    (move-by-pulses id num-pulses-req)))
+
+(defn move-relative-graphql-handler [context args value]
+  (move-relative
+   (normalize-pin-tag (:id args))
+   (:increment args))
+  (resolve-axis context args value))
 
 (defn move-to-position [context args value]
   nil
@@ -379,7 +385,7 @@
    :query/axis resolve-axis
    :mutation/set_axis set-axis
    :mutation/move_by_pulses move-by-pulses-graphql-handler
-   :mutation/move_relative move-relative
+   :mutation/move_relative move-relative-graphql-handler
    :mutation/move_to_position move-to-position
 })
 
