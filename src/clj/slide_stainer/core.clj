@@ -21,6 +21,9 @@
   (:import (clojure.lang IPersistentMap))
   (:gen-class))
 
+(defn swap-in! [atom ks v]
+  (swap-vals! atom #(assoc-in % ks v)))
+
 (defonce state-atom (atom {}))
 (defonce pulse-lock
   (atom false))
@@ -145,8 +148,25 @@
    (swap! state-atom dissoc :device)
    (swap! state-atom dissoc :buffer)))
 
-(swap! state-atom assoc :setup pin-defs)
-(swap! state-atom assoc :setup-index (index-pin-defs pin-defs))
+(defonce buid-pin-defs-placeholder
+  (do (swap! state-atom assoc :setup pin-defs)
+      (swap! state-atom assoc :setup-index (index-pin-defs pin-defs))))
+
+(defn inches-to-pulses [id inches]
+  (let [axis-config (get-in @state-atom [:setup id])
+        pulses-per-revolution (:pulses_per_revolution axis-config)
+        travel-distance-per-turn (:travel_distance_per_turn axis-config)
+        ]
+    (int (/ (* inches pulses-per-revolution)
+            travel-distance-per-turn))))
+
+(defn pulses-to-inches [id pulses]
+  (let [axis-config (get-in @state-atom [:setup id])
+        pulses-per-revolution (:pulses_per_revolution axis-config)
+        travel-distance-per-turn (:travel_distance_per_turn axis-config)
+        ]
+    (/ (* pulses travel-distance-per-turn)
+          pulses-per-revolution)))
 
 (with-test
   (defn normalize-pin-tag [tag]
@@ -233,14 +253,28 @@
 (defn resolve-axis [context args value]
   (let [id (normalize-pin-tag (:id args))]
     {:id (str id)
-     :position (get-in state-atom [:axis id :position])}))
+     :position        (get-in @state-atom [:setup id :position])
+     :position_inches (get-in @state-atom [:setup id :position_inches])}))
 
 (defn set-axis [context args value]
   (let [id (normalize-pin-tag (:id args))
-        axis-cursor nil
-;        axis-cursor (reagent/cursor state-atom [:axis id])
+        position (:position args)
+        position_inches (:position_inches args)
+        travel-distance-per-turn (:travel_distance_per_turn args)
+        position-limit (:position_limit args)
+        pulses-per-revolution (:pulses_per_revolution args)
         ]
-    (swap! axis-cursor assoc :position (:position args))))
+
+    (when travel-distance-per-turn (swap-in! state-atom [:setup id :position] travel-distance-per-turn))
+    (when position-limit (swap-in! state-atom [:setup id :position] position-limit))
+    (when pulses-per-revolution (swap-in! state-atom [:setup id :position] pulses-per-revolution))
+    (when position
+      (do (swap-in! state-atom [:setup id :position] position)
+          (swap-in! state-atom [:setup id :position_inches] (pulses-to-inches id position))))
+    (when (and position_inches (not position))
+      (do (swap-in! state-atom [:setup id :position_inches] position_inches)
+          (swap-in! state-atom [:setup id :position] (inches-to-pulses id position_inches))))
+    (resolve-axis context args value)))
 
 (defn pulse-step-fn
   "Stepper pulse generation function that always outputs a 40kHz signal"
@@ -340,32 +374,34 @@
    (:pulses args))
   (resolve-axis context args value))
 
-(defn inches-to-pulses [id inches]
-  (let [axis-config (get-in @state-atom [:setup id])
-        pulses-per-revolution (:pulses_per_revolution axis-config)
-        travel-distance-per-turn (:travel_distance_per_turn axis-config)
-        ]
-    (int (/ (* inches pulses-per-revolution)
-                               travel-distance-per-turn))))
-
 (defn move-relative [id increment]
   (move-by-pulses id (inches-to-pulses id increment)))
 
-(defn move-relative-graphql-handler [context args value]
+(defn move-relative-graphql-handler
+  "Example query: mutation {move_relative(id:\":stepperZ\",increment:-1){id}}"
+  [context args value]
   (move-relative
    (normalize-pin-tag (:id args))
    (:increment args))
   (resolve-axis context args value))
 
 (defn move-to-position [id position]
-  (let [desired-pos-in-steps nil])
-  ;; do bounds checking
-  (let [current-pos-in-steps nil
-        desired-pos-in-steps nil]
-    ;; do the move
-    ;; update the position in the state
-    )
-  )
+  (let [axis-config (get-in @state-atom [:setup id])
+        desired-pos-in-steps (inches-to-pulses id position)
+        max-steps-in-bounds (inches-to-pulses id (:position_limit axis-config))
+        bounds-checked-desired-pos-in-steps (cond (< desired-pos-in-steps 0) 0
+                                                  (> desired-pos-in-steps max-steps-in-bounds) max-steps-in-bounds
+                                                  :else desired-pos-in-steps)
+        current-pos-in-steps (:position axis-config)
+        steps-to-move (- desired-pos-in-steps current-pos-in-steps)
+        ]
+    (move-by-pulses id steps-to-move)
+    ;; (println axis-config)
+    ;; (println (:position axis-config))
+    ;; (println desired-pos-in-steps current-pos-in-steps)
+;    (println "steps-to-move: " steps-to-move)
+    (swap-in! state-atom [:setup id :position] bounds-checked-desired-pos-in-steps)
+    ))
 
 (defn move-to-position-graphql-handler [context args value]
   (move-to-position
