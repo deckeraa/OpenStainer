@@ -340,13 +340,16 @@
    (:pulses args))
   (resolve-axis context args value))
 
-(defn move-relative [id increment]
+(defn inches-to-pulses [id inches]
   (let [axis-config (get-in @state-atom [:setup id])
-        pulses-by-revolution (or (:pulses_per_revolution axis-config) 400)
-        travel-distance-per-turn (or (:travel_distance_per_turn axis-config) 0.063)
-        num-pulses-req (int (/ (* increment pulses-by-revolution)
-                               travel-distance-per-turn))]
-    (move-by-pulses id num-pulses-req)))
+        pulses-per-revolution (:pulses_per_revolution axis-config)
+        travel-distance-per-turn (:travel_distance_per_turn axis-config)
+        ]
+    (int (/ (* inches pulses-per-revolution)
+                               travel-distance-per-turn))))
+
+(defn move-relative [id increment]
+  (move-by-pulses id (inches-to-pulses id increment)))
 
 (defn move-relative-graphql-handler [context args value]
   (move-relative
@@ -354,9 +357,21 @@
    (:increment args))
   (resolve-axis context args value))
 
-(defn move-to-position [context args value]
-  nil
+(defn move-to-position [id position]
+  (let [desired-pos-in-steps nil])
+  ;; do bounds checking
+  (let [current-pos-in-steps nil
+        desired-pos-in-steps nil]
+    ;; do the move
+    ;; update the position in the state
+    )
   )
+
+(defn move-to-position-graphql-handler [context args value]
+  (move-to-position
+   (normalize-pin-tag (:id args))
+   (:position args))
+  (resolve-axis context args value))
 
 (defn simplify
   "Converts all ordered maps nested within the map into standard hash maps, and
@@ -386,7 +401,7 @@
    :mutation/set_axis set-axis
    :mutation/move_by_pulses move-by-pulses-graphql-handler
    :mutation/move_relative move-relative-graphql-handler
-   :mutation/move_to_position move-to-position
+   :mutation/move_to_position move-to-position-graphql-handler
 })
 
 (defn load-schema
