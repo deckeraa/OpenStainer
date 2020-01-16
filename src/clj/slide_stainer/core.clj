@@ -29,18 +29,28 @@
 
 (def pin-defs
   {:stepperZ {:pins
-              {17 {::gpio/tag :stepperX-ena
+              {17 {::gpio/tag :stepperZ-ena
                    :inverted? false}
-               18 {::gpio/tag :stepperX-dir
+               18 {::gpio/tag :stepperZ-dir
                    :inverted? false}
-               19 {::gpio/tag :stepperX-pul
+               19 {::gpio/tag :stepperZ-pul
                    :inverted? false}}
               :travel_distance_per_turn 0.063
               :position nil
               :position_limit 9
               :pulses_per_revolution 800}
-   ;; :stepperX {:pins
-   ;;            }
+   :stepperX {:pins
+              {26 {::gpio/tag :stepperX-ena
+                   :inverted? false}
+               6  {::gpio/tag :stepperX-dir
+                   :inverted? false}
+               5  {::gpio/tag :stepperX-pul
+                   :inverted? false}}
+              :travel_distance_per_turn 0.063
+              :position nil
+              :position_limit 12
+              :pulses_per_revolution 800
+              }
    :led13 {:pins
            {13 {::gpio/tag :led13-led}}}})
 
@@ -235,7 +245,9 @@
 (defn pulse-step-fn
   "Stepper pulse generation function that always outputs a 40kHz signal"
   [step]
-  40000)
+  400
+;  40000
+  )
 
 (defn pulse-linear-fn
   "Stepper pulse generation function that uses a linear ramp-up"
@@ -298,7 +310,7 @@
                      (:pulses args)
                      (* -1 (:pulses args)))
         nanosecond-wait 1000000 ;(max 1000000 7500)
-        precomputed-pulses (precompute-pulse pulse-logistic-fn num-pulses)
+        precomputed-pulses (precompute-pulse pulse-linear-fn num-pulses)
         ] ; friendly reminder not to take it lower than 7.5us
     (println "move-by-pulses" ena)
     (if (compare-and-set! pulse-lock false true)
