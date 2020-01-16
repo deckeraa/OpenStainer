@@ -299,16 +299,15 @@
     (is (= (precompute-pulse testing-fn 4) [-1 -2 -2 -1]))
     (is (= (precompute-pulse testing-fn 5) [-1 -2 -3 -2 -1]))))
 
-(defn move-by-pulses [context args value]
+(defn move-by-pulses [id pulses]
   (when (not (:device @state-atom)) (init-pins))
-  (let [id (normalize-pin-tag (:id args))
-        ena (normalize-pin-tag (str id "-ena"))
+  (let [ena (normalize-pin-tag (str id "-ena"))
         pul (normalize-pin-tag (str id "-pul"))
         dir (normalize-pin-tag (str id "-dir"))
-        dir-val (pos? (:pulses args))
+        dir-val (pos? pulses)
         num-pulses (if dir-val
-                     (:pulses args)
-                     (* -1 (:pulses args)))
+                     pulses
+                     (* -1 pulses))
         nanosecond-wait 1000000 ;(max 1000000 7500)
         precomputed-pulses (precompute-pulse pulse-linear-fn num-pulses)
         ] ; friendly reminder not to take it lower than 7.5us
@@ -331,43 +330,15 @@
         (when (not (compare-and-set! pulse-lock true false)) (println "Someone messed with the lock"))
         (println "Dropped the lock"))
       (println "Couldn't get the lock on pulse"))
-    (resolve-axis context args value)
     ))
 
-;; (defn move-by-pulses [context args value]
-;;   (when (not (:device @state-atom)) (init-pins))
-;;   (let [id (normalize-pin-tag (:id args))
-;;         ena (normalize-pin-tag (str id "-ena"))
-;;         pul (normalize-pin-tag (str id "-pul"))
-;;         dir (normalize-pin-tag (str id "-dir"))
-;;         dir-val (pos? (:pulses args))
-;;         num-pulses (if dir-val
-;;                      (:pulses args)
-;;                      (* -1 (:pulses args)))
-;;         nanosecond-wait 1000000 ;(max 1000000 7500)
-;;         ] ; friendly reminder not to take it lower than 7.5us
-;;     (println "move-by-pulses" ena)
-;;     (if (compare-and-set! pulse-lock false true)
-;;       (do
-;;         (println "Got the lock")
-;;         (set-pin ena true)
-;;         (java.util.concurrent.locks.LockSupport/parkNanos 5000) ; 5us wait required by driver
-;;         (set-pin dir dir-val)
-;;         (java.util.concurrent.locks.LockSupport/parkNanos (max 300000000 5000)) ; 5us wait required by driver
-;;         (loop [i num-pulses]
-;;           (when (> i 0)
-;;             (set-pin pul true)
-;;             (java.util.concurrent.locks.LockSupport/parkNanos nanosecond-wait)
-;;             (set-pin pul false)
-;;             (java.util.concurrent.locks.LockSupport/parkNanos nanosecond-wait)
-;;             (recur (- i 1))))
-;;         (java.util.concurrent.locks.LockSupport/parkNanos nanosecond-wait)
-;;         (set-pin ena false)
-;;         (when (not (compare-and-set! pulse-lock true false)) (println "Someone messed with the lock"))
-;;         (println "Dropped the lock"))
-;;       (println "Couldn't get the lock on pulse"))
-;;     (resolve-axis context args value)
-;;     ))
+(defn move-by-pulses-graphql-handler
+  "Example query: mutation {move_by_pulses(id:\":stepperZ\",pulses:-3200){id}}"
+  [context args value]
+  (move-by-pulses
+   (normalize-pin-tag (:id args))
+   (:pulses args))
+  (resolve-axis context args value))
 
 (defn move-relative [context args value]
   (let [id (normalize-pin-tag (:id args))
@@ -375,7 +346,7 @@
         axis-config (get-in state-atom [:setup :pin-defs id ])
         num-pulses-req (/ (* increment (:pulses_per_revolution axis-config))
                           (:travel_distance_per_turn axis-config))]
-    nil))
+    num-pulses-req))
 
 (defn move-to-position [context args value]
   nil
@@ -407,7 +378,7 @@
    :query/state resolve-state
    :query/axis resolve-axis
    :mutation/set_axis set-axis
-   :mutation/move_by_pulses move-by-pulses
+   :mutation/move_by_pulses move-by-pulses-graphql-handler
    :mutation/move_relative move-relative
    :mutation/move_to_position move-to-position
 })
