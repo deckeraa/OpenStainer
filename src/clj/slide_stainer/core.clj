@@ -45,9 +45,9 @@
    :stepperX {:pins
               {26 {::gpio/tag :stepperX-ena
                    :inverted? false}
-               6  {::gpio/tag :stepperX-dir
+               27  {::gpio/tag :stepperX-dir
                    :inverted? false}
-               5  {::gpio/tag :stepperX-pul
+               22  {::gpio/tag :stepperX-pul
                    :inverted? false}}
               :travel_distance_per_turn 0.063
               :position nil
@@ -95,8 +95,15 @@
 (with-test
   (defn get-pin-defs-for-gpio-lib [pin-defs]
     (apply merge (map (fn [[device {pins :pins}]]
-                        (apply merge (map (fn [[pin_num {tag ::gpio/tag}]]
-                                            {pin_num {::gpio/tag tag}}) pins))) pin-defs)))
+                        (apply merge (map (fn [[pin_num {tag  ::gpio/tag
+                                                         dir  ::gpio/direction
+                                                         edge ::gpio/edge-detection}]]
+                                            (let [pin-map (as-> {} $
+                                                            (if tag (assoc $ ::gpio/tag tag)  $)
+                                                            (if dir (assoc $ ::gpio/direction dir) $)
+                                                            (if edge (assoc $ ::gpio/edge-detection edge) $))]
+                                              {pin_num pin-map}))
+                                          pins))) pin-defs)))
   (let [sample-pin-defs {:stepperX {:pins
                                     {17 {::gpio/tag :stepperX-ena
                                          :inverted? true}
@@ -117,8 +124,13 @@
                                     :pos-limit-inches 4}
                          :led12 {:pins
                                  {12 {::gpio/tag :led12-led
-                                      :inverted? true}}}}
-        pin-defs-for-lib {12 {::gpio/tag :led12-led}
+                                      :inverted? true}}}
+                         :switch {:pins
+                                  {4 {::gpio/tag :switch
+                                      ::gpio/direction :input
+                                      ::gpio/edge-detection :rising}}}}
+        pin-defs-for-lib { 4 {::gpio/tag :switch ::gpio/direction :input ::gpio/edge-detection :rising}
+                          12 {::gpio/tag :led12-led}
                           17 {::gpio/tag :stepperX-ena}
                           18 {::gpio/tag :stepperX-dir}
                           19 {::gpio/tag :stepperX-pul}
@@ -208,21 +220,21 @@
     (content-type (response/response "<h1>Success.</h1>") "text/html"))
   )
 
-(defn pulse [pin-tag wait-ms num-pulses]
-  (println "Starting pulse" wait-ms num-pulses)
-  (if (compare-and-set! pulse-lock false true)
-    (do
-      (println "Grabbed the lock" wait-ms num-pulses)
-      (loop [i num-pulses]
-        (when (> i 0)
-          (set-pin pin-tag true)
-          (java.util.concurrent.locks.LockSupport/parkNanos wait-ms)
-          (set-pin pin-tag false)
-          (java.util.concurrent.locks.LockSupport/parkNanos wait-ms)
-          (recur (- i 1))))
-      (when (not (compare-and-set! pulse-lock true false)) (println "Someone mess with the lock"))
-      (println "Finishing pulsing" wait-ms num-pulses))
-    (println "Couldn't get the lock on pulse")))
+;; (defn pulse [pin-tag wait-ms num-pulses]
+;;   (println "Starting pulse" wait-ms num-pulses)
+;;   (if (compare-and-set! pulse-lock false true)
+;;     (do
+;;       (println "Grabbed the lock" wait-ms num-pulses)
+;;       (loop [i num-pulses]
+;;         (when (> i 0)
+;;           (set-pin pin-tag true)
+;;           (java.util.concurrent.locks.LockSupport/parkNanos wait-ms)
+;;           (set-pin pin-tag false)
+;;           (java.util.concurrent.locks.LockSupport/parkNanos wait-ms)
+;;           (recur (- i 1))))
+;;       (when (not (compare-and-set! pulse-lock true false)) (println "Someone mess with the lock"))
+;;       (println "Finishing pulsing" wait-ms num-pulses))
+;;     (println "Couldn't get the lock on pulse")))
 
 (defn resolve-ip [context args value]
 ;  (println (sh "ifconfig" "wlan0"))
@@ -290,7 +302,7 @@
         initial_offset 80]
     (min
      (+ (* step slope) initial_offset) ; y = mx+b
-     240000                            ; max 80 kHz
+     12000                            ; max 80 kHz
      )))
 
 (defn pulse-logistic-fn
@@ -346,6 +358,8 @@
         precomputed-pulses (precompute-pulse pulse-linear-fn num-pulses)
         ] ; friendly reminder not to take it lower than 7.5us
     (println "move-by-pulses" ena)
+    (println (take 10 precomputed-pulses))
+    (println (apply max precomputed-pulses))
     (if (compare-and-set! pulse-lock false true)
       (do
         (println "Got the lock")
@@ -486,9 +500,9 @@
 (defn pulse-handler [req]
   (let [body (keywordize-keys (json/read-str (request/body-string req)))]
     (println body)
-    (pulse (keyword (:pin-tag body))
-           (Integer/parseInt (:wait-ms body))
-           (Integer/parseInt (:num-pulses body)))
+    ;; (pulse (keyword (:pin-tag body))
+    ;;        (Integer/parseInt (:wait-ms body))
+    ;;        (Integer/parseInt (:num-pulses body)))
     (content-type (response/response "<h1>Success.</h1>") "text/html")))
 
 (defn blink [pin_num]
