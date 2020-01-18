@@ -16,6 +16,7 @@
             [incanter.core :refer :all]
             [incanter.io :refer :all]
             [incanter.stats :refer :all]
+            [clojure.core.async :as async :refer [go go-loop <! timeout]]
             [clojure.walk :as walk])
   (:use clojure.test)
   (:import (clojure.lang IPersistentMap))
@@ -55,8 +56,12 @@
               :pulses_per_revolution 800
               }
    :led13 {:pins
-           {13 {::gpio/tag :led13-led}}}})
-
+           {13 {::gpio/tag :led13-led}}}
+   ;; :switch {:pins
+   ;;          {4 {::gpio/tag :switch
+   ;;              ::gpio/direction :input
+   ;;              ::gpio/edge-detection :rising}}}
+   })
 
 (with-test
   (defn index-pin-defs [pin-defs]
@@ -142,6 +147,20 @@
 ;; (with-test
 ;;   (defn append-to-tag ))
 
+(defn init-watcher []
+  ;; (go-loop [seconds 1]
+  ;;    (<! (timeout 1000))
+  ;;    (println "waited" seconds "seconds")
+  ;;    (recur (inc seconds)))
+  ;; (go (while true
+  ;;       (if-some [evt (gpio/event (:watcher @state-atom) -1)]
+  ;;         (println "button triggerd!"))))
+  (go (while true
+        (if-some [evt (gpio/event (:watcher @state-atom) 1000)]
+          (println "Triggered")
+          (println "Reading line: " (gpio/poll (:watcher @state-atom) (:buffer @state-atom) :switch)))))
+  )
+
 (defn init-pins
   ([] (init-pins state-atom))
   ([state-atom]
@@ -149,7 +168,14 @@
    (swap! state-atom assoc :handle (gpio/handle (:device @state-atom)
                                                 (get-pin-defs-for-gpio-lib (:setup @state-atom))
                                                 {::gpio/direction :output}))
-   (swap! state-atom assoc :buffer (gpio/buffer (:handle @state-atom)))))
+   ;; (swap! state-atom assoc :watcher (gpio/watcher (:device @state-atom)
+   ;;                                                {4 {::gpio/tag :switch
+   ;;                                                    ::gpio/direction :input
+   ;;                                                    ::gpio/edge-detection :rising}}))
+;   (swap! state-atom assoc :watcher-buffer)
+   (swap! state-atom assoc :buffer (gpio/buffer (:handle @state-atom)))
+;   (init-watcher)
+   ))
 
 (defn clean-up-pins
   ([] (clean-up-pins state-atom))
@@ -158,7 +184,10 @@
    (gpio/close (:device @state-atom))
    (swap! state-atom dissoc :handle)
    (swap! state-atom dissoc :device)
-   (swap! state-atom dissoc :buffer)))
+   (swap! state-atom dissoc :buffer))
+  ([context args value]
+   (clean-up-pins)
+   (resolve-state context args value)))
 
 (defonce buid-pin-defs-placeholder
   (do (swap! state-atom assoc :setup pin-defs)
@@ -452,6 +481,7 @@
    :mutation/move_by_pulses move-by-pulses-graphql-handler
    :mutation/move_relative move-relative-graphql-handler
    :mutation/move_to_position move-to-position-graphql-handler
+   :mutation/clean_up_pins clean-up-pins
 })
 
 (defn load-schema

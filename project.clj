@@ -2,6 +2,7 @@
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [org.clojure/clojurescript "1.10.520"]
                  [javax.xml.bind/jaxb-api "2.2.11"]
+                 [org.clojure/core.async "0.7.559"]
                  [reagent "0.7.0"]
                  [dvlopt/linux.gpio "1.0.0"]
                  [bidi "2.1.6"]
