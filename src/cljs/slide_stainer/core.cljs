@@ -152,19 +152,31 @@
   )
 
 (defn jog-control []
-  [:table
-   [:tr
-    [:td]
-    [:td [:button "Up"]]
-    [:td]]
-   [:tr
-    [:td [:button "Left"]]
-    [:td]
-    [:td [:button "Right"]]]
-   [:tr
-    [:td]
-    [:td [:button "Down"]]
-    [:td]]])
+  (let [click-fn (fn [device invert? e]
+                   (let [query 
+                         (str "mutation {move_relative(id:\""
+                              device
+                              "\",increment:"
+                              (if invert? "-" "")
+                              "1){id}}")]
+                     (println "jog query: " query)
+                     (go (let [resp (http/post "http://localhost:3000/graphql"
+                                               {:json-params {:query query}}
+                                               :with-credentials? false)]
+                           (println "jog resp: " resp)))))]
+    [:table
+     [:tr
+      [:td]
+      [:td [:button {:on-click (partial click-fn :stepperZ true)} "Up"]]
+      [:td]]
+     [:tr
+      [:td [:button {:on-click (partial click-fn :stepperX false)} "Left"]]
+      [:td]
+      [:td [:button {:on-click (partial click-fn :stepperX true)} "Right"]]]
+     [:tr
+      [:td]
+      [:td [:button {:on-click (partial click-fn :stepperZ false)} "Down"]]
+      [:td]]]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Page

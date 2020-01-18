@@ -161,6 +161,9 @@
           (println "Reading line: " (gpio/poll (:watcher @state-atom) (:buffer @state-atom) :switch)))))
   )
 
+(defn resolve-state [context args value]
+  {:contents (str @state-atom)})
+
 (defn init-pins
   ([] (init-pins state-atom))
   ([state-atom]
@@ -288,9 +291,6 @@
     (gpio/write (:handle @state-atom) (-> (:buffer @state-atom) (gpio/set-line id requested-val))))
   (resolve-pin-by-id context args value))
 
-(defn resolve-state [context args value]
-  {:contents (str @state-atom)})
-
 (defn resolve-axis [context args value]
   (let [id (normalize-pin-tag (:id args))]
     {:id (str id)
@@ -331,7 +331,7 @@
         initial_offset 80]
     (min
      (+ (* step slope) initial_offset) ; y = mx+b
-     12000                            ; max 80 kHz
+     (* 25 1000)                          ; max 80 kHz
      )))
 
 (defn pulse-logistic-fn
