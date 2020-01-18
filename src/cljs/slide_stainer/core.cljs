@@ -151,6 +151,21 @@
    (map pin-control [:stepperX-ena :stepperX-dir]))
   )
 
+(defn jog-control []
+  [:table
+   [:tr
+    [:td]
+    [:td [:button "Up"]]
+    [:td]]
+   [:tr
+    [:td [:button "Left"]]
+    [:td]
+    [:td [:button "Right"]]]
+   [:tr
+    [:td]
+    [:td [:button "Down"]]
+    [:td]]])
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Page
 
@@ -160,10 +175,12 @@
      [:div {:class "header"}
       [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :main)))} "Main"]
       [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :graphql)))} "GraphQL"]
-      [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :classic)))} "Classic"]]
+      [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :classic)))} "Classic"]
+      [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :jog)))} "Jog"]]
      (when (= :graphql screen) [graphql-control])
      (when (= :main screen) [pins-control-graphql])
      (when (= :classic screen) [pins-control])
+     (when (= :jog screen) [jog-control])
      ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
