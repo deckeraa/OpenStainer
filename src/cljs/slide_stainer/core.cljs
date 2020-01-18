@@ -152,31 +152,37 @@
   )
 
 (defn jog-control []
-  (let [click-fn (fn [device invert? e]
+  (let [click-fn (fn [device invert? inc-atm e]
                    (let [query 
                          (str "mutation {move_relative(id:\""
                               device
                               "\",increment:"
                               (if invert? "-" "")
-                              "1){id}}")]
+                              @inc-atm
+                              "){id}}")]
                      (println "jog query: " query)
                      (go (let [resp (http/post "http://localhost:3000/graphql"
                                                {:json-params {:query query}}
                                                :with-credentials? false)]
-                           (println "jog resp: " resp)))))]
-    [:table
-     [:tr
-      [:td]
-      [:td [:button {:on-click (partial click-fn :stepperZ true)} "Up"]]
-      [:td]]
-     [:tr
-      [:td [:button {:on-click (partial click-fn :stepperX false)} "Left"]]
-      [:td]
-      [:td [:button {:on-click (partial click-fn :stepperX true)} "Right"]]]
-     [:tr
-      [:td]
-      [:td [:button {:on-click (partial click-fn :stepperZ false)} "Down"]]
-      [:td]]]))
+                           (println "jog resp: " resp)))))
+        increment (reagent/atom 1)]
+    (fn []
+      [:div
+       [:input {:type "number" :value @increment
+                :on-change (fn [evt] (do (println "change" (-> evt .-target .-value)) (reset! increment (-> evt .-target .-value))))}]
+       [:table
+        [:tr
+         [:td]
+         [:td [:button {:on-click (partial click-fn :stepperZ true increment)} "Up"]]
+         [:td]]
+        [:tr
+         [:td [:button {:on-click (partial click-fn :stepperX false increment)} "Left"]]
+         [:td]
+         [:td [:button {:on-click (partial click-fn :stepperX true increment)} "Right"]]]
+        [:tr
+         [:td]
+         [:td [:button {:on-click (partial click-fn :stepperZ false increment)} "Down"]]
+         [:td]]]])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Page

@@ -331,7 +331,7 @@
         initial_offset 80]
     (min
      (+ (* step slope) initial_offset) ; y = mx+b
-     (* 25 1000)                          ; max 80 kHz
+     (* 18 1000)                          
      )))
 
 (defn pulse-logistic-fn
