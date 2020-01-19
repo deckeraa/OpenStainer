@@ -168,11 +168,6 @@
    (swap! state-atom assoc :handle (gpio/handle (:device @state-atom)
                                                 (get-pin-defs-for-gpio-lib (:setup @state-atom))
                                                 {::gpio/direction :output}))
-   ;; (swap! state-atom assoc :watcher (gpio/watcher (:device @state-atom)
-   ;;                                                {4 {::gpio/tag :switch
-   ;;                                                    ::gpio/direction :input
-   ;;                                                    ::gpio/edge-detection :rising}}))
-;   (swap! state-atom assoc :watcher-buffer)
    (swap! state-atom assoc :buffer (gpio/buffer (:handle @state-atom)))
    (init-watcher)
    ))
