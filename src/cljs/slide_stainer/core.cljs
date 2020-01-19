@@ -17,6 +17,21 @@
 (defn on-change-handler [atm evt]
   (reset! atm (-> evt .-target .-value)))
 
+(defn graphql-click-handler
+  ([query]
+   (graphql-click-handler query nil nil))
+  ([query handler-fn]
+   (graphql-click-handler query nil handler-fn))
+  ([query query-atm handler-fn]
+   (fn [e]
+     (go (let [raw-resp (<! (http/post "http://localhost:3000/graphql"
+                                       {:json-params {:query (or (if query-atm @query-atm nil) query)}}
+                                       :with-credentials? false))
+               resp (:data (edn/read-string (:body raw-resp)))]
+           (println "resp: " resp)
+           (println "raw-resp: " raw-resp)
+           (if handler-fn (handler-fn resp raw-resp)))))))
+
 (defn graphql-control []
   (let [input  (reagent/atom
                 "mutation {move_by_pulses(id:\":stepperX\",pulses:1000){id}}"
@@ -39,13 +54,18 @@
                    :rows 4 :cols 40
                    :on-change #(on-change-handler output-data %)
                 }]
-       [:button {:on-click (fn [e]
-                             (go (let [resp (<! (http/post "http://localhost:3000/graphql"
-                                                           {:json-params {:query @input}}
-                                                           :with-credentials? false))]
-                                   (reset! output-status (str resp))
-                                   (reset! output-data   (:body resp))
-                                   (println resp))))}
+       [:button {:on-click (graphql-click-handler nil input (fn [resp raw-resp]
+                                                              (reset! output-status (str raw-resp))
+                                                              (reset! output-data (str resp))))
+                 ;; (fn [e]
+                           ;;   (go (let [resp (<! (http/post "http://localhost:3000/graphql"
+                           ;;                                 {:json-params {:query @input}}
+                           ;;                                 :with-credentials? false))]
+                           ;;         (reset! output-status (str resp))
+                           ;;         (reset! output-data   (:body resp))
+                           ;;         (println "body type" (type (:body resp)))
+                           ;;         (println resp))))
+                 }
         "Run query"]])))
 
 (defn led-button [name num]
@@ -99,7 +119,9 @@
                         (str val)]])
                 ])
              @pins)]
-       [:button {:on-click update-fn} "Refresh"]])))
+       [:button {:on-click update-fn} "Refresh"]
+       [:p]
+       [:button {:on-click (graphql-click-handler "mutation {clean_up_pins{contents}}")} "Clean up pins"]])))
 
 
 (defn pin-control [pin-tag]

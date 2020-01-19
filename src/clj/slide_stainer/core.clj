@@ -16,7 +16,7 @@
             [incanter.core :refer :all]
             [incanter.io :refer :all]
             [incanter.stats :refer :all]
-            [clojure.core.async :as async :refer [go go-loop <! timeout]]
+            [clojure.core.async :as async :refer [go go-loop <! timeout thread]]
             [clojure.walk :as walk])
   (:use clojure.test)
   (:import (clojure.lang IPersistentMap))
@@ -148,18 +148,15 @@
 ;;   (defn append-to-tag ))
 
 (defn init-watcher []
-  ;; (go-loop [seconds 1]
-  ;;    (<! (timeout 1000))
-  ;;    (println "waited" seconds "seconds")
-  ;;    (recur (inc seconds)))
-  ;; (go (while true
-  ;;       (if-some [evt (gpio/event (:watcher @state-atom) -1)]
-  ;;         (println "button triggerd!"))))
-  (go (while true
-        (if-some [evt (gpio/event (:watcher @state-atom) 1000)]
-          (println "Triggered")
-          (println "Reading line: " (gpio/poll (:watcher @state-atom) (:buffer @state-atom) :switch)))))
-  )
+  (let [watcher (gpio/watcher
+                 (:device @state-atom)
+                 {4 {::gpio/tag :switch
+                     ::gpio/direction :input
+                     ::gpio/edge-detection :rising}})]
+    (swap! state-atom assoc :watcher watcher)
+    (thread (while (:watcher @state-atom) ; this gets closed in clean-up-pins
+              (if-some [evt (gpio/event watcher 5000)]
+                (println "Event: " evt))))))
 
 (defn resolve-state [context args value]
   {:contents (str @state-atom)})
@@ -177,17 +174,20 @@
    ;;                                                    ::gpio/edge-detection :rising}}))
 ;   (swap! state-atom assoc :watcher-buffer)
    (swap! state-atom assoc :buffer (gpio/buffer (:handle @state-atom)))
-;   (init-watcher)
+   (init-watcher)
    ))
 
 (defn clean-up-pins
   ([] (clean-up-pins state-atom))
   ([state-atom]
+   (println "Cleaning up pins")
    (gpio/close (:handle @state-atom))
    (gpio/close (:device @state-atom))
+   (gpio/close (:watcher @state-atom))
    (swap! state-atom dissoc :handle)
    (swap! state-atom dissoc :device)
-   (swap! state-atom dissoc :buffer))
+   (swap! state-atom dissoc :buffer)
+   (swap! state-atom dissoc :watcher))
   ([context args value]
    (clean-up-pins)
    (resolve-state context args value)))
@@ -327,7 +327,7 @@
 (defn pulse-linear-fn
   "Stepper pulse generation function that uses a linear ramp-up"
   [step]
-  (let [slope 100
+  (let [slope 25
         initial_offset 80]
     (min
      (+ (* step slope) initial_offset) ; y = mx+b

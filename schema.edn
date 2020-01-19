@@ -81,4 +81,8 @@
    :description "Attempts to move an axis to a position."
    :args {:id {:type ID}
           :position {:type Float}}
-   :resolve :mutation/move_to_position}}}
+   :resolve :mutation/move_to_position}
+  :clean_up_pins
+  {:type :state
+   :description "Cleans up the pins."
+   :resolve :mutation/clean_up_pins}}}
