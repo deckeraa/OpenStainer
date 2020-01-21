@@ -194,12 +194,62 @@
                           }]
     (is (= pin-defs-for-lib (get-input-pin-defs-for-gpio-lib sample-pin-defs)))))
 
+(with-test (defn init-status-atm [gpio-watcher pin-defs fetch-fn]
+             (apply merge (map (fn [[device {limit-switch-low  :limit-switch-low
+                                             limit-switch-high :limit-switch-high}]]
+                                 (let [low-tag (normalize-pin-tag (str device "-" "limit-switch-low"))
+                                       high-tag (normalize-pin-tag (str device "-" "limit-switch-high"))]
+                                   (as-> {} $
+                                     (if limit-switch-low
+                                       (assoc $ low-tag
+                                              (if fetch-fn (fetch-fn low-tag)
+                                                  (gpio/poll gpio-watcher (gpio/buffer gpio-watcher) low-tag))
+                                              ) $)
+                                     (if limit-switch-high
+                                       (assoc $ high-tag
+                                              (if fetch-fn (fetch-fn high-tag)
+                                                  (gpio/poll gpio-watcher (gpio/buffer gpio-watcher) high-tag))
+                                              ) $)
+                                     )))))
+             )
+  (let [sample-pin-defs {:stepperX {:output-pins
+                                    {17 {::gpio/tag :stepperX-ena
+                                         :inverted? true}
+                                     18 {::gpio/tag :stepperX-dir
+                                         :inverted? true}
+                                     19 {::gpio/tag :stepperX-pul
+                                         :inverted? true}}
+                                    :limit-switch-low  {:pin 4 :invert? true}
+                                    :pos nil
+                                    :pos-limit-inches 9}
+                         :stepperZ {:output-pins
+                                    {20 {::gpio/tag :stepperZ-ena
+                                         :inverted? true}
+                                     21 {::gpio/tag :stepperZ-dir
+                                         :inverted? true}
+                                     22 {::gpio/tag :stepperZ-pul
+                                         :inverted? true}}
+                                    :limit-switch-low  {:pin 6 :invert? false}
+                                    :limit-switch-high {:pin 7 :invert? false}
+                                    :pos nil
+                                    :pos-limit-inches 4}}
+        pin-defs-for-lib {:stepperX-limit-switch-low  false
+                          :stepperZ-limit-switch-low  true
+                          :stepperZ-limit-switch-high true}
+        fetch-fn (fn [tag] true)]
+    (is (= pin-defs-for-lib (init-status-atm nil sample-pin-defs fetch-fn))))
+  )
+
 (defn init-watcher [pin-defs]
   (let [gpio-chan (chan)
         gpio-multi-chan (mult gpio-chan) ; to support multiple subscribers to the events channel
-        watcher (gpio/watcher
+        gpio-watcher (gpio/watcher
                  (:device @state-atom)
-                 (get-input-pin-defs-for-gpio-lib pin-defs))]
+                 (get-input-pin-defs-for-gpio-lib pin-defs))
+        last-event-timestamp (atom 0)
+        status-atm (atom {:switch (gpio/poll gpio-watcher (gpio/buffer gpio-watcher) :switch)})
+        debounce-wait-time-ns (* 2 1000 1000)]
+    ;; Add necessary atoms into the global state
     (swap! state-atom assoc :watcher watcher)
     (thread (while (:watcher @state-atom) ; this gets closed in clean-up-pins
               (if-some [evt (gpio/event watcher 5000)]
