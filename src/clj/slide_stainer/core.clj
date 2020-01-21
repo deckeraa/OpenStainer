@@ -524,6 +524,7 @@
   (let [ena (normalize-pin-tag (str id "-ena"))
         pul (normalize-pin-tag (str id "-pul"))
         dir (normalize-pin-tag (str id "-dir"))
+        limit-switch-low (normalize-pin-tag (str id "-limit-switch-low"))
         dir-val (pos? pulses)
         num-pulses (if dir-val
                      pulses
@@ -537,16 +538,23 @@
     (if (compare-and-set! pulse-lock false true)
       (do
         (println "Got the lock")
+        (println "Current limit switches: " limit-switch-low)
+        (println "Status atom" (get-in @state-atom [:status-atm]))
         (set-pin ena true)
         (java.util.concurrent.locks.LockSupport/parkNanos 5000) ; 5us wait required by driver
         (set-pin dir dir-val)
         (java.util.concurrent.locks.LockSupport/parkNanos (max 300000000 5000)) ; 5us wait required by driver
-        (doseq [pulse-val precomputed-pulses]
-          (do
-            (set-pin pul true)
-            (java.util.concurrent.locks.LockSupport/parkNanos (hz-to-ns pulse-val))
-            (set-pin pul false)
-            (java.util.concurrent.locks.LockSupport/parkNanos (hz-to-ns pulse-val))))
+        (try
+          (doseq [pulse-val precomputed-pulses]
+            (do
+              (when (limit-switch-low (deref (:status-atm @state-atom)))
+                (do (println "MOVING WITH LIMIT SWITCH TRIGGERED")
+                    (throw (Exception. "Limit switch hit"))))
+              (set-pin pul true)
+              (java.util.concurrent.locks.LockSupport/parkNanos (hz-to-ns pulse-val))
+              (set-pin pul false)
+              (java.util.concurrent.locks.LockSupport/parkNanos (hz-to-ns pulse-val))))
+          (catch Exception e (println (.getMessage e))))
         (java.util.concurrent.locks.LockSupport/parkNanos nanosecond-wait)
         (set-pin ena false)
         (when (not (compare-and-set! pulse-lock true false)) (println "Someone messed with the lock"))
