@@ -13,10 +13,8 @@
             [com.walmartlabs.lacinia.schema :as schema]
             [com.walmartlabs.lacinia :as lacinia]
             [clojure.edn :as edn]
-            [incanter.core :refer :all]
-            [incanter.io :refer :all]
-            [incanter.stats :refer :all]
-            [clojure.core.async :as async :refer [go go-loop <! timeout thread]]
+            [clojure.core.async :as async :refer [go go-loop <! timeout thread chan mult tap]]
+            [incanter.core :refer [pow]]
             [clojure.walk :as walk])
   (:use clojure.test)
   (:import (clojure.lang IPersistentMap))
@@ -62,6 +60,13 @@
    ;;              ::gpio/direction :input
    ;;              ::gpio/edge-detection :rising}}}
    })
+
+(with-test
+  (defn normalize-pin-tag [tag]
+    "Take tag names and convert them to a keyword consistently."
+    (keyword (clojure.string/replace tag #"^:" "")))
+  (is (= (normalize-pin-tag ":foo") :foo))
+  (is (= (normalize-pin-tag "foo")  :foo)))
 
 (with-test
   (defn index-pin-defs [pin-defs]
@@ -147,8 +152,8 @@
   (defn get-input-pin-defs-for-gpio-lib [pin-defs]
     (apply merge (map (fn [[device {limit-switch-low :limit-switch-low
                                     limit-switch-high :limit-switch-high}]]
-                        {(:pin limit-switch-low)  (keyword (str device "-" "limit-switch-low"))
-                         (:pin limit-switch-high) (keyword (str device "-" "limit-switch-high"))})
+                        {(:pin limit-switch-low) {:dvlopt.linux.gpio/tag (normalize-pin-tag (str device "-" "limit-switch-low"))}
+                         (:pin limit-switch-high) {:dvlopt.linux.gpio/tag (normalize-pin-tag (str device "-" "limit-switch-high"))}})
                       pin-defs)))
   (let [sample-pin-defs {:stepperX {:output-pins
                                     {17 {::gpio/tag :stepperX-ena
@@ -179,8 +184,9 @@
                           }]
     (is (= pin-defs-for-lib (get-input-pin-defs-for-gpio-lib sample-pin-defs)))))
 
-(defn init-watcher []
-  (let [watcher (gpio/watcher
+(defn init-watcher [pin-defs]
+  (let [gpio-chan (chan)
+        watcher (gpio/watcher
                  (:device @state-atom)
                  {4 {::gpio/tag :switch
                      ::gpio/direction :input
@@ -238,13 +244,6 @@
         ]
     (/ (* pulses travel-distance-per-turn)
           pulses-per-revolution)))
-
-(with-test
-  (defn normalize-pin-tag [tag]
-    "Take tag names and convert them to a keyword consistently."
-    (keyword (clojure.string/replace tag #"^:" "")))
-  (is (= (normalize-pin-tag ":foo") :foo))
-  (is (= (normalize-pin-tag "foo")  :foo)))
 
 (defn resolve-pin-by-id [context args value]
   (println "resolve-pin-by-id" args value)
