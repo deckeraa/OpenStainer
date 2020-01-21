@@ -23,10 +23,14 @@
   ([query handler-fn]
    (graphql-click-handler query nil handler-fn))
   ([query query-fn handler-fn]
+   (graphql-click-handler query query-fn handler-fn nil))
+  ([query query-fn handler-fn variable-fn]
    (fn [e]
+;     (println "graphql-click-handler variable-fn: " (variable-fn))
      (go (let [raw-resp (<! (http/post "http://localhost:3000/graphql"
                                        {:json-params {:query (or (if query-fn (query-fn) nil)
-                                                                 query)}}
+                                                                 query)
+                                                      :variables (if variable-fn (variable-fn) nil)}}
                                        :with-credentials? false))
                resp (:data (edn/read-string (:body raw-resp)))]
            (println "resp: " resp)
@@ -184,19 +188,10 @@
                               (if invert? "-" "")
                               @inc-atm
                               "){id}}"))
-        click-fn (fn [device invert? inc-atm e]
-                   (let [query 
-                         (str "mutation {move_relative(id:\""
-                              device
-                              "\",increment:"
-                              (if invert? "-" "")
-                              @inc-atm
-                              "){id}}")]
-                     (println "jog query: " query)
-                     (go (let [resp (http/post "http://localhost:3000/graphql"
-                                               {:json-params {:query query}}
-                                               :with-credentials? false)]
-                           (println "jog resp: " resp)))))
+        variable-fn (fn [device invert? inc-atm]
+                      (str "{\"device\":\"" device
+                           "\",\"increment\":" (if invert? (* -1 @inc-atm) @inc-atm)
+                           "}"))
         increment (reagent/atom 1)]
     (fn []
       [:div
@@ -205,6 +200,8 @@
        [:table
         [:tr
          [:td]
+         ;(partial query-fn :stepperZ true increment)
+;         [:td [:button {:on-click (graphql-click-handler "mutation{move_relative(id:$device,increment:$increment){id}}" nil nil (partial variable-fn :stepperZ true increment))} "Up"]]
          [:td [:button {:on-click (graphql-click-handler nil (partial query-fn :stepperZ true increment) nil)} "Up"]]
          [:td]]
         [:tr

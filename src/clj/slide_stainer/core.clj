@@ -670,8 +670,8 @@
     m))
 
 (defn q
-  [query-string]
-  (-> (lacinia/execute schema query-string nil nil)
+  [query-string variables]
+  (-> (lacinia/execute schema query-string variables nil)
       (simplify)))
 
 (defn get-ip-address-handler [req]
@@ -680,7 +680,7 @@
 (defn graphql-handler [req]
   (let [body (keywordize-keys (json/read-str (request/body-string req)))]
     (println "graphql query: " body)
-    (content-type (response/response (str (q (:query body)))) "text/html")))
+    (content-type (response/response (str (q (:query body) (:variables body)))) "text/html")))
 
 (defn led-handler [req]
   (println req))
