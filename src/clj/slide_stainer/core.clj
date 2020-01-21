@@ -70,6 +70,32 @@
   (is (= (normalize-pin-tag "foo")  :foo)))
 
 (with-test
+  (defn split-full-tag [full-tag]
+    (let [tokens (clojure.string/split (str full-tag) #"-")
+          device-tag (normalize-pin-tag (first tokens))
+          pin-tag (keyword (clojure.string/join "-" (rest tokens)))]
+      [device-tag pin-tag])
+    )
+  (is (= [:stepperZ :limit-switch-low] (split-full-tag :stepperZ-limit-switch-low))))
+
+(with-test
+  (defn is-inverted? [pin-defs full-tag]
+    (let [split-tag (split-full-tag full-tag)]
+      (get-in pin-defs [(first split-tag) (second split-tag) :invert?])))
+  (let [sample-pin-defs   {:stepperZ {:output-pins
+                                      {17 {::gpio/tag :stepperZ-ena
+                                           :inverted? false}
+                                       18 {::gpio/tag :stepperZ-dir
+                                           :inverted? false}
+                                       19 {::gpio/tag :stepperZ-pul
+                                           :inverted? false}}
+                                      :limit-switch-low   {:pin 4 :invert? false}
+                                      :limit-switch-high  {:pin 4 :invert? true}}}]
+    (is (= false (is-inverted? sample-pin-defs :stepperZ-limit-switch-low)))
+    (is (= true (is-inverted? sample-pin-defs :stepperZ-limit-switch-high)))
+    ))
+
+(with-test
   (defn index-pin-defs [pin-defs]
     (apply merge
            (map (fn [[device {pins :output-pins}]]
@@ -271,6 +297,9 @@
                            (let [tag (:dvlopt.linux.gpio/tag evt)
                                  evt-timestamp (:dvlopt.linux.gpio/nano-timestamp evt)
                                  transitioning-to-state (= :rising (:dvlopt.linux.gpio/edge evt))
+                                 transitioning-to-state (if (is-inverted? pin-defs tag)
+                                                          (not transitioning-to-state)
+                                                          transitioning-to-state)
                                  ]
                              (if (and
                                   ; since the GPIO library sometimes generates multiple events of same direction (i.e. two :falling events), we need to check and only count an actual state transition as the signal before starting the debounce timer
