@@ -32,7 +32,7 @@
 ; z dir - true = DOWN
 
 (def pin-defs
-  {:stepperZ {:pins
+  {:stepperZ {:output-pins
               {17 {::gpio/tag :stepperZ-ena
                    :inverted? false}
                18 {::gpio/tag :stepperZ-dir
@@ -43,7 +43,7 @@
               :position nil
               :position_limit 9
               :pulses_per_revolution 800}
-   :stepperX {:pins
+   :stepperX {:output-pins
               {26 {::gpio/tag :stepperX-ena
                    :inverted? false}
                27  {::gpio/tag :stepperX-dir
@@ -66,12 +66,12 @@
 (with-test
   (defn index-pin-defs [pin-defs]
     (apply merge
-           (map (fn [[device {pins :pins}]]
+           (map (fn [[device {pins :output-pins}]]
                   (as-> pins $
                     (map (fn [[pin_number {tag :dvlopt.linux.gpio/tag inverted? :inverted?}]]
                            {tag {:inverted? inverted? :pin_number pin_number :device device}}) $)
                     (apply merge $))) pin-defs)))
-  (let [sample-pin-defs {:stepperX {:pins
+  (let [sample-pin-defs {:stepperX {:output-pins
                                     {17 {::gpio/tag :stepperX-ena
                                          :inverted? true}
                                      18 {::gpio/tag :stepperX-dir
@@ -80,7 +80,7 @@
                                          :inverted? true}}
                                     :pos nil
                                     :pos-limit-inches 9}
-                         :stepperZ {:pins
+                         :stepperZ {:output-pins
                                     {20 {::gpio/tag :stepperZ-ena
                                          :inverted? true}
                                      21 {::gpio/tag :stepperZ-dir
@@ -98,8 +98,8 @@
     (is (= sample-index (index-pin-defs sample-pin-defs)))))
 
 (with-test
-  (defn get-pin-defs-for-gpio-lib [pin-defs]
-    (apply merge (map (fn [[device {pins :pins}]]
+  (defn get-output-pin-defs-for-gpio-lib [pin-defs]
+    (apply merge (map (fn [[device {pins :output-pins}]]
                         (apply merge (map (fn [[pin_num {tag  ::gpio/tag
                                                          dir  ::gpio/direction
                                                          edge ::gpio/edge-detection}]]
@@ -109,7 +109,7 @@
                                                             (if edge (assoc $ ::gpio/edge-detection edge) $))]
                                               {pin_num pin-map}))
                                           pins))) pin-defs)))
-  (let [sample-pin-defs {:stepperX {:pins
+  (let [sample-pin-defs {:stepperX {:output-pins
                                     {17 {::gpio/tag :stepperX-ena
                                          :inverted? true}
                                      18 {::gpio/tag :stepperX-dir
@@ -118,7 +118,7 @@
                                          :inverted? true}}
                                     :pos nil
                                     :pos-limit-inches 9}
-                         :stepperZ {:pins
+                         :stepperZ {:output-pins
                                     {20 {::gpio/tag :stepperZ-ena
                                          :inverted? true}
                                      21 {::gpio/tag :stepperZ-dir
@@ -127,25 +127,57 @@
                                          :inverted? true}}
                                     :pos nil
                                     :pos-limit-inches 4}
-                         :led12 {:pins
+                         :led12 {:output-pins
                                  {12 {::gpio/tag :led12-led
                                       :inverted? true}}}
                          :switch {:pins
                                   {4 {::gpio/tag :switch
                                       ::gpio/direction :input
                                       ::gpio/edge-detection :rising}}}}
-        pin-defs-for-lib { 4 {::gpio/tag :switch ::gpio/direction :input ::gpio/edge-detection :rising}
-                          12 {::gpio/tag :led12-led}
+        pin-defs-for-lib {12 {::gpio/tag :led12-led}
                           17 {::gpio/tag :stepperX-ena}
                           18 {::gpio/tag :stepperX-dir}
                           19 {::gpio/tag :stepperX-pul}
                           20 {::gpio/tag :stepperZ-ena}
                           21 {::gpio/tag :stepperZ-dir}
                           22 {::gpio/tag :stepperZ-pul}}]
-    (is (= pin-defs-for-lib (get-pin-defs-for-gpio-lib sample-pin-defs)))))
+    (is (= pin-defs-for-lib (get-output-pin-defs-for-gpio-lib sample-pin-defs)))))
 
-;; (with-test
-;;   (defn append-to-tag ))
+(with-test
+  (defn get-input-pin-defs-for-gpio-lib [pin-defs]
+    (apply merge (map (fn [[device {limit-switch-low :limit-switch-low
+                                    limit-switch-high :limit-switch-high}]]
+                        {(:pin limit-switch-low)  (keyword (str device "-" "limit-switch-low"))
+                         (:pin limit-switch-high) (keyword (str device "-" "limit-switch-high"))})
+                      pin-defs)))
+  (let [sample-pin-defs {:stepperX {:output-pins
+                                    {17 {::gpio/tag :stepperX-ena
+                                         :inverted? true}
+                                     18 {::gpio/tag :stepperX-dir
+                                         :inverted? true}
+                                     19 {::gpio/tag :stepperX-pul
+                                         :inverted? true}}
+                                    :limit-switch-low  {:pin 4 :is-high-closed? true}
+                                    :limit-switch-high {:pin 5 :is-high-closed? true}
+                                    :pos nil
+                                    :pos-limit-inches 9}
+                         :stepperZ {:output-pins
+                                    {20 {::gpio/tag :stepperZ-ena
+                                         :inverted? true}
+                                     21 {::gpio/tag :stepperZ-dir
+                                         :inverted? true}
+                                     22 {::gpio/tag :stepperZ-pul
+                                         :inverted? true}}
+                                    :limit-switch-low  {:pin 6 :is-high-closed? false}
+                                    :limit-switch-high {:pin 7 :is-high-closed? false}
+                                    :pos nil
+                                    :pos-limit-inches 4}}
+        pin-defs-for-lib {4 {::gpio/tag :stepperX-limit-switch-low}
+                          5 {::gpio/tag :stepperX-limit-switch-high}
+                          6 {::gpio/tag :stepperZ-limit-switch-low}
+                          7 {::gpio/tag :stepperZ-limit-switch-high}
+                          }]
+    (is (= pin-defs-for-lib (get-input-pin-defs-for-gpio-lib sample-pin-defs)))))
 
 (defn init-watcher []
   (let [watcher (gpio/watcher
@@ -166,7 +198,7 @@
   ([state-atom]
    (swap! state-atom assoc :device (gpio/device 0))
    (swap! state-atom assoc :handle (gpio/handle (:device @state-atom)
-                                                (get-pin-defs-for-gpio-lib (:setup @state-atom))
+                                                (get-output-pin-defs-for-gpio-lib (:setup @state-atom))
                                                 {::gpio/direction :output}))
    (swap! state-atom assoc :buffer (gpio/buffer (:handle @state-atom)))
    (init-watcher)
