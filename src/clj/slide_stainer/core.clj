@@ -37,6 +37,7 @@
                    :inverted? false}
                19 {::gpio/tag :stepperZ-pul
                    :inverted? false}}
+              :limit-switch-low  {:pin 4 :is-high-closed? true}
               :travel_distance_per_turn 0.063
               :position nil
               :position_limit 9
@@ -152,8 +153,16 @@
   (defn get-input-pin-defs-for-gpio-lib [pin-defs]
     (apply merge (map (fn [[device {limit-switch-low :limit-switch-low
                                     limit-switch-high :limit-switch-high}]]
-                        {(:pin limit-switch-low) {:dvlopt.linux.gpio/tag (normalize-pin-tag (str device "-" "limit-switch-low"))}
-                         (:pin limit-switch-high) {:dvlopt.linux.gpio/tag (normalize-pin-tag (str device "-" "limit-switch-high"))}})
+                        (as-> {} $
+                          (if limit-switch-low (assoc $ (:pin limit-switch-low) {:dvlopt.linux.gpio/tag (normalize-pin-tag (str device "-" "limit-switch-low"))
+                                                                                 :dvlopt.linux.gpio/direction :input}) $)
+                          (if limit-switch-high (assoc $ (:pin limit-switch-high) {:dvlopt.linux.gpio/tag (normalize-pin-tag (str device "-" "limit-switch-high"))
+                                                                                 :dvlopt.linux.gpio/direction :input}) $))
+                        ;; {(:pin limit-switch-low) {:dvlopt.linux.gpio/tag (normalize-pin-tag (str device "-" "limit-switch-low"))
+                        ;;                           :dvlopt.linux.gpio/direction :input}
+                        ;;  (:pin limit-switch-high) {:dvlopt.linux.gpio/tag (normalize-pin-tag (str device "-" "limit-switch-high"))
+                        ;;                            :dvlopt.linux.gpio/direction :input}}
+                        )
                       pin-defs)))
   (let [sample-pin-defs {:stepperX {:output-pins
                                     {17 {::gpio/tag :stepperX-ena
@@ -163,7 +172,6 @@
                                      19 {::gpio/tag :stepperX-pul
                                          :inverted? true}}
                                     :limit-switch-low  {:pin 4 :is-high-closed? true}
-                                    :limit-switch-high {:pin 5 :is-high-closed? true}
                                     :pos nil
                                     :pos-limit-inches 9}
                          :stepperZ {:output-pins
@@ -177,20 +185,21 @@
                                     :limit-switch-high {:pin 7 :is-high-closed? false}
                                     :pos nil
                                     :pos-limit-inches 4}}
-        pin-defs-for-lib {4 {::gpio/tag :stepperX-limit-switch-low}
-                          5 {::gpio/tag :stepperX-limit-switch-high}
-                          6 {::gpio/tag :stepperZ-limit-switch-low}
-                          7 {::gpio/tag :stepperZ-limit-switch-high}
+        pin-defs-for-lib {4 {::gpio/tag :stepperX-limit-switch-low
+                             ::gpio/direction :input}
+                          6 {::gpio/tag :stepperZ-limit-switch-low
+                             ::gpio/direction :input}
+                          7 {::gpio/tag :stepperZ-limit-switch-high
+                             ::gpio/direction :input}
                           }]
     (is (= pin-defs-for-lib (get-input-pin-defs-for-gpio-lib sample-pin-defs)))))
 
 (defn init-watcher [pin-defs]
   (let [gpio-chan (chan)
+        gpio-multi-chan (mult gpio-chan) ; to support multiple subscribers to the events channel
         watcher (gpio/watcher
                  (:device @state-atom)
-                 {4 {::gpio/tag :switch
-                     ::gpio/direction :input
-                     ::gpio/edge-detection :rising}})]
+                 (get-input-pin-defs-for-gpio-lib pin-defs))]
     (swap! state-atom assoc :watcher watcher)
     (thread (while (:watcher @state-atom) ; this gets closed in clean-up-pins
               (if-some [evt (gpio/event watcher 5000)]
@@ -207,7 +216,7 @@
                                                 (get-output-pin-defs-for-gpio-lib (:setup @state-atom))
                                                 {::gpio/direction :output}))
    (swap! state-atom assoc :buffer (gpio/buffer (:handle @state-atom)))
-   (init-watcher)
+   (init-watcher pin-defs)
    ))
 
 (defn clean-up-pins
