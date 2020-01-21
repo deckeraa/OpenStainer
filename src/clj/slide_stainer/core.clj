@@ -194,24 +194,35 @@
                           }]
     (is (= pin-defs-for-lib (get-input-pin-defs-for-gpio-lib sample-pin-defs)))))
 
-(with-test (defn init-status-atm [gpio-watcher pin-defs fetch-fn]
-             (apply merge (map (fn [[device {limit-switch-low  :limit-switch-low
-                                             limit-switch-high :limit-switch-high}]]
-                                 (let [low-tag (normalize-pin-tag (str device "-" "limit-switch-low"))
-                                       high-tag (normalize-pin-tag (str device "-" "limit-switch-high"))]
-                                   (as-> {} $
-                                     (if limit-switch-low
-                                       (assoc $ low-tag
-                                              (if fetch-fn (fetch-fn low-tag)
-                                                  (gpio/poll gpio-watcher (gpio/buffer gpio-watcher) low-tag))
-                                              ) $)
-                                     (if limit-switch-high
-                                       (assoc $ high-tag
-                                              (if fetch-fn (fetch-fn high-tag)
-                                                  (gpio/poll gpio-watcher (gpio/buffer gpio-watcher) high-tag))
-                                              ) $)
-                                     )))))
-             )
+(with-test (defn init-tags-for-status-atm [device device-map fetch-fn]
+             (let [tag-fn (fn [tag]
+                            (let [full-tag  (normalize-pin-tag (str device "-" (clojure.string/replace tag #"^:" "")))
+                                  fetched-val (fetch-fn full-tag)
+                                  xformed-fetched-val (if (get-in device-map [tag :invert?])
+                                                      (not fetched-val)
+                                                      fetched-val)
+                                  ]
+                              {full-tag xformed-fetched-val}))]
+               (apply merge (map tag-fn
+                                 (clojure.set/intersection (set [:limit-switch-low :limit-switch-high])
+                                                           (set (keys device-map)))))))
+  (let [sample-device-map  { :limit-switch-low  {:pin 6 :invert? false}
+                            :limit-switch-high {:pin 7 :invert? true}}
+        fetch-fn (fn [tag] true)
+        desired-output {:stepperZ-limit-switch-low  true
+                        :stepperZ-limit-switch-high false}
+        ]
+    (is (= desired-output (init-tags-for-status-atm :stepperZ sample-device-map fetch-fn)))))
+
+(with-test (defn init-status-atm
+             ([gpio-watcher pin-defs]
+              (init-status-atm gpio-watcher pin-defs nil))
+             ([gpio-watcher pin-defs fetch-fn]
+              (let [fetch-fn (if fetch-fn fetch-fn
+                                 (fn [tag] (gpio/poll gpio-watcher (gpio/buffer gpio-watcher) tag)))]
+                (apply merge (map (fn [[device device-map]]
+                                    (init-tags-for-status-atm device device-map fetch-fn))
+                                  pin-defs)))))
   (let [sample-pin-defs {:stepperX {:output-pins
                                     {17 {::gpio/tag :stepperX-ena
                                          :inverted? true}
@@ -237,8 +248,7 @@
                           :stepperZ-limit-switch-low  true
                           :stepperZ-limit-switch-high true}
         fetch-fn (fn [tag] true)]
-    (is (= pin-defs-for-lib (init-status-atm nil sample-pin-defs fetch-fn))))
-  )
+    (is (= pin-defs-for-lib (init-status-atm nil sample-pin-defs fetch-fn)))))
 
 (defn init-watcher [pin-defs]
   (let [gpio-chan (chan)
@@ -247,12 +257,13 @@
                  (:device @state-atom)
                  (get-input-pin-defs-for-gpio-lib pin-defs))
         last-event-timestamp (atom 0)
-        status-atm (atom {:switch (gpio/poll gpio-watcher (gpio/buffer gpio-watcher) :switch)})
+        status-atm (atom (init-status-atm gpio-watcher pin-defs))
         debounce-wait-time-ns (* 2 1000 1000)]
     ;; Add necessary atoms into the global state
-    (swap! state-atom assoc :watcher watcher)
+    (swap! state-atom assoc :watcher gpio-watcher)
+    (swap! state-atom assoc :status-atm status-atm)
     (thread (while (:watcher @state-atom) ; this gets closed in clean-up-pins
-              (if-some [evt (gpio/event watcher 5000)]
+              (if-some [evt (gpio/event gpio-watcher 5000)]
                 (println "Event: " evt))))))
 
 (defn resolve-state [context args value]
