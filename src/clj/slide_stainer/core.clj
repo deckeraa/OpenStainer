@@ -37,7 +37,7 @@
                    :inverted? false}
                19 {::gpio/tag :stepperZ-pul
                    :inverted? false}}
-              :limit-switch-low  {:pin 4 :invert? false}
+              :limit-switch-low  {:pin 4 :invert? true}
               :travel_distance_per_turn 0.063
               :position nil
               :position_limit 9
@@ -531,10 +531,9 @@
                      (* -1 pulses))
         nanosecond-wait 1000000 ;(max 1000000 7500)
         precomputed-pulses (precompute-pulse pulse-linear-fn num-pulses)
+        hit-limit-switch? (atom false)
         ] ; friendly reminder not to take it lower than 7.5us
-    (println "move-by-pulses" ena)
-    (println (take 10 precomputed-pulses))
-    (println (apply max precomputed-pulses))
+    (println "move-by-pulses max calculated frequency (Hz): " (apply max precomputed-pulses))
     (if (compare-and-set! pulse-lock false true)
       (do
         (println "Got the lock")
@@ -548,18 +547,20 @@
           (doseq [pulse-val precomputed-pulses]
             (do
               (when (limit-switch-low (deref (:status-atm @state-atom)))
-                (do (println "MOVING WITH LIMIT SWITCH TRIGGERED")
-                    (throw (Exception. "Limit switch hit"))))
+                (throw (Exception. "Limit switch hit")))
               (set-pin pul true)
               (java.util.concurrent.locks.LockSupport/parkNanos (hz-to-ns pulse-val))
               (set-pin pul false)
               (java.util.concurrent.locks.LockSupport/parkNanos (hz-to-ns pulse-val))))
-          (catch Exception e (println (.getMessage e))))
+          (catch Exception e (do
+                               (println (.getMessage e))
+                               (reset! hit-limit-switch? true))))
         (java.util.concurrent.locks.LockSupport/parkNanos nanosecond-wait)
         (set-pin ena false)
         (when (not (compare-and-set! pulse-lock true false)) (println "Someone messed with the lock"))
         (println "Dropped the lock"))
       (println "Couldn't get the lock on pulse"))
+    (not @hit-limit-switch?) ; returns true if all steps were taken, false if the move was interrupted by hitting a limit switch
     ))
 
 (defn move-by-pulses-graphql-handler
@@ -591,12 +592,16 @@
         current-pos-in-steps (:position axis-config)
         steps-to-move (- desired-pos-in-steps current-pos-in-steps)
         ]
-    (move-by-pulses id steps-to-move)
+    (if (move-by-pulses id steps-to-move)
+      (swap-in! state-atom [:setup id :position] bounds-checked-desired-pos-in-steps)
+      (swap-in! state-atom [:setup id :position] (if (pos? move-by-pulses)
+                                                   (inches-to-pulses id (:position_limit axis-config))
+                                                   0)))
     ;; (println axis-config)
     ;; (println (:position axis-config))
     ;; (println desired-pos-in-steps current-pos-in-steps)
 ;    (println "steps-to-move: " steps-to-move)
-    (swap-in! state-atom [:setup id :position] bounds-checked-desired-pos-in-steps)
+    
     ))
 
 (defn move-to-position-graphql-handler [context args value]
