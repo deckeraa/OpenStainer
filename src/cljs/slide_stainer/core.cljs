@@ -214,44 +214,47 @@
          [:td]]]])))
 
 (defn position-readout-jog-control [device-id]
-  (let [z_pos_pul_atm (reagent/atom "")
-        z_pos_inch_atm (reagent/atom "")
-        input_dirty (reagent/atom false)
-        axis_update_fn (fn [pul_atm inch_atm resp raw-resp]
-                         (println "axis_update_fn" resp)
+  (let [pul-atm (reagent/atom "")
+        inch-atm (reagent/atom "")
+        input-dirty-atm (reagent/atom false)
+        axis-update-fn (fn [pul_atm inch_atm resp raw-resp]
+                         (println "axis-update-fn" resp)
                          (let [body (or (:axis resp) (:set_axis resp))]
-                           (println "axis_update_fn" body (:set_axis resp) (type resp))
+                           (println "axis-update-fn" body (:set_axis resp) (type resp))
                            (reset! pul_atm  (get-in body [:position]))
                            (reset! inch_atm (get-in body [:position_inches]))
-                           (reset! input_dirty false)))]
+                           (reset! input-dirty-atm false)))
+        refresh-fn (graphql-click-handler
+                    (str "{axis(id:\"" device-id "\"){position,position_inches}}") 
+                    (partial axis-update-fn pul-atm inch-atm))]
     (fn []
+      (when (= @pul-atm "") (refresh-fn))
       [:div
        [:h3 (str "Position for "  device-id)]
        [:div
-        [:input {:value (or @z_pos_pul_atm "undefined")
+        [:input {:value (or @pul-atm "")
                  :on-change (fn [e]
-                              (reset! input_dirty true)
-                              (reset! z_pos_pul_atm (-> e .-target .-value)))
-                 :style {:color (if @input_dirty :red :black)}}]
+                              (reset! input-dirty-atm true)
+                              (reset! pul-atm (-> e .-target .-value)))
+                 :style {:color (if @input-dirty-atm :red :black)}}]
         "pulses"
         [:button {:on-click (graphql-click-handler
                             nil
-                            (fn [] (str "mutation{set_axis(id:\"" device-id "\",position:" @z_pos_pul_atm "){position,position_inches}}"))
-                            (partial axis_update_fn z_pos_pul_atm z_pos_inch_atm))} "Set"]
+                            (fn [] (str "mutation{set_axis(id:\"" device-id "\",position:" @pul-atm "){position,position_inches}}"))
+                            (partial axis-update-fn pul-atm inch-atm))} "Set"]
         ]
        [:div
-        [:input {:value (or @z_pos_inch_atm "undefined")
+        [:input {:value (or @inch-atm "")
                  :on-change (fn [e]
-                              (reset! input_dirty true)
-                              (reset! z_pos_inch_atm (-> e .-target .-value)))
-                 :style {:color (if @input_dirty :red :black)}}]
+                              (reset! input-dirty-atm true)
+                              (reset! inch-atm (-> e .-target .-value)))
+                 :style {:color (if @input-dirty-atm :red :black)}}]
         "inches"
         [:button {:on-click (graphql-click-handler
                             nil
-                            (fn [] (str "mutation{set_axis(id:\"" device-id "\",position_inches:" @z_pos_inch_atm "){position,position_inches}}"))
-                            (partial axis_update_fn z_pos_pul_atm z_pos_inch_atm))} "Set"]]
-       [:button {:on-click (graphql-click-handler (str "{axis(id:\"" device-id "\"){position,position_inches}}") ;(fn [resp raw-resp] (println "absolute-jog-control" resp))
-                                                  (partial axis_update_fn z_pos_pul_atm z_pos_inch_atm))
+                            (fn [] (str "mutation{set_axis(id:\"" device-id "\",position_inches:" @inch-atm "){position,position_inches}}"))
+                            (partial axis-update-fn pul-atm inch-atm))} "Set"]]
+       [:button {:on-click refresh-fn
                  } "Refresh"]])))
 
 (defn jog-control []
