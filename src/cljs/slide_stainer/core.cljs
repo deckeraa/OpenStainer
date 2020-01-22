@@ -180,7 +180,7 @@
    (map pin-control [:stepperX-ena :stepperX-dir]))
   )
 
-(defn jog-control []
+(defn relative-jog-control []
   (let [query-fn (fn [device invert? inc-atm]
                    (str "mutation {move_relative(id:\""
                               device
@@ -212,6 +212,52 @@
          [:td]
          [:td [:button {:on-click (graphql-click-handler nil (partial query-fn :stepperZ false increment) nil)} "Down"]]
          [:td]]]])))
+
+(defn position-readout-jog-control [device-id]
+  (let [z_pos_pul_atm (reagent/atom "")
+        z_pos_inch_atm (reagent/atom "")
+        input_dirty (reagent/atom false)
+        axis_update_fn (fn [pul_atm inch_atm resp raw-resp]
+                         (println "axis_update_fn" resp)
+                         (let [body (or (:axis resp) (:set_axis resp))]
+                           (println "axis_update_fn" body (:set_axis resp) (type resp))
+                           (reset! pul_atm  (get-in body [:position]))
+                           (reset! inch_atm (get-in body [:position_inches]))
+                           (reset! input_dirty false)))]
+    (fn []
+      [:div
+       [:h3 (str "Position for "  device-id)]
+       [:div
+        [:input {:value (or @z_pos_pul_atm "undefined")
+                 :on-change (fn [e]
+                              (reset! input_dirty true)
+                              (reset! z_pos_pul_atm (-> e .-target .-value)))
+                 :style {:color (if @input_dirty :red :black)}}]
+        "pulses"
+        [:button {:on-click (graphql-click-handler
+                            nil
+                            (fn [] (str "mutation{set_axis(id:\"" device-id "\",position:" @z_pos_pul_atm "){position,position_inches}}"))
+                            (partial axis_update_fn z_pos_pul_atm z_pos_inch_atm))} "Set"]
+        ]
+       [:div
+        [:input {:value (or @z_pos_inch_atm "undefined")
+                 :on-change (fn [e]
+                              (reset! input_dirty true)
+                              (reset! z_pos_inch_atm (-> e .-target .-value)))
+                 :style {:color (if @input_dirty :red :black)}}]
+        "inches"
+        [:button {:on-click (graphql-click-handler
+                            nil
+                            (fn [] (str "mutation{set_axis(id:\"" device-id "\",position_inches:" @z_pos_inch_atm "){position,position_inches}}"))
+                            (partial axis_update_fn z_pos_pul_atm z_pos_inch_atm))} "Set"]]
+       [:button {:on-click (graphql-click-handler (str "{axis(id:\"" device-id "\"){position,position_inches}}") ;(fn [resp raw-resp] (println "absolute-jog-control" resp))
+                                                  (partial axis_update_fn z_pos_pul_atm z_pos_inch_atm))
+                 } "Refresh"]])))
+
+(defn jog-control []
+  [:div
+   [relative-jog-control]
+   [position-readout-jog-control :stepperZ]])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Page
