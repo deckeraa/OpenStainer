@@ -258,6 +258,11 @@
        [:button {:on-click refresh-fn
                  } "Refresh"]])))
 
+(defn absolute-jog-control [device]
+  [:div
+   [:h3 (str device " position")]]
+  )
+
 (defn jog-control []
   [:div
    [relative-jog-control]
