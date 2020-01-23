@@ -561,14 +561,13 @@
                                )))
         (java.util.concurrent.locks.LockSupport/parkNanos nanosecond-wait)
         (set-pin ena false)
-        (if @hit-limit-switch?
-          (swap-in! state-atom [:setup id :position] (if dir-val
-                                                       (inches-to-pulses id (:position_limit axis-config))
-                                                       0))
-          (swap-in! state-atom [:setup id :position] (+ (get-in @state-atom [:setup id :position])
-                                                        pulses))
-          )
-
+        (swap-in! state-atom [:setup id :position]
+                  (if @hit-limit-switch?
+                    (if dir-val
+                      (inches-to-pulses id (:position_limit axis-config))
+                      0)
+                    (+ (get-in @state-atom [:setup id :position])
+                                                        pulses)))
         (when (not (compare-and-set! pulse-lock true false)) (println "Someone messed with the lock"))
         (println "Dropped the lock"))
       (println "Couldn't get the lock on pulse"))
@@ -605,23 +604,6 @@
         steps-to-move (- desired-pos-in-steps current-pos-in-steps)
         ]
     (move-by-pulses id steps-to-move)
-    ;; (let [ret (move-by-pulses id steps-to-move)]
-    ;;   (if ret
-    ;;     (do
-    ;;       (println "Setting A:" (get-in @state-atom [:setup id :position-inches]) " -> " (pulses-to-inches id  bounds-checked-desired-pos-in-steps) "   " (get-in @state-atom [:setup id]))
-    ;;       (swap-in! state-atom [:setup id :position] bounds-checked-desired-pos-in-steps)
-    ;;       (swap-in! state-atom [:setup id :position-inches] (pulses-to-inches id bounds-checked-desired-pos-in-steps))
-    ;;       )
-    ;;     (do
-    ;;       (println "Setting B:" (get-in @state-atom [:setup id]))
-    ;;       (swap-in! state-atom [:setup id :position] (if (pos? move-by-pulses)
-    ;;                                                    (inches-to-pulses id (:position_limit axis-config))
-    ;;                                                    0)))))
-    ;; (println axis-config)
-    ;; (println (:position axis-config))
-    ;; (println desired-pos-in-steps current-pos-in-steps)
-;    (println "steps-to-move: " steps-to-move)
-    
     ))
 
 (defn move-to-position-graphql-handler [context args value]
