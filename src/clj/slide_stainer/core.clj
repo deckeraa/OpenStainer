@@ -437,10 +437,12 @@
   (resolve-pin-by-id context args value))
 
 (defn resolve-axis [context args value]
-  (let [id (normalize-pin-tag (:id args))]
+  (let [id (normalize-pin-tag (:id args))
+        pos (get-in @state-atom [:setup id :position])]
     {:id (str id)
-     :position        (get-in @state-atom [:setup id :position])
-     :position_inches (get-in @state-atom [:setup id :position_inches])}))
+     :position        pos
+     :position_inches (pulses-to-inches id pos) ;(get-in @state-atom [:setup id :position_inches])
+     }))
 
 (defn set-axis [context args value]
   (let [id (normalize-pin-tag (:id args))
@@ -592,11 +594,17 @@
         current-pos-in-steps (:position axis-config)
         steps-to-move (- desired-pos-in-steps current-pos-in-steps)
         ]
-    (if (move-by-pulses id steps-to-move)
-      (swap-in! state-atom [:setup id :position] bounds-checked-desired-pos-in-steps)
-      (swap-in! state-atom [:setup id :position] (if (pos? move-by-pulses)
-                                                   (inches-to-pulses id (:position_limit axis-config))
-                                                   0)))
+    (let [ret (move-by-pulses id steps-to-move)]
+      (if ret
+        (do
+          (println "Setting A:" (get-in @state-atom [:setup id :position-inches]) " -> " (pulses-to-inches id  bounds-checked-desired-pos-in-steps) "   " (get-in @state-atom [:setup id]))
+          (swap-in! state-atom [:setup id :position] bounds-checked-desired-pos-in-steps)
+          (swap-in! state-atom [:setup id :position-inches] (pulses-to-inches id bounds-checked-desired-pos-in-steps)))
+        (do
+          (println "Setting B:" (get-in @state-atom [:setup id]))
+          (swap-in! state-atom [:setup id :position] (if (pos? move-by-pulses)
+                                                       (inches-to-pulses id (:position_limit axis-config))
+                                                       0)))))
     ;; (println axis-config)
     ;; (println (:position axis-config))
     ;; (println desired-pos-in-steps current-pos-in-steps)
