@@ -527,12 +527,13 @@
         pul (normalize-pin-tag (str id "-pul"))
         dir (normalize-pin-tag (str id "-dir"))
         limit-switch-low (normalize-pin-tag (str id "-limit-switch-low"))
+        axis-config (get-in @state-atom [:setup id])
         dir-val (pos? pulses)
-        num-pulses (if dir-val
+        abs-pulses (if dir-val
                      pulses
                      (* -1 pulses))
         nanosecond-wait 1000000 ;(max 1000000 7500)
-        precomputed-pulses (precompute-pulse pulse-linear-fn num-pulses)
+        precomputed-pulses (precompute-pulse pulse-linear-fn abs-pulses)
         hit-limit-switch? (atom false)
         ] ; friendly reminder not to take it lower than 7.5us
     (println "move-by-pulses max calculated frequency (Hz): " (apply max precomputed-pulses))
@@ -556,9 +557,18 @@
               (java.util.concurrent.locks.LockSupport/parkNanos (hz-to-ns pulse-val))))
           (catch Exception e (do
                                (println (.getMessage e))
-                               (reset! hit-limit-switch? true))))
+                               (reset! hit-limit-switch? true)
+                               )))
         (java.util.concurrent.locks.LockSupport/parkNanos nanosecond-wait)
         (set-pin ena false)
+        (if @hit-limit-switch?
+          (swap-in! state-atom [:setup id :position] (if dir-val
+                                                       (inches-to-pulses id (:position_limit axis-config))
+                                                       0))
+          (swap-in! state-atom [:setup id :position] (+ (get-in @state-atom [:setup id :position])
+                                                        pulses))
+          )
+
         (when (not (compare-and-set! pulse-lock true false)) (println "Someone messed with the lock"))
         (println "Dropped the lock"))
       (println "Couldn't get the lock on pulse"))
@@ -594,17 +604,19 @@
         current-pos-in-steps (:position axis-config)
         steps-to-move (- desired-pos-in-steps current-pos-in-steps)
         ]
-    (let [ret (move-by-pulses id steps-to-move)]
-      (if ret
-        (do
-          (println "Setting A:" (get-in @state-atom [:setup id :position-inches]) " -> " (pulses-to-inches id  bounds-checked-desired-pos-in-steps) "   " (get-in @state-atom [:setup id]))
-          (swap-in! state-atom [:setup id :position] bounds-checked-desired-pos-in-steps)
-          (swap-in! state-atom [:setup id :position-inches] (pulses-to-inches id bounds-checked-desired-pos-in-steps)))
-        (do
-          (println "Setting B:" (get-in @state-atom [:setup id]))
-          (swap-in! state-atom [:setup id :position] (if (pos? move-by-pulses)
-                                                       (inches-to-pulses id (:position_limit axis-config))
-                                                       0)))))
+    (move-by-pulses id steps-to-move)
+    ;; (let [ret (move-by-pulses id steps-to-move)]
+    ;;   (if ret
+    ;;     (do
+    ;;       (println "Setting A:" (get-in @state-atom [:setup id :position-inches]) " -> " (pulses-to-inches id  bounds-checked-desired-pos-in-steps) "   " (get-in @state-atom [:setup id]))
+    ;;       (swap-in! state-atom [:setup id :position] bounds-checked-desired-pos-in-steps)
+    ;;       (swap-in! state-atom [:setup id :position-inches] (pulses-to-inches id bounds-checked-desired-pos-in-steps))
+    ;;       )
+    ;;     (do
+    ;;       (println "Setting B:" (get-in @state-atom [:setup id]))
+    ;;       (swap-in! state-atom [:setup id :position] (if (pos? move-by-pulses)
+    ;;                                                    (inches-to-pulses id (:position_limit axis-config))
+    ;;                                                    0)))))
     ;; (println axis-config)
     ;; (println (:position axis-config))
     ;; (println desired-pos-in-steps current-pos-in-steps)
