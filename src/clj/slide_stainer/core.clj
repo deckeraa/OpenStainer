@@ -39,7 +39,7 @@
                    :inverted? false}}
               :limit-switch-low  {:pin 4 :invert? true}
               :travel_distance_per_turn 0.063
-              :position nil
+              :position-in-pulses 0
               :position_limit 9
               :pulses_per_revolution 800}
    :stepperX {:output-pins
@@ -50,7 +50,7 @@
                21  {::gpio/tag :stepperX-pul
                    :inverted? false}}
               :travel_distance_per_turn 0.063
-              :position nil
+              :position-in-pulses 0
               :position_limit 12
               :pulses_per_revolution 800
               }
@@ -438,7 +438,7 @@
 
 (defn resolve-axis [context args value]
   (let [id (normalize-pin-tag (:id args))
-        pos (get-in @state-atom [:setup id :position])]
+        pos (get-in @state-atom [:setup id :position-in-pulses])]
     {:id (str id)
      :position        pos
      :position_inches (pulses-to-inches id pos) ;(get-in @state-atom [:setup id :position_inches])
@@ -446,22 +446,19 @@
 
 (defn set-axis [context args value]
   (let [id (normalize-pin-tag (:id args))
-        position (:position args)
+        position-in-pulses (:position args)
         position_inches (:position_inches args)
         travel-distance-per-turn (:travel_distance_per_turn args)
         position-limit (:position_limit args)
         pulses-per-revolution (:pulses_per_revolution args)
         ]
 
-    (when travel-distance-per-turn (swap-in! state-atom [:setup id :position] travel-distance-per-turn))
-    (when position-limit (swap-in! state-atom [:setup id :position] position-limit))
-    (when pulses-per-revolution (swap-in! state-atom [:setup id :position] pulses-per-revolution))
-    (when position
-      (do (swap-in! state-atom [:setup id :position] position)
-          (swap-in! state-atom [:setup id :position_inches] (pulses-to-inches id position))))
-    (when (and position_inches (not position))
-      (do (swap-in! state-atom [:setup id :position_inches] position_inches)
-          (swap-in! state-atom [:setup id :position] (inches-to-pulses id position_inches))))
+    (when travel-distance-per-turn (swap-in! state-atom [:setup id :travel_distance_per_turn] travel-distance-per-turn))
+    (when position-limit (swap-in! state-atom [:setup id :position_limit] position-limit))
+    (when pulses-per-revolution (swap-in! state-atom [:setup id :pulses_per_revolution] pulses-per-revolution))
+    (when position-in-pulses (swap-in! state-atom [:setup id :position-in-pulses] position-in-pulses))
+    (when (and position_inches (not position-in-pulses))
+      (swap-in! state-atom [:setup id :position-in-pulses] (inches-to-pulses id position_inches)))
     (resolve-axis context args value)))
 
 (defn pulse-step-fn
@@ -561,12 +558,12 @@
                                )))
         (java.util.concurrent.locks.LockSupport/parkNanos nanosecond-wait)
         (set-pin ena false)
-        (swap-in! state-atom [:setup id :position]
+        (swap-in! state-atom [:setup id :position-in-pulses]
                   (if @hit-limit-switch?
                     (if dir-val
                       (inches-to-pulses id (:position_limit axis-config))
                       0)
-                    (+ (get-in @state-atom [:setup id :position])
+                    (+ (get-in @state-atom [:setup id :position-in-pulses])
                                                         pulses)))
         (when (not (compare-and-set! pulse-lock true false)) (println "Someone messed with the lock"))
         (println "Dropped the lock"))
@@ -593,14 +590,14 @@
    (:increment args))
   (resolve-axis context args value))
 
-(defn move-to-position [id position]
+(defn move-to-position [id position-in-inches]
   (let [axis-config (get-in @state-atom [:setup id])
-        desired-pos-in-steps (inches-to-pulses id position)
+        desired-pos-in-steps (inches-to-pulses id position-in-inches)
         max-steps-in-bounds (inches-to-pulses id (:position_limit axis-config))
         bounds-checked-desired-pos-in-steps (cond (< desired-pos-in-steps 0) 0
                                                   (> desired-pos-in-steps max-steps-in-bounds) max-steps-in-bounds
                                                   :else desired-pos-in-steps)
-        current-pos-in-steps (:position axis-config)
+        current-pos-in-steps (:position-in-pulses axis-config)
         steps-to-move (- desired-pos-in-steps current-pos-in-steps)
         ]
     (move-by-pulses id steps-to-move)
