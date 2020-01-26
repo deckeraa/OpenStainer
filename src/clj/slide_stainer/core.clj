@@ -37,7 +37,7 @@
                    :inverted? false}
                19 {::gpio/tag :stepperZ-pul
                    :inverted? false}}
-              :limit-switch-low  {:pin 4 :invert? true}
+              :limit-switch-low  {:pin 4 :invert? false}
               :travel_distance_per_turn 0.063
               :position-in-pulses 0
               :position_limit 9
@@ -471,11 +471,12 @@
 (defn pulse-linear-fn
   "Stepper pulse generation function that uses a linear ramp-up"
   [step]
-  (let [slope 25
+  (let [slope 15
         initial_offset 80]
     (min
      (+ (* step slope) initial_offset) ; y = mx+b
-     (* 18 1000)                          
+                                        ;     (* 18 1000)
+     (* 15 1000)
      )))
 
 (defn pulse-logistic-fn
@@ -546,12 +547,20 @@
         (try
           (doseq [pulse-val precomputed-pulses]
             (do
-              (when (limit-switch-low (deref (:status-atm @state-atom)))
-                (throw (Exception. "Limit switch hit")))
-              (set-pin pul true)
-              (java.util.concurrent.locks.LockSupport/parkNanos (hz-to-ns pulse-val))
-              (set-pin pul false)
-              (java.util.concurrent.locks.LockSupport/parkNanos (hz-to-ns pulse-val))))
+              (let [start-time (java.lang.System/nanoTime)
+                    wait-time (hz-to-ns pulse-val)
+                    tgt-one (+ start-time wait-time)
+                    tgt-two (+ tgt-one wait-time)]
+                (when (limit-switch-low (deref (:status-atm @state-atom)))
+                  (throw (Exception. "Limit switch hit")))
+                (set-pin pul true)
+                (while (< (java.lang.System/nanoTime) tgt-one) nil) ; busy-wait
+                                        ;              (java.util.concurrent.locks.LockSupport/parkNanos (hz-to-ns pulse-val))
+                (set-pin pul false)
+                (while (< (java.lang.System/nanoTime) tgt-two) nil)
+                )
+;              (java.util.concurrent.locks.LockSupport/parkNanos (hz-to-ns pulse-val))
+              ))
           (catch Exception e (do
                                (println (.getMessage e))
                                (reset! hit-limit-switch? true)
@@ -600,10 +609,12 @@
         current-pos-in-steps (:position-in-pulses axis-config)
         steps-to-move (- desired-pos-in-steps current-pos-in-steps)
         ]
+    (println "move-to-position: " id steps-to-move)
     (move-by-pulses id steps-to-move)
     ))
 
 (defn move-to-position-graphql-handler [context args value]
+  (println "move-to-position-graphql-handler")
   (move-to-position
    (normalize-pin-tag (:id args))
    (:position args))

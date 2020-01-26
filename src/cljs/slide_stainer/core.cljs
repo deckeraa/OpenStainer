@@ -203,7 +203,7 @@
          [:td]
          ;(partial query-fn :stepperZ true increment)
 ;         [:td [:button {:on-click (graphql-click-handler "mutation{move_relative(id:$device,increment:$increment){id}}" nil nil (partial variable-fn :stepperZ true increment))} "Up"]]
-         [:td [:button {:on-click (graphql-click-handler nil (partial query-fn :stepperZ true increment) nil)} "Up"]]
+         [:td [:button {:on-click (graphql-click-handler nil (partial query-fn :stepperZ false increment) nil)} "Up"]]
          [:td]]
         [:tr
          [:td [:button {:on-click (graphql-click-handler nil (partial query-fn :stepperX false increment) nil)} "Left"]]
@@ -211,7 +211,7 @@
          [:td [:button {:on-click (graphql-click-handler nil (partial query-fn :stepperX true increment) nil)} "Right"]]]
         [:tr
          [:td]
-         [:td [:button {:on-click (graphql-click-handler nil (partial query-fn :stepperZ false increment) nil)} "Down"]]
+         [:td [:button {:on-click (graphql-click-handler nil (partial query-fn :stepperZ true increment) nil)} "Down"]]
          [:td]]]])))
 
 (defn position-readout-jog-control [device-id]
@@ -259,14 +259,24 @@
                  } "Refresh"]])))
 
 (defn absolute-jog-control [device]
-  [:div
-   [:h3 (str device " position")]]
-  )
+  (let [dist-atm (reagent/atom 0)]
+    (fn []
+      [:div
+       [:h3 (str device " position")]
+       [:input {:value @dist-atm
+                :on-change (fn [e] (reset! dist-atm (-> e .-target .-value)))}]
+       [:button {:on-click (graphql-click-handler
+                            nil
+                            (fn [] (str "mutation{move_to_position(id:\"" device
+                                        "\",position:" @dist-atm "){position}}"))
+                            nil)
+                 } "Move"]])))
 
 (defn jog-control []
   [:div
    [relative-jog-control]
-   [position-readout-jog-control :stepperZ]])
+   [position-readout-jog-control :stepperZ]
+   [absolute-jog-control :stepperZ]])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Page
