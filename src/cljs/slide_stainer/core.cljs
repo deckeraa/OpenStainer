@@ -276,7 +276,9 @@
   [:div
    [relative-jog-control]
    [position-readout-jog-control :stepperZ]
-   [absolute-jog-control :stepperZ]])
+   [absolute-jog-control :stepperZ]
+      [position-readout-jog-control :stepperX]
+   [absolute-jog-control :stepperX]])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Page
