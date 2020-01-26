@@ -272,13 +272,25 @@
                             nil)
                  } "Move"]])))
 
+(defn jar-jog-control []
+  (let [query-fn (fn [jar] (str "mutation{move_to_jar(jar:\"" jar "\"){position}}"))
+        click-fn (graphql-click-handler nil query-fn nil)]
+    (fn []
+      [:div
+       (map (fn [jar]
+              [:button {:on-click (graphql-click-handler nil (partial query-fn jar) nil)} (str jar)])
+            [:jar-one :jar-two :jar-three])
+;       [:button {:on-click (graphql-click-handler nil (partial query-fn :jar-one) nil)} ":jar-one"]
+       ])))
+
 (defn jog-control []
   [:div
    [relative-jog-control]
    [position-readout-jog-control :stepperZ]
    [absolute-jog-control :stepperZ]
       [position-readout-jog-control :stepperX]
-   [absolute-jog-control :stepperX]])
+   [absolute-jog-control :stepperX]
+   [jar-jog-control]])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Page

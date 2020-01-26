@@ -82,6 +82,11 @@
    :args {:id {:type ID}
           :position {:type Float}}
    :resolve :mutation/move_to_position}
+  :move_to_jar
+  {:type :axis
+   :description "Attempts to move an axis to a given jar."
+   :args {:jar {:type ID}}
+   :resolve :mutation/move_to_jar}
   :clean_up_pins
   {:type :state
    :description "Cleans up the pins."

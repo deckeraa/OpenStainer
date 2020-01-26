@@ -27,7 +27,14 @@
 (defonce pulse-lock
   (atom false))
 
-; z dir - true = DOWN
+                                        ; z dir - true = DOWN
+
+(def up-pos 4)
+(def down-pos 0)
+(def jar-positions
+  {:jar-one 0
+   :jar-two 2
+   :jar-three 4})
 
 (def pin-defs
   {:stepperZ {:output-pins
@@ -534,7 +541,7 @@
         precomputed-pulses (precompute-pulse pulse-linear-fn abs-pulses)
         hit-limit-switch? (atom false)
         ] ; friendly reminder not to take it lower than 7.5us
-    (println "move-by-pulses max calculated frequency (Hz): " (apply max precomputed-pulses))
+    (println "move-by-pulses max calculated frequency (Hz): " (when (not (empty? precomputed-pulses)) (apply max precomputed-pulses)))
     (if (compare-and-set! pulse-lock false true)
       (do
         (println "Got the lock")
@@ -620,6 +627,23 @@
    (:position args))
   (resolve-axis context args value))
 
+(defn move-to-up-position []
+  (move-to-position :stepperZ up-pos))
+
+(defn move-to-down-position []
+  (move-to-position :stepperZ down-pos))
+
+(defn move-to-jar [jar]
+  (move-to-up-position)
+  (move-to-position :stepperX (get jar-positions jar))
+  (move-to-down-position)
+  )
+
+(defn move-to-jar-graphql-handler [context args value]
+  (println "move-to-jar-graphql-handler")
+  (move-to-jar (normalize-pin-tag (:jar args)))
+  (resolve-axis context (assoc args :id :stepperX) value))
+
 (defn simplify
   "Converts all ordered maps nested within the map into standard hash maps, and
    sequences into vectors, which makes for easier constants in the tests, and eliminates ordering problems."
@@ -649,6 +673,7 @@
    :mutation/move_by_pulses move-by-pulses-graphql-handler
    :mutation/move_relative move-relative-graphql-handler
    :mutation/move_to_position move-to-position-graphql-handler
+   :mutation/move_to_jar move-to-jar-graphql-handler
    :mutation/clean_up_pins clean-up-pins
 })
 
