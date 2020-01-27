@@ -224,3 +224,20 @@
                         :stepperZ-limit-switch-high false}
         ]
     (is (= desired-output (init-tags-for-status-atm :stepperZ sample-device-map fetch-fn)))))
+
+(defn inches-to-pulses [id inches]
+  (println "foo " @state-atom)
+  (let [axis-config (get-in @state-atom [:setup id])
+        pulses-per-revolution (:pulses_per_revolution axis-config)
+        travel-distance-per-turn (:travel_distance_per_turn axis-config)
+        ]
+    (int (/ (* inches pulses-per-revolution)
+            travel-distance-per-turn))))
+
+(defn pulses-to-inches [id pulses]
+  (let [axis-config (get-in @state-atom [:setup id])
+        pulses-per-revolution (:pulses_per_revolution axis-config)
+        travel-distance-per-turn (:travel_distance_per_turn axis-config)
+        ]
+    (/ (* pulses travel-distance-per-turn)
+       pulses-per-revolution)))

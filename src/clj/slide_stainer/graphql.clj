@@ -19,6 +19,11 @@
      :pin_number (:pin_number pin-info)
      }))
 
+(defn resolve-pins [context args value]
+  (println "resolve-pins" args value)
+  (map #(resolve-pin-by-id context {:id %} value)
+       (vec (keys (:setup-index @state-atom)))))
+
 (defn get-ip-address []
   (as-> (sh "ifconfig" "wlan0") $ ; why not use hostname -I instead? Less parsing would be needed.
       (:out $)
@@ -31,3 +36,11 @@
 
 (defn resolve-ip [context args value]
   {:inet4 (get-ip-address)})
+
+(defn resolve-axis [context args value]
+  (let [id (normalize-pin-tag (:id args))
+        pos (get-in @state-atom [:setup id :position-in-pulses])]
+    {:id (str id)
+     :position        pos
+     :position_inches (pulses-to-inches id pos) ;(get-in @state-atom [:setup id :position_inches])
+     }))

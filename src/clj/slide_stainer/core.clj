@@ -33,22 +33,7 @@
   (do (swap! state-atom assoc :setup pin-defs)
       (swap! state-atom assoc :setup-index (index-pin-defs pin-defs))))
 
-(defn inches-to-pulses [id inches]
-  (println "foo " @state-atom)
-  (let [axis-config (get-in @state-atom [:setup id])
-        pulses-per-revolution (:pulses_per_revolution axis-config)
-        travel-distance-per-turn (:travel_distance_per_turn axis-config)
-        ]
-    (int (/ (* inches pulses-per-revolution)
-            travel-distance-per-turn))))
 
-(defn pulses-to-inches [id pulses]
-  (let [axis-config (get-in @state-atom [:setup id])
-        pulses-per-revolution (:pulses_per_revolution axis-config)
-        travel-distance-per-turn (:travel_distance_per_turn axis-config)
-        ]
-    (/ (* pulses travel-distance-per-turn)
-       pulses-per-revolution)))
 
 
 
@@ -79,13 +64,6 @@
 ;;       (println "Finishing pulsing" wait-ms num-pulses))
 ;;     (println "Couldn't get the lock on pulse")))
 
-
-
-(defn resolve-pins [context args value]
-  (println "resolve-pins" args value)
-  (map #(resolve-pin-by-id context {:id %} value)
-       (vec (keys (:setup-index @state-atom)))))
-
 (defn set_pin [context args value]
   (println "setting " (:id args) "to " (:logical_value args))
   (when (not (:device @state-atom)) (init-pins))
@@ -96,14 +74,6 @@
                         (:logical_value args))]
     (gpio/write (:handle @state-atom) (-> (:buffer @state-atom) (gpio/set-line id requested-val))))
   (resolve-pin-by-id context args value))
-
-(defn resolve-axis [context args value]
-  (let [id (normalize-pin-tag (:id args))
-        pos (get-in @state-atom [:setup id :position-in-pulses])]
-    {:id (str id)
-     :position        pos
-     :position_inches (pulses-to-inches id pos) ;(get-in @state-atom [:setup id :position_inches])
-     }))
 
 (defn set-axis [context args value]
   (let [id (normalize-pin-tag (:id args))
