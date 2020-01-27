@@ -7,7 +7,6 @@
             [ring.util.request :as request]
             [clojure.data.json :as json]
             [clojure.walk :refer [keywordize-keys]]
-            [clojure.java.shell :refer [sh]]
             [clojure.java.io :as io]
             [com.walmartlabs.lacinia.util :as util]
             [com.walmartlabs.lacinia.schema :as schema]
@@ -51,27 +50,7 @@
     (/ (* pulses travel-distance-per-turn)
        pulses-per-revolution)))
 
-(defn resolve-pin-by-id [context args value]
-  (println "resolve-pin-by-id" args value)
-  (when (not (:device @state-atom)) (init-pins))
-  (let [id (normalize-pin-tag (:id args))
-        pin-info (id (:setup-index @state-atom))
-        board_value (gpio/get-line (:buffer @state-atom) id)]
-    {:id (str id)
-     :board_value board_value
-     :logical_value (if (:inverted? pin-info) (not board_value) board_value)
-     :pin_number (:pin_number pin-info)
-     }))
 
-(defn get-ip-address []
-  (as-> (sh "ifconfig" "wlan0") $ ; why not use hostname -I instead? Less parsing would be needed.
-      (:out $)
-      (clojure.string/split-lines $) ; split up the various lines of ifconfig output
-      (map #(re-find #"inet\s+\d+\.\d+\.\d+\.\d+" %) $) ; find things matching the inet ip
-      (filter (complement nil?) $) ; filter out the non-matching lines
-      (first $) ; grab the first one (there should only be one
-      (clojure.string/replace $ #"inet\s+" "") ; take out the inet portion
-      ))
 
 (defn set-pin [pin-tag state]
 ;  (when (not (:device @state-atom)) (init-pins))
@@ -100,12 +79,7 @@
 ;;       (println "Finishing pulsing" wait-ms num-pulses))
 ;;     (println "Couldn't get the lock on pulse")))
 
-(defn resolve-ip [context args value]
-;  (println (sh "ifconfig" "wlan0"))
-                                        ;  (println (str "resolve-ip: " (get-ip-address)))
-  (println "get-ip-address" args value)
-  {:inet4 (get-ip-address)
-   })
+
 
 (defn resolve-pins [context args value]
   (println "resolve-pins" args value)
