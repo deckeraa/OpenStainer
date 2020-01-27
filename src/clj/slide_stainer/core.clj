@@ -15,59 +15,11 @@
             [clojure.edn :as edn]
             [clojure.core.async :as async :refer [go go-loop <! timeout thread chan mult tap put!]]
             [incanter.core :refer [pow]]
-            [clojure.walk :as walk])
+            [clojure.walk :as walk]
+            [slide-stainer.defs :refer :all])
   (:use clojure.test)
   (:import (clojure.lang IPersistentMap))
   (:gen-class))
-
-(defn swap-in! [atom ks v]
-  (swap-vals! atom #(assoc-in % ks v)))
-
-(defonce state-atom (atom {}))
-(defonce pulse-lock
-  (atom false))
-
-                                        ; z dir - true = DOWN
-
-(def up-pos 4)
-(def down-pos 0)
-(def jar-positions
-  {:jar-one 0
-   :jar-two 2
-   :jar-three 4})
-
-(def pin-defs
-  {:stepperZ {:output-pins
-              {17 {::gpio/tag :stepperZ-ena
-                   :inverted? false}
-               18 {::gpio/tag :stepperZ-dir
-                   :inverted? false}
-               19 {::gpio/tag :stepperZ-pul
-                   :inverted? false}}
-              :limit-switch-low  {:pin 4 :invert? false}
-              :travel_distance_per_turn 0.063
-              :position-in-pulses 0
-              :position_limit 9
-              :pulses_per_revolution 800}
-   :stepperX {:output-pins
-              {26 {::gpio/tag :stepperX-ena
-                   :inverted? false}
-               27  {::gpio/tag :stepperX-dir
-                   :inverted? false}
-               21  {::gpio/tag :stepperX-pul
-                   :inverted? false}}
-              :travel_distance_per_turn 0.063
-              :position-in-pulses 0
-              :position_limit 12
-              :pulses_per_revolution 800
-              }
-   :led13 {:pins
-           {13 {::gpio/tag :led13-led}}}
-   ;; :switch {:pins
-   ;;          {4 {::gpio/tag :switch
-   ;;              ::gpio/direction :input
-   ;;              ::gpio/edge-detection :rising}}}
-   })
 
 (with-test
   (defn normalize-pin-tag [tag]
@@ -356,6 +308,7 @@
       (swap! state-atom assoc :setup-index (index-pin-defs pin-defs))))
 
 (defn inches-to-pulses [id inches]
+  (println "foo " @state-atom)
   (let [axis-config (get-in @state-atom [:setup id])
         pulses-per-revolution (:pulses_per_revolution axis-config)
         travel-distance-per-turn (:travel_distance_per_turn axis-config)
