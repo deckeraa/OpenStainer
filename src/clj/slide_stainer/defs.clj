@@ -5,6 +5,8 @@
 (defn swap-in! [atom ks v]
   (swap-vals! atom #(assoc-in % ks v)))
 
+(defonce state-atom (atom {}))
+
 (def up-pos 4)
 (def down-pos 0)
 (def jar-positions

@@ -16,12 +16,12 @@
             [clojure.core.async :as async :refer [go go-loop <! timeout thread chan mult tap put!]]
             [incanter.core :refer [pow]]
             [clojure.walk :as walk]
-            [slide-stainer.defs :refer :all])
+            [slide-stainer.defs :refer :all]
+            [slide-stainer.graphql :refer :all])
   (:use clojure.test)
   (:import (clojure.lang IPersistentMap))
   (:gen-class))
 
-(defonce state-atom (atom {}))
 (defonce pulse-lock
   (atom false))
 
@@ -98,9 +98,6 @@
                                  evt-timestamp)
                                timestamp))
                            ))))))))
-
-(defn resolve-state [context args value]
-  {:contents (str @state-atom)})
 
 (defn init-pins
   ([] (init-pins state-atom))
