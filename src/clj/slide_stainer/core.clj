@@ -95,39 +95,6 @@
     (content-type (response/response "<h1>Success.</h1>") "text/html"))
   )
 
-(defn alternating-leds
-  "Alternates leds.
-   In the REPL, press CTRL-C in order to stop.
-   Ex. (alternate {:device       0
-                   :interval-ms  250
-                   :line-numbers [17 27 22]})"
-  ([line-numbers]
-   (alternating-leds line-numbers
-                     nil))
-  ([line-numbers {:as   options
-                  :keys [device
-                         interval-ms]
-                  :or   {device      0
-                         interval-ms 500}}]
-   (with-open [device' (gpio/device device)
-               handle  (gpio/handle device'
-                                    (reduce (fn add-led [line-number->line-options line-number]
-                                              (assoc line-number->line-options
-                                                     line-number
-                                                     {::gpio/state false}))
-                                            {}
-                                            line-numbers)
-                                    {::gpio/direction :output})]
-     (let [buffer (gpio/buffer handle)]
-       (loop [line-numbers' (cycle line-numbers)]
-         (gpio/write handle
-                     (-> buffer
-                         gpio/clear-lines
-                         (gpio/set-line (first line-numbers')
-                                        true)))
-         (Thread/sleep interval-ms)
-         (recur (rest line-numbers')))))))
-
 (def api-routes
   ["/" [["led" led-handler]
         ["blink" blink-handler]
