@@ -32,24 +32,6 @@
     (content-type (response/response "<h1>Success.</h1>") "text/html"))
   )
 
-;; (defn pulse [pin-tag wait-ms num-pulses]
-;;   (println "Starting pulse" wait-ms num-pulses)
-;;   (if (compare-and-set! pulse-lock false true)
-;;     (do
-;;       (println "Grabbed the lock" wait-ms num-pulses)
-;;       (loop [i num-pulses]
-;;         (when (> i 0)
-;;           (set-pin pin-tag true)
-;;           (java.util.concurrent.locks.LockSupport/parkNanos wait-ms)
-;;           (set-pin pin-tag false)
-;;           (java.util.concurrent.locks.LockSupport/parkNanos wait-ms)
-;;           (recur (- i 1))))
-;;       (when (not (compare-and-set! pulse-lock true false)) (println "Someone mess with the lock"))
-;;       (println "Finishing pulsing" wait-ms num-pulses))
-;;     (println "Couldn't get the lock on pulse")))
-
-
-
 (defn get-ip-address-handler [req]
   (content-type (response/response (get-ip-address)) "text/html"))
 
