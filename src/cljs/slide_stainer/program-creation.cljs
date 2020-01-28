@@ -21,9 +21,13 @@
 (defn substance-selector [option-list substance-cursor]
   "Ex: (substance-selector [\"Hematoxylin\" \"Tap water\" \"Eosin\"] \"Eosin\")"
   [:select {:name "substance" :value (:substance @substance-cursor)
-            :on-change (fn [e] (do
-                                 (println (-> e .-target .-value))
-                                 (swap! substance-cursor assoc :substance (-> e .-target .-value))))}
+            :on-change (fn [e]
+                         (let [new-substance (-> e .-target .-value)]
+                           (swap! substance-cursor
+                                  (fn [substance]
+                                    (as-> substance $
+                                      (assoc $ :substance new-substance)
+                                      (assoc $ :jar-number (inc (.indexOf option-list new-substance))))))))}
    (map (fn [option] [:option {:value option} option]) option-list)])
 
 (defn procedure-steps [prog-atm]
