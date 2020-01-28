@@ -3,6 +3,7 @@
    [reagent.core :as reagent]
    [cljs-http.client :as http]
    [clojure.edn :as edn]
+   [slide-stainer.program-creation]
    )
   (:require-macros
    [cljs.core.async.macros :refer [go go-loop]]))
@@ -302,11 +303,13 @@
       [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :main)))} "Main"]
       [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :graphql)))} "GraphQL"]
       [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :classic)))} "Classic"]
-      [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :jog)))} "Jog"]]
+      [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :jog)))} "Jog"]
+      [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :program-creation)))} "Program Creation"]]
      (when (= :graphql screen) [graphql-control])
      (when (= :main screen) [pins-control-graphql])
      (when (= :classic screen) [pins-control])
      (when (= :jog screen) [jog-control])
+     (when (= :program-creation screen) [slide-stainer.program-creation/program-creation])
      ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
