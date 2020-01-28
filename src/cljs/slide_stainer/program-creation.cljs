@@ -10,25 +10,29 @@
    [{:substance "Hematoxylin" :time-in-seconds (* 25 60) :jar-number 1}
     {:substance "Tap water" :time-in-seconds 150 :jar-number 2}]})
 
-(defn jar-contents [prog]
+(def sample-program-atom (reagent/atom sample-program))
+
+(defn jar-contents [prog-atm]
   [:h3 "Jar Contents"]
   [:table [:tr [:th "Jar #"] [:th "Substance"]]
-   (map-indexed (fn [idx substance] [:tr [:td (inc idx)] [:td substance]]) (:jar-contents prog))])
+   (map-indexed (fn [idx substance] [:tr [:td (inc idx)] [:td substance]]) (:jar-contents @prog-atm))])
 
-(defn procedure-steps [prog]
-  [:h3 "Procedure Steps"]
-  [:table [:tr [:th "Step #"] [:th "Substance"] [:th "Time"] [:th "Jar #"]]
-   (map-indexed (fn [idx step]
-                  [:tr
-                   [:td (inc idx)]
-                   [:td (:substance step)]
-                   [:td (:time step)]
-                   [:td (:jar-number step)]]) (:procedure-steps prog))])
+(defn procedure-steps [prog-atm]
+  (let [steps-cursor (reagent/cursor prog-atm [:procedure-steps])]
+    (fn []
+      [:h3 "Procedure Steps"]
+      [:table [:tr [:th "Step #"] [:th "Substance"] [:th "Time"] [:th "Jar #"]]
+       (map-indexed (fn [idx step]
+                      [:tr
+                       [:td (inc idx)]
+                       [:td (:substance step)]
+                       [:td (:time step)]
+                       [:td (:jar-number step)]]) @steps-cursor)])))
 
 (defn program-creation
-  ([] (program-creation sample-program))
-  ([prog]
+  ([] (program-creation sample-program-atom))
+  ([prog-atm]
    [:div
-    [:h2 (:name prog)]
-    [jar-contents prog]
-    [procedure-steps prog]]))
+    [:h2 (:name @prog-atm)]
+    [jar-contents prog-atm]
+    [procedure-steps prog-atm]]))
