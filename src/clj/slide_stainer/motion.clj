@@ -100,15 +100,15 @@
             (do
               (let [start-time (java.lang.System/nanoTime)
                     wait-time (hz-to-ns pulse-val)
-                    tgt-one (+ start-time wait-time)
-                    tgt-two (+ tgt-one wait-time)]
+                    tgt-one (+ start-time wait-time)]
                 (when (limit-switch-low (deref (:status-atm @state-atom)))
                   (throw (Exception. "Limit switch hit")))
                 (set-pin pul true)
                 (while (< (java.lang.System/nanoTime) tgt-one) nil) ; busy-wait
+                (let [tgt-two (+ (java.lang.System/nanoTime) wait-time)]
                                         ;              (java.util.concurrent.locks.LockSupport/parkNanos (hz-to-ns pulse-val))
-                (set-pin pul false)
-                (while (< (java.lang.System/nanoTime) tgt-two) nil)
+                  (set-pin pul false)
+                  (while (< (java.lang.System/nanoTime) tgt-two) nil))
                 )
 ;              (java.util.concurrent.locks.LockSupport/parkNanos (hz-to-ns pulse-val))
               ))
