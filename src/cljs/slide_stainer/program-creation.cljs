@@ -13,10 +13,27 @@
 
 (def sample-program-atom (reagent/atom sample-program))
 
+(defn rename-substance [prog-atm jar-number new-substance]
+  "Don't forget that jar-number is 1-indexed."
+  (swap! prog-atm (fn [prog]
+                    (as-> prog $
+                      (assoc-in $ [:jar-contents (dec jar-number)] new-substance)
+                      (assoc-in $ [:procedure-steps] (mapv (fn [step]
+                                                             (if (= jar-number (:jar-number step))
+                                                               (assoc step :substance new-substance)
+                                                               step))
+                                                           (:procedure-steps $)))
+                      ))))
+
 (defn jar-contents [prog-atm]
   [:h3 "Jar Contents"]
   [:table [:tr [:th "Jar #"] [:th "Substance"]]
-   (map-indexed (fn [idx substance] [:tr [:td (inc idx)] [:td substance]]) (:jar-contents @prog-atm))])
+   (map-indexed (fn [idx substance]
+                  [:tr
+                   [:td (inc idx)]
+                   [:td [:input {:type "text" :value substance
+                                 :on-change (fn [e] (rename-substance prog-atm (inc idx) (-> e .-target .-value)))}]]])
+                (:jar-contents @prog-atm))])
 
 (defn substance-selector [option-list substance-cursor]
   "Ex: (substance-selector [\"Hematoxylin\" \"Tap water\" \"Eosin\"] \"Eosin\")"
