@@ -1,6 +1,7 @@
 (ns slide-stainer.program-creation
   (:require [reagent.core :as reagent]
-            [cljs-http.client :as http])
+            [cljs-http.client :as http]
+            [cljs.test :refer-macros [deftest is testing run-tests]])
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
 
 (def sample-program
@@ -17,6 +18,14 @@
   [:table [:tr [:th "Jar #"] [:th "Substance"]]
    (map-indexed (fn [idx substance] [:tr [:td (inc idx)] [:td substance]]) (:jar-contents @prog-atm))])
 
+(defn substance-selector [option-list substance-cursor]
+  "Ex: (substance-selector [\"Hematoxylin\" \"Tap water\" \"Eosin\"] \"Eosin\")"
+  [:select {:name "substance" :value (:substance @substance-cursor)
+            :on-change (fn [e] (do
+                                 (println (-> e .-target .-value))
+                                 (swap! substance-cursor assoc :substance (-> e .-target .-value))))}
+   (map (fn [option] [:option {:value option} option]) option-list)])
+
 (defn procedure-steps [prog-atm]
   (let [steps-cursor (reagent/cursor prog-atm [:procedure-steps])]
     (fn []
@@ -25,7 +34,11 @@
        (map-indexed (fn [idx step]
                       [:tr
                        [:td (inc idx)]
-                       [:td (:substance step)]
+                       [:td (substance-selector (:jar-contents @prog-atm) (reagent/cursor steps-cursor [idx]))]
+;                       [:td (substance-selector (:jar-contents @prog-atm) (:substance step))]
+                       ;; [:td [:select {:name "substance" :value (:substance step)}
+                       ;;       [:option {:value "Hematoxylin"} "Hematoxylin"]
+                       ;;       [:option {:value "Tap water"} "Tap water"]]]
                        [:td (:time step)]
                        [:td (:jar-number step)]]) @steps-cursor)])))
 
