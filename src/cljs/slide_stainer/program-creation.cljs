@@ -27,48 +27,56 @@
 
 (defn jar-contents [prog-atm]
   [:h3 "Jar Contents"]
-  [:table [:tr [:th "Jar #"] [:th "Substance"]]
-   (map-indexed (fn [idx substance]
-                  [:tr
-                   [:td (inc idx)]
-                   [:td [:input {:type "text" :value substance
-                                 :on-change (fn [e] (rename-substance prog-atm (inc idx) (-> e .-target .-value)))}]]])
-                (:jar-contents @prog-atm))])
+  [:table [:tbody [:tr [:th "Jar #"] [:th "Substance"]]
+           (map-indexed (fn [idx substance]
+                          ^{:key idx}
+                          [:tr
+                           [:td (inc idx)]
+                           [:td [:input {:type "text" :value substance
+                                         :on-change (fn [e] (rename-substance prog-atm (inc idx) (-> e .-target .-value)))}]]])
+                        (:jar-contents @prog-atm))]])
 
 (defn substance-selector [option-list step-cursor]
   "Ex: (substance-selector [\"Hematoxylin\" \"Tap water\" \"Eosin\"] \"Eosin\")"
-  [:select {:name "substance" :value (:substance @step-cursor)
-            :on-change (fn [e]
-                         (let [new-substance (-> e .-target .-value)]
-                           (swap! step-cursor
-                                  (fn [substance]
-                                    (as-> substance $
-                                      (assoc $ :substance new-substance)
-                                      (assoc $ :jar-number (inc (.indexOf option-list new-substance))))))))}
-   (map (fn [option] [:option {:value option} option]) option-list)])
+  (fn [option-list step-cursor]
+;    (println "Re-running substance-selector for" @step-cursor option-list)
+    [:select {:name "substance" :value (:substance @step-cursor)
+              :on-change (fn [e]
+                           (let [new-substance (-> e .-target .-value)]
+                             (swap! step-cursor
+                                    (fn [substance]
+                                      (as-> substance $
+                                        (assoc $ :substance new-substance)
+                                        (assoc $ :jar-number (inc (.indexOf option-list new-substance))))))))}
+     (map-indexed (fn [idx option] ^{:key idx} [:option {:value option} option]) option-list)]))
 
 (defn jar-selector [option-list step-cursor]
-  (let [options (as-> option-list $
-                  (map-indexed (fn [idx itm] [(inc idx) itm]) $)
-                  (filter #(= (:substance @step-cursor) (second %)) $)
-                  (mapv first $))]
-    (if (> (count options) 1)
-      [:select {:name "jar-number" :value (:jar-number @step-cursor)}
-       (map (fn [option] [:option {:value option} option]) options)]
-      [:div (:jar-number @step-cursor)])))
+  (fn [option-list step-cursor]
+    (let [options (as-> option-list $
+                    (map-indexed (fn [idx itm] [(inc idx) itm]) $)
+                    (filter #(= (:substance @step-cursor) (second %)) $)
+                    (mapv first $))]
+      (if (> (count options) 1)
+        [:select {:name "jar-number" :value (:jar-number @step-cursor)}
+         (map-indexed (fn [idx option] ^{:key idx} [:option {:value option} option]) options)]
+        [:div (:jar-number @step-cursor)]))))
 
 (defn procedure-steps [prog-atm]
-  (let [steps-cursor (reagent/cursor prog-atm [:procedure-steps])]
-    (fn []
+  (fn []
+    (let [steps-cursor (reagent/cursor prog-atm [:procedure-steps])
+          substance-options (:jar-contents @prog-atm)]
+;      (println "Re-running procedure-steps: " substance-options)
       [:h3 "Procedure Steps"]
-      [:table [:tr [:th "Step #"] [:th "Substance"] [:th "Time"] [:th "Jar #"]]
-       (map-indexed (fn [idx step]
-                      (let [step-cursor (reagent/cursor steps-cursor [idx])]
-                        [:tr
-                         [:td (inc idx)]
-                         [:td (substance-selector (:jar-contents @prog-atm) step-cursor)]
-                         [:td (:time step)]
-                         [:td (jar-selector (:jar-contents @prog-atm) step-cursor)]])) @steps-cursor)])))
+      [:table
+       [:tbody [:tr [:th "Step #"] [:th "Substance"] [:th "Time"] [:th "Jar #"]]
+        (map-indexed (fn [idx step]
+                       (let [step-cursor (reagent/cursor steps-cursor [idx])]
+                         ^{:key idx}
+                         [:tr
+                          [:td (inc idx)]
+                          [:td [substance-selector substance-options step-cursor]]
+                          [:td (:time step)]
+                          [:td [jar-selector substance-options step-cursor]]])) @steps-cursor)]])))
 
 (defn program-creation
   ([] (program-creation sample-program-atom))
@@ -76,4 +84,5 @@
    [:div
     [:h2 (:name @prog-atm)]
     [jar-contents prog-atm]
-    [procedure-steps prog-atm]]))
+    [procedure-steps prog-atm]
+    [:div (str @prog-atm)]]))
