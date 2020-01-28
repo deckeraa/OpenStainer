@@ -57,7 +57,8 @@
                     (filter #(= (:substance @step-cursor) (second %)) $)
                     (mapv first $))]
       (if (> (count options) 1)
-        [:select {:name "jar-number" :value (:jar-number @step-cursor)}
+        [:select {:name "jar-number" :value (:jar-number @step-cursor)
+                  :on-change (fn [e] (swap! step-cursor #(assoc % :jar-number (-> e .-target .-value))))}
          (map-indexed (fn [idx option] ^{:key idx} [:option {:value option} option]) options)]
         [:div (:jar-number @step-cursor)]))))
 
