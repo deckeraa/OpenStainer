@@ -5,6 +5,8 @@
             [slide-stainer.onscreen-keyboard])
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
 
+(def number-of-jars 6)
+
 (def sample-program
   {:name "H&E with Harris' Hematoxylin"
    :jar-contents ["Hematoxylin" "Tap water" "70% ethanol/1% HCI" "Tap water" "Eosin"]
@@ -27,16 +29,20 @@
                                                            (:procedure-steps $)))
                       ))))
 
+(defn extend-vector [coll n]
+  (vec (concat coll (take (- n (count coll)) (repeat "")))))
+
 (defn jar-contents [prog-atm]
-  [:h3 "Jar Contents"]
-  [:table [:tbody [:tr [:th "Jar #"] [:th "Substance"]]
-           (map-indexed (fn [idx substance]
-                          ^{:key idx}
-                          [:tr
-                           [:td (inc idx)]
-                           [:td [:input {:type "text" :value substance
-                                         :on-change (fn [e] (rename-substance prog-atm (inc idx) (-> e .-target .-value)))}]]])
-                        (:jar-contents @prog-atm))]])
+  [:div
+   [:h3 "Jar Contents"]
+   [:table [:tbody [:tr [:th "Jar #"] [:th "Substance"]]
+            (map-indexed (fn [idx substance]
+                           ^{:key idx}
+                           [:tr
+                            [:td (inc idx)]
+                            [:td [:input {:type "text" :value substance
+                                          :on-change (fn [e] (rename-substance prog-atm (inc idx) (-> e .-target .-value)))}]]])
+                         (extend-vector (:jar-contents @prog-atm) number-of-jars))]]])
 
 (defn substance-selector [option-list step-cursor]
   "Ex: (substance-selector [\"Hematoxylin\" \"Tap water\" \"Eosin\"] \"Eosin\")"
