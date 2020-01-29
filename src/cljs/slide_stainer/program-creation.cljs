@@ -1,7 +1,8 @@
 (ns slide-stainer.program-creation
   (:require [reagent.core :as reagent]
             [cljs-http.client :as http]
-            [cljs.test :refer-macros [deftest is testing run-tests]])
+            [cljs.test :refer-macros [deftest is testing run-tests]]
+            [slide-stainer.onscreen-keyboard])
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
 
 (def sample-program
@@ -12,6 +13,7 @@
     {:substance "Tap water" :time-in-seconds 150 :jar-number 2}]})
 
 (def sample-program-atom (reagent/atom sample-program))
+(def osk-atm (reagent/atom nil))
 
 (defn rename-substance [prog-atm jar-number new-substance]
   "Don't forget that jar-number is 1-indexed."
@@ -95,6 +97,7 @@
     (fn [step-cursor]
       [:div
        [:input {:type "text" :value @minutes-atm
+                :on-focus (fn [e] (reset! osk-atm minutes-atm))
                 :on-change (fn [e] (let [new-minutes (-> e .-target .-value)]
                                      (println new-minutes (type new-minutes))
                                      (when (re-matches #"[0-9]*" new-minutes)
@@ -137,4 +140,5 @@
     [:h2 (:name @prog-atm)]
     [jar-contents prog-atm]
     [procedure-steps prog-atm]
-    [:div (str @prog-atm)]]))
+    [:div (str @prog-atm)]
+    [slide-stainer.onscreen-keyboard/onscreen-keyboard osk-atm]]))
