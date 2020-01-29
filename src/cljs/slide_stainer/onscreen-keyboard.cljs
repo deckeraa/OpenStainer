@@ -5,19 +5,53 @@
    [devcards.core :refer [defcard defcard-rg]]))
 
 (defn osk-input [osk-atm args]
-  (let [input-atm (reagent/atom "")]
+  (let [input-atm (reagent/atom "foo")]
     (fn []
       [:input {:type :text
                :on-focus (fn [e]
                            (swap! osk-atm assoc :input-atm input-atm) ; set the on-screen keyboard to point to this input field's input
-                           )}])))
+                           (println "on-focus" @osk-atm)
+                           )
+               :value @input-atm}])))
 
-(defcard my-first-card
-  "Hello World")
+(def osk-atm (reagent/atom {}))
+
+(defcard-rg osk-input-card
+  [osk-input osk-atm {}])
 
 (defn onscreen-keyboard [osk-atm]
-  (fn [osk-atm]
-    [:button {:on-click (fn [e]
-                          (println e @osk-atm)
-                          (when @osk-atm (swap! (:input-atm @osk-atm) (fn [v] (str v 1))))
-                          )} "1"]))
+  (let [button-fn (fn [val] [:button {:on-click (fn [e]
+                                                  (println "on-click" e @osk-atm)
+                                                  (when (:input-atm @osk-atm)
+                                                    (swap! (:input-atm @osk-atm) (fn [v] (str v val))))
+                                                  (println (reagent/current-component))
+                                                  )
+                                      :on-mousedown (fn [e]
+                                                      (println "on-mousedown"))} val]) ]
+    (fn [osk-atm]
+      [:div
+       [:div
+        (map button-fn (range 10))
+        [:button {:on-click (fn [e]
+                              (println "backspace" @osk-atm)
+                              (when (:input-atm @osk-atm)
+                                (swap! (:input-atm @osk-atm) (fn [v] (subs v 0 (dec (count v))))))
+                              )} "Backspace"]]
+       [:div
+        (map button-fn "qwertyuiop")]
+       [:div
+        (map button-fn "asdfghjkl")]
+       [:div
+        (map button-fn "zxcvbnm")]
+       [:div
+        (button-fn "Space")]
+       ])))
+
+(defcard-rg onscreen-keyboard-card
+  [onscreen-keyboard osk-atm])
+
+(defcard osk-atm-card
+  (str @osk-atm))
+
+(defcard-rg comp
+  [:p (reagent/current-component)])
