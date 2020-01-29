@@ -114,18 +114,21 @@
   (fn []
     (let [steps-cursor (reagent/cursor prog-atm [:procedure-steps])
           substance-options (:jar-contents @prog-atm)]
-;      (println "Re-running procedure-steps: " substance-options)
-      [:h3 "Procedure Steps"]
-      [:table
-       [:tbody [:tr [:th "Step #"] [:th "Substance"] [:th "Time"] [:th "Jar #"]]
-        (map-indexed (fn [idx step]
-                       (let [step-cursor (reagent/cursor steps-cursor [idx])]
-                         ^{:key idx}
-                         [:tr
-                          [:td (inc idx)]
-                          [:td [substance-selector substance-options step-cursor]]
-                          [:td [time-display step-cursor]]
-                          [:td [jar-selector substance-options step-cursor]]])) @steps-cursor)]])))
+                                        ;      (println "Re-running procedure-steps: " substance-options)
+      [:div
+       
+       [:h3 "Procedure Steps"]
+       [:table
+        [:tbody [:tr [:th "Step #"] [:th "Substance"] [:th "Time"] [:th "Jar #"]]
+         (map-indexed (fn [idx step]
+                        (let [step-cursor (reagent/cursor steps-cursor [idx])]
+                          ^{:key idx}
+                          [:tr
+                           [:td (inc idx)]
+                           [:td [substance-selector substance-options step-cursor]]
+                           [:td [time-display step-cursor]]
+                           [:td [jar-selector substance-options step-cursor]]])) @steps-cursor)]]
+       [:button {} "+"]])))
 
 (defn program-creation
   ([] (program-creation sample-program-atom))
