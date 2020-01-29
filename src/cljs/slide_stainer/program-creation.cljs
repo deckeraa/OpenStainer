@@ -62,6 +62,54 @@
          (map-indexed (fn [idx option] ^{:key idx} [:option {:value option} option]) options)]
         [:div (:jar-number @step-cursor)]))))
 
+(defn render-time [time-in-seconds]
+  (let [minutes (Math/floor (/ time-in-seconds 60))
+        seconds (str (rem time-in-seconds 60))
+        padded-seconds (if (= 1 (count seconds)) (str 0 seconds) seconds)]
+    (str minutes ":" padded-seconds)))
+
+(defn- parse-and-pad [time]
+  "Parses a time and pads out the time to two digits"
+  (let [time (if (= time "") "0" time) ; blank means zero in this case
+        parsed-time (js/parseInt time)]
+    (cond (not (integer? parsed-time)) [nil nil]
+          (= 2 (count time)) [parsed-time time]
+          (= 1 (count time)) [parsed-time (str "0" time)])))
+
+(deftest test-parse-and-pad
+  (is (= [nil nil] (parse-and-pad "abc")))
+  (is (= [15 "15"] (parse-and-pad "15")))
+  (is (= [1 "01"] (parse-and-pad "1")))
+  (is (= [0 "00"] (parse-and-pad ""))))
+
+(defn time-display [step-cursor]
+  (let [time-in-seconds (:time-in-seconds @step-cursor)
+        minutes (Math/floor (/  time-in-seconds 60))
+        minutes-atm (reagent/atom (str minutes))
+        seconds (str (rem time-in-seconds 60))
+        padded-seconds (if (= 1 (count seconds)) (str 0 seconds) seconds)
+        seconds-atm (reagent/atom padded-seconds)
+        update-seconds (fn []
+                         (swap! step-cursor assoc :time-in-seconds (+ (* 60 (first (parse-and-pad @minutes-atm)))
+                                                                      (first (parse-and-pad @seconds-atm)))))]
+    (fn [step-cursor]
+      [:div
+       [:input {:type "text" :value @minutes-atm
+                :on-change (fn [e] (let [new-minutes (-> e .-target .-value)]
+                                     (println new-minutes (type new-minutes))
+                                     (when (re-matches #"[0-9]*" new-minutes)
+                                       (reset! minutes-atm new-minutes))))
+                :on-blur (fn [e] (update-seconds))}]
+       ":"
+       [:input {:type "text" :value @seconds-atm
+                :on-change (fn [e] (let [new-seconds (-> e .-target .-value)]
+                                     (when (re-matches #"^[0-9]{0,2}$" new-seconds)
+                                       (reset! seconds-atm new-seconds))))
+                :on-blur (fn [e]
+                           (let [parsed-seconds (parse-and-pad @seconds-atm)]
+                             (reset! seconds-atm (second parsed-seconds))
+                             (update-seconds)))}]])))
+
 (defn procedure-steps [prog-atm]
   (fn []
     (let [steps-cursor (reagent/cursor prog-atm [:procedure-steps])
@@ -76,7 +124,7 @@
                          [:tr
                           [:td (inc idx)]
                           [:td [substance-selector substance-options step-cursor]]
-                          [:td (:time step)]
+                          [:td [time-display step-cursor]]
                           [:td [jar-selector substance-options step-cursor]]])) @steps-cursor)]])))
 
 (defn program-creation
