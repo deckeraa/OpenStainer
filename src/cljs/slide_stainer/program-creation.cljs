@@ -41,16 +41,17 @@
 (defn substance-selector [option-list step-cursor]
   "Ex: (substance-selector [\"Hematoxylin\" \"Tap water\" \"Eosin\"] \"Eosin\")"
   (fn [option-list step-cursor]
-;    (println "Re-running substance-selector for" @step-cursor option-list)
-    [:select {:name "substance" :value (:substance @step-cursor)
-              :on-change (fn [e]
-                           (let [new-substance (-> e .-target .-value)]
-                             (swap! step-cursor
-                                    (fn [substance]
-                                      (as-> substance $
-                                        (assoc $ :substance new-substance)
-                                        (assoc $ :jar-number (inc (.indexOf option-list new-substance))))))))}
-     (map-indexed (fn [idx option] ^{:key idx} [:option {:value option} option]) option-list)]))
+    (let [substance (:substance @step-cursor)]
+      [:select {:name "substance" :value substance
+                :on-change (fn [e]
+                             (let [new-substance (-> e .-target .-value)]
+                               (swap! step-cursor
+                                      (fn [substance]
+                                        (as-> substance $
+                                          (assoc $ :substance new-substance)
+                                          (assoc $ :jar-number (inc (.indexOf option-list new-substance))))))))}
+       (map-indexed (fn [idx option] ^{:key idx} [:option {:value option} option])
+                    (if (empty? substance) (cons "" option-list) option-list))])))
 
 (defn jar-selector [option-list step-cursor]
   (fn [option-list step-cursor]
