@@ -2,6 +2,7 @@
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [org.clojure/clojurescript "1.10.520"]
                  [javax.xml.bind/jaxb-api "2.2.11"]
+                 [devcards "0.2.6"]
                  [org.clojure/core.async "0.7.559"]
                  [reagent "0.7.0"]
                  [dvlopt/linux.gpio "1.0.0"]
@@ -43,7 +44,15 @@
 
   :cljsbuild
   {:builds
-   [{:id           "dev"
+   [{:id "devcards"
+    :source-paths ["src"]   
+    :figwheel { :devcards true } ;; <- note this
+    :compiler { :main    "slide-stainer.core"
+                :asset-path "js/devcards_out"
+                :output-to  "resources/public/js/slide-stainer_devcards.js"
+                :output-dir "resources/public/js/devcards_out"
+                :source-map-timestamp true }}
+    {:id           "dev"
      :source-paths ["src/cljs"]
      :figwheel     {:on-jsload "slide-stainer.core/reload"}
      :compiler     {:main                 slide-stainer.core

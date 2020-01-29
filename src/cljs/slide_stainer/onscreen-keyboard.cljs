@@ -1,5 +1,8 @@
 (ns slide-stainer.onscreen-keyboard
-  (:require [reagent.core :as reagent]))
+  (:require [reagent.core :as reagent]
+            [devcards.core])
+  (:require-macros
+   [devcards.core :refer [defcard defcard-rg]]))
 
 (defn osk-input [osk-atm args]
   (let [input-atm (reagent/atom "")]
@@ -8,6 +11,9 @@
                :on-focus (fn [e]
                            (swap! osk-atm assoc :input-atm input-atm) ; set the on-screen keyboard to point to this input field's input
                            )}])))
+
+(defcard my-first-card
+  "Hello World")
 
 (defn onscreen-keyboard [osk-atm]
   (fn [osk-atm]
