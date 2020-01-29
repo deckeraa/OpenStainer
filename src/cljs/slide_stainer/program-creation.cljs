@@ -113,6 +113,12 @@
                              (reset! seconds-atm (second parsed-seconds))
                              (update-seconds)))}]])))
 
+(defn drop-nth [coll n]
+  (as-> coll $
+    (map-indexed vector $)
+    (remove (fn [[idx itm]] (= n idx)) $)
+    (mapv (fn [[idx itm]] itm) $)))
+
 (defn procedure-steps [prog-atm]
   (fn []
     (let [steps-cursor (reagent/cursor prog-atm [:procedure-steps])
@@ -130,8 +136,15 @@
                            [:td (inc idx)]
                            [:td [substance-selector substance-options step-cursor]]
                            [:td [time-display step-cursor]]
-                           [:td [jar-selector substance-options step-cursor]]])) @steps-cursor)]]
-       [:button {} "+"]])))
+                           [:td [jar-selector substance-options step-cursor]]
+                           [:td [:button {:on-click (fn [e] (swap! steps-cursor
+                                                                   (fn [steps]
+                                                                     (println steps)
+                                                                     (println idx)
+                                                                     (println (drop-nth steps idx))
+                                                                     (drop-nth steps idx))))} "x"]]]))
+                      @steps-cursor)]]
+       [:button {:on-click (fn [e] (swap! steps-cursor conj {}))} "+"]])))
 
 (defn program-creation
   ([] (program-creation sample-program-atom))
@@ -141,4 +154,5 @@
     [jar-contents prog-atm]
     [procedure-steps prog-atm]
     [:div (str @prog-atm)]
-    [slide-stainer.onscreen-keyboard/onscreen-keyboard osk-atm]]))
+;    [slide-stainer.onscreen-keyboard/onscreen-keyboard osk-atm]
+    ]))
