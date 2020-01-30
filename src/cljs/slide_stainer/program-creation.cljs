@@ -104,6 +104,7 @@
     (fn [step-cursor]
       [:div
        [:input {:type "text" :value @minutes-atm
+                :size 2
                 :on-focus (fn [e] (reset! osk-atm minutes-atm))
                 :on-change (fn [e] (let [new-minutes (-> e .-target .-value)]
                                      (println new-minutes (type new-minutes))
@@ -112,6 +113,7 @@
                 :on-blur (fn [e] (update-seconds))}]
        ":"
        [:input {:type "text" :value @seconds-atm
+                :size 2
                 :on-change (fn [e] (let [new-seconds (-> e .-target .-value)]
                                      (when (re-matches #"^[0-9]{0,2}$" new-seconds)
                                        (reset! seconds-atm new-seconds))))
