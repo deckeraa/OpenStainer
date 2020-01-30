@@ -107,18 +107,31 @@ and returns the properly shifted string."
     (fn [osk-atm]
       [:div {:class (str "onscreen-keyboard" " " (if (:open? @osk-atm) "onscreen-keyboard-open" "onscreen-keyboard-closed"))}
        [:div
-        (doall (map button-fn (range 10)))
+        (button-fn ["1" "!"])
+        (button-fn ["2" "@"])
+        (button-fn ["3" "#"])
+        (button-fn ["4" "$"])
+        (button-fn ["5" "%"])
+        (button-fn ["6" "^"])
+        (button-fn ["7" "&"])
+        (button-fn ["8" "*"])
+        (button-fn ["9" "("])
+        (button-fn ["0" ")"])
         [backspace-button osk-atm]]
        [:div
         (doall (map button-fn "qwertyuiop"))]
        [:div
-        (doall (map button-fn "asdfghjkl"))]
+        (doall (map button-fn "asdfghjkl"))
+        (button-fn [";" ":"])
+        (button-fn ["'" "\""])]
        [:div
-        (doall (map button-fn "zxcvbnm"))]
+        (doall (map button-fn "zxcvbnm"))
+        (button-fn ["," "<"])
+        (button-fn ["." ">"])]
        [:div
         [shift-button osk-atm]
         (button-fn " " ["Space" "Space"])
-        (button-fn ".")
+
         [shift-button osk-atm]
         [done-button osk-atm]
         ]])))
