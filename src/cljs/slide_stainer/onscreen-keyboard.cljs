@@ -10,10 +10,11 @@
     (fn []
       [:input {:type :text
                :on-focus (fn [e]
-                           (swap! osk-atm assoc :input-atm input-atm) ; set the on-screen keyboard to point to this input field's input
-                           (swap! osk-atm assoc :el-atm ref-atm)
-                           (println "on-focus" @osk-atm)
-                           )
+                           (swap! osk-atm (fn [osk-map]
+                                           (-> osk-map
+                                               (assoc :input-atm input-atm) ; set the on-screen keyboard to point to this input field's input
+                                               (assoc :el-atm ref-atm)
+                                               (assoc :open? true)))))
                :on-blur (fn [e] (println "BBBBBBBBBBBBBBBBBBBLLLLLLLLLLLLLLLLLLLLLLLUUUUUUUUUUUUUUUUUUUURRRRRRRRRRRRR"))
                :on-change (fn [e] (reset! input-atm (-> e .-target .-value)))
                :ref (fn [el] (reset! ref-atm el))
@@ -34,11 +35,10 @@
          el-atm (:el-atm @osk-atm)]
      ^{:key val}
      [:button {:on-click (fn [e]
-                           (when el-atm (println @el-atm (.-selectionStart @el-atm)))
                            (when (and input-atm el-atm)
                              (let [cursor-pos (.-selectionStart @el-atm)]
                                (if special-click-handler ; if we have a special handler (for example, Backspace)...
-                                 (special-click-handler e input-atm el-atm cursor-pos) ; ... then run that ...
+                                 (special-click-handler osk-atm e input-atm el-atm cursor-pos) ; ... then run that ...
                                  (swap! input-atm (fn [v] ; ... otherwise, insert val at the cursor position
                                                     (str (subs v 0 cursor-pos)
                                                          val
@@ -50,10 +50,10 @@
 (defn onscreen-keyboard [osk-atm]
   (let [button-fn (partial osk-button osk-atm)]
     (fn [osk-atm]
-      [:div
+      [:div {:class (str "onscreen-keyboard" " " (if (:open? @osk-atm) "onscreen-keyboard-open" "onscreen-keyboard-closed"))}
        [:div
         (doall (map button-fn (range 10)))
-        (button-fn nil "Backspace" (fn [e input-atm el-atm cursor-pos]
+        (button-fn nil "Backspace" (fn [osk-atm e input-atm el-atm cursor-pos]
                                      (swap! input-atm (fn [v]
                                                         (str (subs v 0 (dec cursor-pos))
                                                              (subs v cursor-pos (count v)))))))]
@@ -64,7 +64,14 @@
        [:div
         (doall (map button-fn "zxcvbnm"))]
        [:div
-        (button-fn " " "Space")]])))
+        (button-fn " " "Space")
+        (button-fn ".")
+        (button-fn nil "Done" (fn [osk-atm e input-atm el-atm cursor-pos]
+                                (swap! osk-atm (fn [osk-map]
+                                                 (-> osk-map
+                                                     (assoc :input-atm nil)
+                                                     (assoc :el-atm nil)
+                                                     (assoc :open? false))))))]])))
 
 (defcard-rg onscreen-keyboard-card
   [onscreen-keyboard osk-atm])
