@@ -9,6 +9,7 @@
         ref-atm   (clojure.core/atom nil)]
     (fn []
       [:input {:type :text
+               :class "onscreen-keyboard-input"
                :on-focus (fn [e]
                            (swap! osk-atm (fn [osk-map]
                                            (-> osk-map

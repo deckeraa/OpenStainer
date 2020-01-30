@@ -1,16 +1,23 @@
-button {
-    min-width: 50px;
-    min-height: 50px;
-}
-
 .onscreen-keyboard {
     background-color: lightblue;
     position: fixed;
     bottom: 0px;
     left: 0px;
     width: 100%;
+    padding-top: 15px;
 }
 
 .onscreen-keyboard-closed {
     display: none;
+}
+
+.onscreen-keyboard button {
+    min-width: 60px;
+    min-height: 60px;
+    font-size: 24px;
+}
+
+.onscreen-keyboard-input {
+    /* min-height: 45px; */
+    font-size: 24px;
 }
