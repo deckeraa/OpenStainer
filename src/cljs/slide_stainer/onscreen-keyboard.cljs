@@ -12,6 +12,8 @@
                            (swap! osk-atm assoc :input-atm input-atm) ; set the on-screen keyboard to point to this input field's input
                            (println "on-focus" @osk-atm)
                            )
+               :on-blur (fn [e] (println "BBBBBBBBBBBBBBBBBBBLLLLLLLLLLLLLLLLLLLLLLLUUUUUUUUUUUUUUUUUUUURRRRRRRRRRRRR"))
+               :on-change (fn [e] (reset! input-atm (-> e .-target .-value)))
                :value @input-atm}])))
 
 (def osk-atm (reagent/atom {}))
@@ -25,9 +27,12 @@
                                                   (when (:input-atm @osk-atm)
                                                     (swap! (:input-atm @osk-atm) (fn [v] (str v val))))
                                                   (println (reagent/current-component))
+                                                  (this-as this
+                                                    (println this))
                                                   )
-                                      :on-mousedown (fn [e]
-                                                      (println "on-mousedown"))} val]) ]
+                                      :on-mouse-down (fn [e]
+                                                       (println "on-mousedown")
+                                                       (.preventDefault e))} val]) ]
     (fn [osk-atm]
       [:div
        [:div
