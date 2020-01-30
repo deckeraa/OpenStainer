@@ -5,7 +5,7 @@
    [devcards.core :refer [defcard defcard-rg]]))
 
 (defn osk-input [osk-atm args]
-  (let [input-atm (reagent/atom "foo")
+  (let [input-atm (reagent/atom (or (:value args) ""))
         ref-atm   (clojure.core/atom nil)]
     (fn []
       [:input {:type :text
@@ -14,9 +14,20 @@
                                            (-> osk-map
                                                (assoc :input-atm input-atm) ; set the on-screen keyboard to point to this input field's input
                                                (assoc :el-atm ref-atm)
+                                               (assoc :args args)
                                                (assoc :open? true)))))
-               :on-blur (fn [e] (println "BBBBBBBBBBBBBBBBBBBLLLLLLLLLLLLLLLLLLLLLLLUUUUUUUUUUUUUUUUUUUURRRRRRRRRRRRR"))
-               :on-change (fn [e] (reset! input-atm (-> e .-target .-value)))
+               :on-blur (fn [e]
+                          (println "BBBBBBBBBBBBBBBBBBBLLLLLLLLLLLLLLLLLLLLLLLUUUUUUUUUUUUUUUUUUUURRRRRRRRRRRRR")
+                          (swap! osk-atm (fn [osk-map]
+                                           (-> osk-map
+                                               (assoc :input-atm nil)
+                                               (assoc :el-atm nil)
+                                               (assoc :args nil)
+                                               (assoc :open? false)))))
+               :on-change (fn [e]
+                            (reset! input-atm (-> e .-target .-value))
+                            (println "on-change" args)
+                            (when (:on-change args) ((:on-change args) @input-atm)))
                :ref (fn [el] (reset! ref-atm el))
                :value @input-atm}])))
 
@@ -24,6 +35,13 @@
 
 (defcard-rg osk-input-card
   [osk-input osk-atm {}])
+
+(defcard-rg osk-input-card-with-change-handler
+  (let [counter-atm (reagent/atom 0)]
+    (fn []
+      [:div
+       [:p (str "Counter: " @counter-atm)]
+       [osk-input osk-atm {:on-change (fn [e] (println "Calling inc") (swap! counter-atm inc))}]])))
 
 (defn osk-button
   ([osk-atm val]
@@ -42,7 +60,10 @@
                                  (swap! input-atm (fn [v] ; ... otherwise, insert val at the cursor position
                                                     (str (subs v 0 cursor-pos)
                                                          val
-                                                         (subs v cursor-pos (count v)))))))))
+                                                         (subs v cursor-pos (count v))))))
+                               (when (:args @osk-atm)
+                                 (when-let [change-fn (get-in @osk-atm [:args :on-change])] 
+                                   (change-fn @input-atm))))))
                :on-mouse-down (fn [e] ; try to avoid the event from bubbling so far as to take focus away from the input field
                                 (.preventDefault e))}
       (if display-name display-name val)])))
@@ -76,8 +97,9 @@
 (defcard-rg onscreen-keyboard-card
   [onscreen-keyboard osk-atm])
 
-(defcard osk-atm-card
-  (str @osk-atm))
+(defcard-rg osk-atm-card
+  (fn []
+    [:div 
+     (str @osk-atm)]))
 
-(defcard-rg comp
-  [:p (reagent/current-component)])
+

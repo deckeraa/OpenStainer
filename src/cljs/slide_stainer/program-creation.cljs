@@ -2,7 +2,7 @@
   (:require [reagent.core :as reagent]
             [cljs-http.client :as http]
             [cljs.test :refer-macros [deftest is testing run-tests]]
-            [slide-stainer.onscreen-keyboard])
+            [slide-stainer.onscreen-keyboard :as osk])
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
 
 (def number-of-jars 6)
@@ -15,7 +15,7 @@
     {:substance "Tap water" :time-in-seconds 150 :jar-number 2}]})
 
 (def sample-program-atom (reagent/atom sample-program))
-(def osk-atm (reagent/atom nil))
+(def osk-atm (reagent/atom {}))
 
 (defn rename-substance [prog-atm jar-number new-substance]
   "Don't forget that jar-number is 1-indexed."
@@ -40,8 +40,14 @@
                            ^{:key idx}
                            [:tr
                             [:td (inc idx)]
-                            [:td [:input {:type "text" :value substance
-                                          :on-change (fn [e] (rename-substance prog-atm (inc idx) (-> e .-target .-value)))}]]])
+                            [:td [osk/osk-input osk-atm
+                                  {:on-change (fn [new-val]
+                                                (println "Change handler called: " new-val)
+                                                (rename-substance prog-atm (inc idx) new-val))
+                                   :value substance}]]]
+                                  ;; [:input {:type "text" :value substance
+                             ;;          :on-change (fn [e] (rename-substance prog-atm (inc idx) (-> e .-target .-value)))}]
+                           )
                          (extend-vector (:jar-contents @prog-atm) number-of-jars))]]])
 
 (defn substance-selector [option-list step-cursor]
@@ -163,5 +169,5 @@
     [jar-contents prog-atm]
     [procedure-steps prog-atm]
     [:div (str @prog-atm)]
-;    [slide-stainer.onscreen-keyboard/onscreen-keyboard osk-atm]
-    ]))
+    [:div (str @osk-atm)]
+    [slide-stainer.onscreen-keyboard/onscreen-keyboard osk-atm]]))
