@@ -88,6 +88,7 @@
         (button-fn " " "Space")
         (button-fn ".")
         (button-fn nil "Done" (fn [osk-atm e input-atm el-atm cursor-pos]
+                                (.blur @el-atm)
                                 (swap! osk-atm (fn [osk-map]
                                                  (-> osk-map
                                                      (assoc :input-atm nil)
