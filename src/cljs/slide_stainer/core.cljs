@@ -112,22 +112,23 @@
       [:div
        [:p (str @pins)]
        [:table
-        [:tr [:th "ID"] [:th "Pin #"] [:th "Board Value"] [:th "Logical Value"]]
-        (map (fn [pin]
-               [:tr
-                [:td (:id pin)]
-                [:td (:pin_number pin)]
-                [:td (str (:board_value pin))]
-                (let [val (:logical_value pin)]
-                  [:td [:button {:style {:height 75 :width 75}
-                                 :on-click (fn [e]
-                                             (go (let [resp (<! (http/post "http://localhost:3000/graphql" {:json-params {:query (str "mutation {set_pin(id:\"" (:id pin) "\",logical_value:" (not val) "){id,pin_number,board_value,logical_value}}")}} :with-credentials? false))]
-                                                   (println "mutate RESP" (str resp))
-                                                   ))
-                                             )}
-                        (str val)]])
-                ])
-             @pins)]
+        [:tbody
+         [:tr [:th "ID"] [:th "Pin #"] [:th "Board Value"] [:th "Logical Value"]]
+         (map (fn [pin]
+                ^{:key pin} [:tr
+                             [:td (:id pin)]
+                             [:td (:pin_number pin)]
+                             [:td (str (:board_value pin))]
+                             (let [val (:logical_value pin)]
+                               [:td [:button {:style {:height 75 :width 75}
+                                              :on-click (fn [e]
+                                                          (go (let [resp (<! (http/post "http://localhost:3000/graphql" {:json-params {:query (str "mutation {set_pin(id:\"" (:id pin) "\",logical_value:" (not val) "){id,pin_number,board_value,logical_value}}")}} :with-credentials? false))]
+                                                                (println "mutate RESP" (str resp))
+                                                                ))
+                                                          )}
+                                     (str val)]])
+                             ])
+              @pins)]]
        [:button {:on-click update-fn} "Refresh"]
        [:p]
        [:button {:on-click (graphql-click-handler "mutation {clean_up_pins{contents}}")} "Clean up pins"]])))
