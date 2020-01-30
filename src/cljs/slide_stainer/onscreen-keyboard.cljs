@@ -18,7 +18,6 @@
                                                (assoc :args args)
                                                (assoc :open? true)))))
                :on-blur (fn [e]
-                          (println "BBBBBBBBBBBBBBBBBBBLLLLLLLLLLLLLLLLLLLLLLLUUUUUUUUUUUUUUUUUUUURRRRRRRRRRRRR")
                           (swap! osk-atm (fn [osk-map]
                                            (-> osk-map
                                                (assoc :input-atm nil)
@@ -69,6 +68,15 @@
                                 (.preventDefault e))}
       (if display-name display-name val)])))
 
+(defn done-button [osk-atm]
+  [osk-button osk-atm nil "Done" (fn [osk-atm e input-atm el-atm cursor-pos]
+                                   (.blur @el-atm)
+                                   (swap! osk-atm (fn [osk-map]
+                                                    (-> osk-map
+                                                        (assoc :input-atm nil)
+                                                        (assoc :el-atm nil)
+                                                        (assoc :open? false)))))])
+
 (defn onscreen-keyboard [osk-atm]
   (let [button-fn (partial osk-button osk-atm)]
     (fn [osk-atm]
@@ -88,13 +96,8 @@
        [:div
         (button-fn " " "Space")
         (button-fn ".")
-        (button-fn nil "Done" (fn [osk-atm e input-atm el-atm cursor-pos]
-                                (.blur @el-atm)
-                                (swap! osk-atm (fn [osk-map]
-                                                 (-> osk-map
-                                                     (assoc :input-atm nil)
-                                                     (assoc :el-atm nil)
-                                                     (assoc :open? false))))))]])))
+        [done-button osk-atm]
+        ]])))
 
 (defcard-rg onscreen-keyboard-card
   [onscreen-keyboard osk-atm])
