@@ -43,6 +43,17 @@
        [:p (str "Counter: " @counter-atm)]
        [osk-input osk-atm {:on-change (fn [e] (println "Calling inc") (swap! counter-atm inc))}]])))
 
+(defn- shift [val shift?]
+  "Take either a string or a vector of strings (the first element being the 'lowercase' version
+and the second element being the 'uppercase version) and a boolean indicating whether shifting should occur,
+and returns the properly shifted string."
+  ; if we passed in something like ["`" "~"]
+  (cond (vector? val)
+        (if shift? (second val) (first val))
+        (string? val)
+        (if shift? (clojure.string/upper-case val) (clojure.string/lower-case val))
+        :default val))
+
 (defn osk-button
   ([osk-atm val]
    (osk-button osk-atm val nil nil))
@@ -50,7 +61,8 @@
    [osk-button osk-atm val display-name nil])
   ([osk-atm val display-name special-click-handler]
    (let [input-atm (:input-atm @osk-atm)
-         el-atm (:el-atm @osk-atm)]
+         el-atm (:el-atm @osk-atm)
+         shift? (:shift? @osk-atm)]
      ^{:key val}
      [:button {:on-click (fn [e]
                            (when (and input-atm el-atm)
@@ -59,17 +71,17 @@
                                  (special-click-handler osk-atm e input-atm el-atm cursor-pos) ; ... then run that ...
                                  (swap! input-atm (fn [v] ; ... otherwise, insert val at the cursor position
                                                     (str (subs v 0 cursor-pos)
-                                                         val
+                                                         (shift val shift?)
                                                          (subs v cursor-pos (count v))))))
                                (when (:args @osk-atm)
                                  (when-let [change-fn (get-in @osk-atm [:args :on-change])] 
                                    (change-fn @input-atm))))))
                :on-mouse-down (fn [e] ; try to avoid the event from bubbling so far as to take focus away from the input field
                                 (.preventDefault e))}
-      (if display-name display-name val)])))
+      (shift (if display-name display-name val) shift?)])))
 
 (defn done-button [osk-atm]
-  [osk-button osk-atm nil "Done"
+  [osk-button osk-atm nil ["Done" "Done"]
    (fn [osk-atm e input-atm el-atm cursor-pos]
      (.blur @el-atm)
      (swap! osk-atm (fn [osk-map]
@@ -79,11 +91,16 @@
                           (assoc :open? false)))))])
 
 (defn backspace-button [osk-atm]
-  [osk-button osk-atm nil "Backspace"
+  [osk-button osk-atm nil ["Backspace" "Backspace"]
    (fn [osk-atm e input-atm el-atm cursor-pos]
      (swap! input-atm (fn [v]
                         (str (subs v 0 (dec cursor-pos))
                              (subs v cursor-pos (count v))))))])
+
+(defn shift-button [osk-atm]
+  [osk-button osk-atm nil ["Shift" "Shift"]
+   (fn [osk-atm e input-atm el-atm cursor-pos]
+     (swap! osk-atm (fn [osk-map] (assoc osk-map :shift? (not (:shift? osk-map))))))])
 
 (defn onscreen-keyboard [osk-atm]
   (let [button-fn (partial osk-button osk-atm)]
@@ -99,8 +116,10 @@
        [:div
         (doall (map button-fn "zxcvbnm"))]
        [:div
-        (button-fn " " "Space")
+        [shift-button osk-atm]
+        (button-fn " " ["Space" "Space"])
         (button-fn ".")
+        [shift-button osk-atm]
         [done-button osk-atm]
         ]])))
 
