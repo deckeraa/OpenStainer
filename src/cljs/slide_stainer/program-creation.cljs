@@ -111,7 +111,6 @@
       [:div
        [:input {:type "text" :value @minutes-atm
                 :size 2
-                :on-focus (fn [e] (reset! osk-atm minutes-atm))
                 :on-change (fn [e] (let [new-minutes (-> e .-target .-value)]
                                      (println new-minutes (type new-minutes))
                                      (when (re-matches #"[0-9]*" new-minutes)
