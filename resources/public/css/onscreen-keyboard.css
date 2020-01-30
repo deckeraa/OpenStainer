@@ -2,3 +2,15 @@ button {
     min-width: 50px;
     min-height: 50px;
 }
+
+.onscreen-keyboard {
+    background-color: lightblue;
+    position: fixed;
+    bottom: 0px;
+    left: 0px;
+    width: 100%;
+}
+
+.onscreen-keyboard-closed {
+    display: none;
+}

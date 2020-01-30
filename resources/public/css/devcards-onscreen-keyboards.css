@@ -5,3 +5,7 @@
 .onscreen-keyboard-closed {
     background-color: yellow;
 }
+
+.onscreen-keyboard {
+    position: relative;
+}
