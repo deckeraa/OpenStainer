@@ -109,23 +109,26 @@
                                                                       (first (parse-and-pad @seconds-atm)))))]
     (fn [step-cursor]
       [:div
-       [:input {:type "text" :value @minutes-atm
-                :size 2
-                :on-change (fn [e] (let [new-minutes (-> e .-target .-value)]
-                                     (println new-minutes (type new-minutes))
-                                     (when (re-matches #"[0-9]*" new-minutes)
-                                       (reset! minutes-atm new-minutes))))
-                :on-blur (fn [e] (update-seconds))}]
+       [osk/osk-input osk-atm
+        {:type "text" :value @minutes-atm
+         :size 2
+         :on-change (fn [new-minutes] 
+                      (println new-minutes (type new-minutes))
+                      (when (re-matches #"[0-9]*" new-minutes)
+                        (reset! minutes-atm new-minutes)))
+         :on-blur (fn [_] (update-seconds))}]
        ":"
-       [:input {:type "text" :value @seconds-atm
+       [osk/osk-input osk-atm
+        {:type "text" :value @seconds-atm
                 :size 2
-                :on-change (fn [e] (let [new-seconds (-> e .-target .-value)]
-                                     (when (re-matches #"^[0-9]{0,2}$" new-seconds)
-                                       (reset! seconds-atm new-seconds))))
-                :on-blur (fn [e]
-                           (let [parsed-seconds (parse-and-pad @seconds-atm)]
-                             (reset! seconds-atm (second parsed-seconds))
-                             (update-seconds)))}]])))
+         :on-change (fn [new-seconds]
+                      (when (re-matches #"^[0-9]{0,2}$" new-seconds)
+                        (reset! seconds-atm new-seconds)))
+         :on-blur (fn [_]
+                    (let [parsed-seconds (parse-and-pad @seconds-atm)]
+                      (reset! seconds-atm (second parsed-seconds))
+                      (update-seconds)))}]
+       ])))
 
 (defn drop-nth [coll n]
   (as-> coll $
