@@ -4,32 +4,38 @@
   (:require-macros
    [devcards.core :refer [defcard defcard-rg]]))
 
+(defn get-supported-args [args]
+  (select-keys args [:size]))
+
 (defn osk-input [osk-atm args]
   (let [input-atm (reagent/atom (or (:value args) ""))
         ref-atm   (clojure.core/atom nil)]
     (fn []
-      [:input {:type :text
-               :class "onscreen-keyboard-input"
-               :on-focus (fn [e]
+      [:input (merge
+               (get-supported-args args)
+               {:type :text
+                :class "onscreen-keyboard-input"
+                :on-focus (fn [e]
+                            (swap! osk-atm (fn [osk-map]
+                                             (-> osk-map
+                                                 (assoc :input-atm input-atm) ; set the on-screen keyboard to point to this input field's input
+                                                 (assoc :el-atm ref-atm)
+                                                 (assoc :args args)
+                                                 (assoc :open? true)))))
+                :on-blur (fn [e]
+                           (when (:on-blur args) ((:on-blur args) @input-atm))
                            (swap! osk-atm (fn [osk-map]
-                                           (-> osk-map
-                                               (assoc :input-atm input-atm) ; set the on-screen keyboard to point to this input field's input
-                                               (assoc :el-atm ref-atm)
-                                               (assoc :args args)
-                                               (assoc :open? true)))))
-               :on-blur (fn [e]
-                          (swap! osk-atm (fn [osk-map]
-                                           (-> osk-map
-                                               (assoc :input-atm nil)
-                                               (assoc :el-atm nil)
-                                               (assoc :args nil)
-                                               (assoc :open? false)))))
-               :on-change (fn [e]
-                            (reset! input-atm (-> e .-target .-value))
-                            (println "on-change" args)
-                            (when (:on-change args) ((:on-change args) @input-atm)))
-               :ref (fn [el] (reset! ref-atm el))
-               :value @input-atm}])))
+                                            (-> osk-map
+                                                (assoc :input-atm nil)
+                                                (assoc :el-atm nil)
+                                                (assoc :args nil)
+                                                (assoc :open? false)))))
+                :on-change (fn [e]
+                             (reset! input-atm (-> e .-target .-value))
+                             (println "on-change" args)
+                             (when (:on-change args) ((:on-change args) @input-atm)))
+                :ref (fn [el] (reset! ref-atm el))
+                :value @input-atm})])))
 
 (def osk-atm (reagent/atom {}))
 
