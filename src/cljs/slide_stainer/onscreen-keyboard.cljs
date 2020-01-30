@@ -69,13 +69,21 @@
       (if display-name display-name val)])))
 
 (defn done-button [osk-atm]
-  [osk-button osk-atm nil "Done" (fn [osk-atm e input-atm el-atm cursor-pos]
-                                   (.blur @el-atm)
-                                   (swap! osk-atm (fn [osk-map]
-                                                    (-> osk-map
-                                                        (assoc :input-atm nil)
-                                                        (assoc :el-atm nil)
-                                                        (assoc :open? false)))))])
+  [osk-button osk-atm nil "Done"
+   (fn [osk-atm e input-atm el-atm cursor-pos]
+     (.blur @el-atm)
+     (swap! osk-atm (fn [osk-map]
+                      (-> osk-map
+                          (assoc :input-atm nil)
+                          (assoc :el-atm nil)
+                          (assoc :open? false)))))])
+
+(defn backspace-button [osk-atm]
+  [osk-button osk-atm nil "Backspace"
+   (fn [osk-atm e input-atm el-atm cursor-pos]
+     (swap! input-atm (fn [v]
+                        (str (subs v 0 (dec cursor-pos))
+                             (subs v cursor-pos (count v))))))])
 
 (defn onscreen-keyboard [osk-atm]
   (let [button-fn (partial osk-button osk-atm)]
@@ -83,10 +91,7 @@
       [:div {:class (str "onscreen-keyboard" " " (if (:open? @osk-atm) "onscreen-keyboard-open" "onscreen-keyboard-closed"))}
        [:div
         (doall (map button-fn (range 10)))
-        (button-fn nil "Backspace" (fn [osk-atm e input-atm el-atm cursor-pos]
-                                     (swap! input-atm (fn [v]
-                                                        (str (subs v 0 (dec cursor-pos))
-                                                             (subs v cursor-pos (count v)))))))]
+        [backspace-button osk-atm]]
        [:div
         (doall (map button-fn "qwertyuiop"))]
        [:div
