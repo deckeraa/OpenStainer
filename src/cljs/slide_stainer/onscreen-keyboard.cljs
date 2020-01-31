@@ -21,7 +21,8 @@
                                                  (assoc :input-atm input-atm) ; set the on-screen keyboard to point to this input field's input
                                                  (assoc :el-atm ref-atm)
                                                  (assoc :args args)
-                                                 (assoc :open? true)))))
+                                                 (assoc :open? true))))
+                            (js/setTimeout (fn [] (.scrollIntoView @ref-atm)) 100)) ; TODO putting this in a timeout is kind of hacky -- we need to call scrollIntoView after the onscreen-keyboard-placeholder becomes visible. Hence the timeout as a poor man's way of making that happen.
                 :on-blur (fn [e]
                            (when (:on-blur args) ((:on-blur args) @input-atm))
                            (swap! osk-atm (fn [osk-map]
@@ -111,36 +112,38 @@ and returns the properly shifted string."
 (defn onscreen-keyboard [osk-atm]
   (let [button-fn (partial osk-button osk-atm)]
     (fn [osk-atm]
-      [:div {:class (str "onscreen-keyboard" " " (if (:open? @osk-atm) "onscreen-keyboard-open" "onscreen-keyboard-closed"))}
-       [:div
-        (button-fn ["1" "!"])
-        (button-fn ["2" "@"])
-        (button-fn ["3" "#"])
-        (button-fn ["4" "$"])
-        (button-fn ["5" "%"])
-        (button-fn ["6" "^"])
-        (button-fn ["7" "&"])
-        (button-fn ["8" "*"])
-        (button-fn ["9" "("])
-        (button-fn ["0" ")"])
-        [backspace-button osk-atm]]
-       [:div
-        (doall (map button-fn "qwertyuiop"))]
-       [:div
-        (doall (map button-fn "asdfghjkl"))
-        (button-fn [";" ":"])
-        (button-fn ["'" "\""])]
-       [:div
-        (doall (map button-fn "zxcvbnm"))
-        (button-fn ["," "<"])
-        (button-fn ["." ">"])]
-       [:div
-        [shift-button osk-atm]
-        (button-fn " " ["Space" "Space"])
+      [:div
+       [:div {:class (str "onscreen-keyboard-placeholder" (when (not (:open? @osk-atm)) " onscreen-keyboard-placedholder-hidden"))}]
+       [:div {:class (str "onscreen-keyboard" " " (if (:open? @osk-atm) "onscreen-keyboard-open" "onscreen-keyboard-closed"))}
+        [:div
+         (button-fn ["1" "!"])
+         (button-fn ["2" "@"])
+         (button-fn ["3" "#"])
+         (button-fn ["4" "$"])
+         (button-fn ["5" "%"])
+         (button-fn ["6" "^"])
+         (button-fn ["7" "&"])
+         (button-fn ["8" "*"])
+         (button-fn ["9" "("])
+         (button-fn ["0" ")"])
+         [backspace-button osk-atm]]
+        [:div
+         (doall (map button-fn "qwertyuiop"))]
+        [:div
+         (doall (map button-fn "asdfghjkl"))
+         (button-fn [";" ":"])
+         (button-fn ["'" "\""])]
+        [:div
+         (doall (map button-fn "zxcvbnm"))
+         (button-fn ["," "<"])
+         (button-fn ["." ">"])]
+        [:div
+         [shift-button osk-atm]
+         (button-fn " " ["Space" "Space"])
 
-        [shift-button osk-atm]
-        [done-button osk-atm]
-        ]])))
+         [shift-button osk-atm]
+         [done-button osk-atm]
+         ]]])))
 
 (defcard-rg onscreen-keyboard-card
   [onscreen-keyboard osk-atm])

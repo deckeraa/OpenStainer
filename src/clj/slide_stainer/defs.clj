@@ -33,7 +33,7 @@
                27  {::gpio/tag :stepperX-dir
                    :inverted? false}
                21  {::gpio/tag :stepperX-pul
-                   :inverted? false}}
+                    :inverted? false}}
               :travel_distance_per_turn 0.063
               :position-in-pulses 0
               :position_limit 12

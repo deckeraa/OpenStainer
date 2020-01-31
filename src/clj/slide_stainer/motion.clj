@@ -75,7 +75,7 @@
   (let [ena (normalize-pin-tag (str id "-ena"))
         pul (normalize-pin-tag (str id "-pul"))
         dir (normalize-pin-tag (str id "-dir"))
-        limit-switch-low (normalize-pin-tag (str id "-limit-switch-low"))
+        limit-switch-low :stepperZ-limit-switch-low ; (normalize-pin-tag (str id "-limit-switch-low"))
         axis-config (get-in @state-atom [:setup id])
         dir-val (pos? pulses)
         abs-pulses (if dir-val

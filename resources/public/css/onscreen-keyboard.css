@@ -1,10 +1,22 @@
+.onscreen-keyboard-placeholder {
+    /* background-color: purple; */
+    height: 315px;
+    margin: 0px;
+    padding: 0px;
+}
+
+.onscreen-keyboard-placedholder-hidden {
+    display: none;
+}
+
 .onscreen-keyboard {
     background-color: lightblue;
-    position: fixed;
+    position:  fixed;
     bottom: 0px;
     left: 0px;
     width: 100%;
     padding-top: 15px;
+    margin:0px;
 }
 
 .onscreen-keyboard-closed {
