@@ -17,7 +17,10 @@
                  [org.clojure/data.json "0.2.6"]
                  [clojure-future-spec "1.9.0"]
                  [incanter "1.9.3"]
-                 [com.walmartlabs/lacinia "0.36.0-alpha-2"]]
+                 [com.walmartlabs/lacinia "0.36.0-alpha-2"]
+                 [com.ashafa/clutch "0.4.0"]
+                 [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]
+                 [com.cemerick/url "0.1.1"]]
 
   :main slide-stainer.core
 
