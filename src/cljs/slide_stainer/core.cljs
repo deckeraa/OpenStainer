@@ -208,9 +208,9 @@
          [:td [:button {:on-click (graphql-click-handler nil (partial query-fn :stepperZ false increment) nil)} "Up"]]
          [:td]]
         [:tr
-         [:td [:button {:on-click (graphql-click-handler nil (partial query-fn :stepperX false increment) nil)} "Left"]]
+         [:td [:button {:on-click (graphql-click-handler nil (partial query-fn :stepperX true increment) nil)} "Left"]]
          [:td]
-         [:td [:button {:on-click (graphql-click-handler nil (partial query-fn :stepperX true increment) nil)} "Right"]]]
+         [:td [:button {:on-click (graphql-click-handler nil (partial query-fn :stepperX false increment) nil)} "Right"]]]
         [:tr
          [:td]
          [:td [:button {:on-click (graphql-click-handler nil (partial query-fn :stepperZ true increment) nil)} "Down"]]

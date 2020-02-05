@@ -22,7 +22,6 @@
                    :inverted? false}
                19 {::gpio/tag :stepperZ-pul
                    :inverted? false}}
-;              :limit-switch-low   {:pin 4 :invert? false}
               :limit-switch-high  {:pin 23 :invert? false}
               :travel_distance_per_turn 0.063
               :position-in-pulses 0
@@ -35,6 +34,7 @@
                    :inverted? false}
                21  {::gpio/tag :stepperX-pul
                     :inverted? false}}
+              :limit-switch-low   {:pin 24 :invert? false}
               :travel_distance_per_turn 0.063
               :position-in-pulses 0
               :position_limit 12
