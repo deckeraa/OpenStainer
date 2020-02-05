@@ -117,6 +117,10 @@
       (swap-in! state-atom [:setup id :position-in-pulses] (inches-to-pulses id position_inches)))
     (resolve-axis context args value)))
 
+(defn home-graphql-handler [context args value]
+  (println "Homing")
+  (resolve-state context args value))
+
 
 (defn resolver-map []
   {:query/pin_by_id resolve-pin-by-id
@@ -131,6 +135,7 @@
    :mutation/move_to_position move-to-position-graphql-handler
    :mutation/move_to_jar move-to-jar-graphql-handler
    :mutation/clean_up_pins clean-up-pins-graphql-handler
+   :mutation/home home-graphql-handler
 })
 
 (defn simplify

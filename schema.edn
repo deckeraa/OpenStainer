@@ -90,4 +90,8 @@
   :clean_up_pins
   {:type :state
    :description "Cleans up the pins."
-   :resolve :mutation/clean_up_pins}}}
+   :resolve :mutation/clean_up_pins}
+  :home
+  {:type :state
+   :description "Home both axis."
+   :resolve :mutation/home}}}

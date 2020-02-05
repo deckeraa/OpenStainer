@@ -285,6 +285,11 @@
 ;       [:button {:on-click (graphql-click-handler nil (partial query-fn :jar-one) nil)} ":jar-one"]
        ])))
 
+(defn home-button []
+  (fn []
+    [:button {:on-click (graphql-click-handler "mutation {home{contents}}")}
+     "Home"]))
+
 (defn jog-control []
   [:div
    [relative-jog-control]
@@ -292,7 +297,8 @@
    [absolute-jog-control :stepperZ]
       [position-readout-jog-control :stepperX]
    [absolute-jog-control :stepperX]
-   [jar-jog-control]])
+   [jar-jog-control]
+   [home-button]])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Page
