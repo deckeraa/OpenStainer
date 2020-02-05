@@ -76,7 +76,6 @@
         pul (normalize-pin-tag (str id "-pul"))
         dir (normalize-pin-tag (str id "-dir"))
         dir-val (pos? pulses)
-        limit-switch-low :stepperZ-limit-switch-low ; (normalize-pin-tag (str id "-limit-switch-low"))
         limit-switch (normalize-pin-tag (str id (if dir-val "-limit-switch-high" "-limit-switch-low")))
         axis-config (get-in @state-atom [:setup id])
         abs-pulses (if dir-val
@@ -90,7 +89,6 @@
     (if (compare-and-set! pulse-lock false true)
       (do
         (println "Got the lock")
-        (println "Current e-stop: " limit-switch-low)
         (println "Current limit switch: " limit-switch)
         (println "Status atom" (get-in @state-atom [:status-atm]))
         (set-pin ena true)
@@ -103,7 +101,7 @@
               (let [start-time (java.lang.System/nanoTime)
                     wait-time (hz-to-ns pulse-val)
                     tgt-one (+ start-time wait-time)]
-                (when (limit-switch-low (deref (:status-atm @state-atom)))
+                (when (:estop (deref (:status-atm @state-atom)))
                   (throw (Exception. "E-stop hit")))
                 (when (limit-switch (deref (:status-atm @state-atom)))
                   (throw (Exception. "Limit switch hit")))

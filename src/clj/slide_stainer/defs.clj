@@ -22,7 +22,7 @@
                    :inverted? false}
                19 {::gpio/tag :stepperZ-pul
                    :inverted? false}}
-              :limit-switch-low   {:pin 4 :invert? false}
+;              :limit-switch-low   {:pin 4 :invert? false}
               :limit-switch-high  {:pin 23 :invert? false}
               :travel_distance_per_turn 0.063
               :position-in-pulses 0
@@ -38,8 +38,8 @@
               :travel_distance_per_turn 0.063
               :position-in-pulses 0
               :position_limit 12
-              :pulses_per_revolution 800
-              }
+              :pulses_per_revolution 800}
+   :estop {:pin 4}
    :led13 {:pins
            {13 {::gpio/tag :led13-led}}}
    ;; :switch {:pins
@@ -164,17 +164,24 @@
 (with-test
   (defn get-input-pin-defs-for-gpio-lib [pin-defs]
     (apply merge (map (fn [[device {limit-switch-low :limit-switch-low
-                                    limit-switch-high :limit-switch-high}]]
+                                    limit-switch-high :limit-switch-high
+                                    pin :pin}]]
                         (as-> {} $
-                          (if limit-switch-low (assoc $ (:pin limit-switch-low) {:dvlopt.linux.gpio/tag (normalize-pin-tag (str device "-" "limit-switch-low"))
-                                                                                 :dvlopt.linux.gpio/direction :input}) $)
-                          (if limit-switch-high (assoc $ (:pin limit-switch-high) {:dvlopt.linux.gpio/tag (normalize-pin-tag (str device "-" "limit-switch-high"))
-                                                                                 :dvlopt.linux.gpio/direction :input}) $))
-                        ;; {(:pin limit-switch-low) {:dvlopt.linux.gpio/tag (normalize-pin-tag (str device "-" "limit-switch-low"))
-                        ;;                           :dvlopt.linux.gpio/direction :input}
-                        ;;  (:pin limit-switch-high) {:dvlopt.linux.gpio/tag (normalize-pin-tag (str device "-" "limit-switch-high"))
-                        ;;                            :dvlopt.linux.gpio/direction :input}}
-                        )
+                          (if limit-switch-low
+                            (assoc $ (:pin limit-switch-low)
+                                   {:dvlopt.linux.gpio/tag (normalize-pin-tag (str device "-" "limit-switch-low"))
+                                    :dvlopt.linux.gpio/direction :input})
+                            $)
+                          (if limit-switch-high
+                            (assoc $ (:pin limit-switch-high)
+                                   {:dvlopt.linux.gpio/tag (normalize-pin-tag (str device "-" "limit-switch-high"))
+                                    :dvlopt.linux.gpio/direction :input})
+                            $)
+                          (if pin
+                            (assoc $ pin
+                                   {:dvlopt.linux.gpio/tag device
+                                    :dvlopt.linux.gpio/direction :input})
+                            $)))
                       pin-defs)))
   (let [sample-pin-defs {:stepperX {:output-pins
                                     {17 {::gpio/tag :stepperX-ena
@@ -196,12 +203,15 @@
                                     :limit-switch-low  {:pin 6 :is-high-closed? false}
                                     :limit-switch-high {:pin 7 :is-high-closed? false}
                                     :pos nil
-                                    :pos-limit-inches 4}}
+                                    :pos-limit-inches 4}
+                         :estop {:pin 8}}
         pin-defs-for-lib {4 {::gpio/tag :stepperX-limit-switch-low
                              ::gpio/direction :input}
                           6 {::gpio/tag :stepperZ-limit-switch-low
                              ::gpio/direction :input}
                           7 {::gpio/tag :stepperZ-limit-switch-high
+                             ::gpio/direction :input}
+                          8 {::gpio/tag :estop
                              ::gpio/direction :input}
                           }]
     (is (= pin-defs-for-lib (get-input-pin-defs-for-gpio-lib sample-pin-defs)))))
