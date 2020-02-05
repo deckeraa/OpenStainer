@@ -75,9 +75,10 @@
   (let [ena (normalize-pin-tag (str id "-ena"))
         pul (normalize-pin-tag (str id "-pul"))
         dir (normalize-pin-tag (str id "-dir"))
-        limit-switch-low :stepperZ-limit-switch-low ; (normalize-pin-tag (str id "-limit-switch-low"))
-        axis-config (get-in @state-atom [:setup id])
         dir-val (pos? pulses)
+        limit-switch-low :stepperZ-limit-switch-low ; (normalize-pin-tag (str id "-limit-switch-low"))
+        limit-switch (normalize-pin-tag (str id (if dir-val "-limit-switch-high" "-limit-switch-low")))
+        axis-config (get-in @state-atom [:setup id])
         abs-pulses (if dir-val
                      pulses
                      (* -1 pulses))
@@ -89,7 +90,8 @@
     (if (compare-and-set! pulse-lock false true)
       (do
         (println "Got the lock")
-        (println "Current limit switches: " limit-switch-low)
+        (println "Current e-stop: " limit-switch-low)
+        (println "Current limit switch: " limit-switch)
         (println "Status atom" (get-in @state-atom [:status-atm]))
         (set-pin ena true)
         (java.util.concurrent.locks.LockSupport/parkNanos 5000) ; 5us wait required by driver
@@ -102,6 +104,8 @@
                     wait-time (hz-to-ns pulse-val)
                     tgt-one (+ start-time wait-time)]
                 (when (limit-switch-low (deref (:status-atm @state-atom)))
+                  (throw (Exception. "E-stop hit")))
+                (when (limit-switch (deref (:status-atm @state-atom)))
                   (throw (Exception. "Limit switch hit")))
                 (set-pin pul true)
                 (while (< (java.lang.System/nanoTime) tgt-one) nil) ; busy-wait

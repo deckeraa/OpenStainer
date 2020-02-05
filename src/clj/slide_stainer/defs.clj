@@ -7,7 +7,7 @@
 
 (defonce state-atom (atom {}))
 
-(def up-pos 4)
+(def up-pos 2)
 (def down-pos 0)
 (def jar-positions
   {:jar-one 0
@@ -22,7 +22,8 @@
                    :inverted? false}
                19 {::gpio/tag :stepperZ-pul
                    :inverted? false}}
-              :limit-switch-low  {:pin 4 :invert? false}
+              :limit-switch-low   {:pin 4 :invert? false}
+              :limit-switch-high  {:pin 23 :invert? false}
               :travel_distance_per_turn 0.063
               :position-in-pulses 0
               :position_limit 9
