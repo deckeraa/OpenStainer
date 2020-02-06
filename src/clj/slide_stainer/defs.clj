@@ -7,13 +7,6 @@
 
 (defonce state-atom (atom {}))
 
-(def up-pos 2)
-(def down-pos 0)
-(def jar-positions
-  {:jar-one 0
-   :jar-two 2
-   :jar-three 4})
-
 (def pin-defs
   {:stepperZ {:output-pins
               {17 {::gpio/tag :stepperZ-ena
@@ -25,7 +18,7 @@
               :limit-switch-high  {:pin 23 :invert? false}
               :travel_distance_per_turn 0.063
               :position-in-pulses 0
-              :position_limit 9
+              :position_limit 3.5
               :pulses_per_revolution 800}
    :stepperX {:output-pins
               {26 {::gpio/tag :stepperX-ena
@@ -37,7 +30,7 @@
               :limit-switch-low   {:pin 24 :invert? false}
               :travel_distance_per_turn 0.063
               :position-in-pulses 0
-              :position_limit 12
+              :position_limit 9
               :pulses_per_revolution 800}
    :estop {:pin 4}
    :led13 {:pins
@@ -47,6 +40,14 @@
    ;;              ::gpio/direction :input
    ;;              ::gpio/edge-detection :rising}}}
    })
+
+(def up-pos (get-in pin-defs [:stepperZ :position_limit]))
+(def down-pos 0)
+(def left-homing-pos (* -1 (get-in pin-defs [:stepperX :position_limit])))
+(def jar-positions
+  {:jar-one 0
+   :jar-two 2
+   :jar-three 4})
 
 (with-test
   (defn normalize-pin-tag [tag]

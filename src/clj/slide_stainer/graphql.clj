@@ -119,6 +119,7 @@
 
 (defn home-graphql-handler [context args value]
   (println "Homing")
+  (home)
   (resolve-state context args value))
 
 

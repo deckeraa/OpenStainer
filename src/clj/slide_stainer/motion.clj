@@ -161,6 +161,10 @@
   (move-to-position :stepperX (get jar-positions jar))
   (move-to-down-position))
 
+(defn home []
+  (move-to-up-position)
+  (move-to-position :stepperX left-homing-pos))
+
 ;; (defn pulse [pin-tag wait-ms num-pulses]
 ;;   (println "Starting pulse" wait-ms num-pulses)
 ;;   (if (compare-and-set! pulse-lock false true)
