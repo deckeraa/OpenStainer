@@ -82,7 +82,7 @@
 
 (defn move-to-jar-graphql-handler [context args value]
   (println "move-to-jar-graphql-handler")
-  (move-to-jar (normalize-pin-tag (:jar args)))
+  (move-to-jar (:jar args))
   (resolve-axis context (assoc args :id :stepperX) value))
 
 (defn clean-up-pins-graphql-handler [context args value]

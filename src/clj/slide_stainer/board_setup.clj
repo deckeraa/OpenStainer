@@ -73,7 +73,8 @@
                                      (+ timestamp debounce-wait-time-ns)))
                                (do
                                  (swap! status-atm (fn [s] (assoc s tag transitioning-to-state)))
-                                 (println "Swapped " tag @status-atm)
+                                 (println "Swapped " tag ;@status-atm
+                                          )
                                  (put! gpio-chan evt)
                                  evt-timestamp)
                                timestamp))

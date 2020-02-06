@@ -44,10 +44,9 @@
 (def up-pos (get-in pin-defs [:stepperZ :position_limit]))
 (def down-pos 0)
 (def left-homing-pos (* -1 (get-in pin-defs [:stepperX :position_limit])))
-(def jar-positions
-  {:jar-one 0
-   :jar-two 2
-   :jar-three 4})
+(def jar-starting-position-in-inches 0.35) ; position of first jar center
+(def jar-spacing-in-inches 1.9)
+(def jar-positions (mapv #(+ (* % jar-spacing-in-inches) jar-starting-position-in-inches) (range 6)))
 
 (with-test
   (defn normalize-pin-tag [tag]

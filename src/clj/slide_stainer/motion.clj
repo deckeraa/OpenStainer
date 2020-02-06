@@ -85,6 +85,7 @@
         precomputed-pulses (precompute-pulse pulse-linear-fn abs-pulses)
         hit-limit-switch? (atom false)
         ] ; friendly reminder not to take it lower than 7.5us
+    (println "dir-val" dir-val)
     (println "move-by-pulses max calculated frequency (Hz): " (when (not (empty? precomputed-pulses)) (apply max precomputed-pulses)))
     (if (compare-and-set! pulse-lock false true)
       (do
@@ -102,9 +103,9 @@
                     wait-time (hz-to-ns pulse-val)
                     tgt-one (+ start-time wait-time)]
                 (when (:estop (deref (:status-atm @state-atom)))
-                  (throw (Exception. "E-stop hit")))
+                  (throw (ex-info "E-stop hit" {:cause :estop})))
                 (when (limit-switch (deref (:status-atm @state-atom)))
-                  (throw (Exception. "Limit switch hit")))
+                  (throw (ex-info "Limit switch hit" {:cause :limit-switch})))
                 (set-pin pul true)
                 (while (< (java.lang.System/nanoTime) tgt-one) nil) ; busy-wait
                 (let [tgt-two (+ (java.lang.System/nanoTime) wait-time)]
@@ -116,17 +117,20 @@
               ))
           (catch Exception e (do
                                (println (.getMessage e))
-                               (reset! hit-limit-switch? true)
+                               (when (= :limit-switch
+                                        (:cause (ex-data e)))
+                                 (reset! hit-limit-switch? true))
                                )))
         (java.util.concurrent.locks.LockSupport/parkNanos nanosecond-wait)
         (set-pin ena false)
-        (swap-in! state-atom [:setup id :position-in-pulses]
-                  (if @hit-limit-switch?
-                    (if dir-val
-                      (inches-to-pulses id (:position_limit axis-config))
-                      0)
-                    (+ (get-in @state-atom [:setup id :position-in-pulses])
-                                                        pulses)))
+        (let [new-position (if @hit-limit-switch?
+                             (if dir-val
+                               (inches-to-pulses id (:position_limit axis-config))
+                               0)
+                             (+ (get-in @state-atom [:setup id :position-in-pulses])
+                                pulses))]
+          (println "New position: " new-position @hit-limit-switch? dir-val)
+          (swap-in! state-atom [:setup id :position-in-pulses] new-position))
         (when (not (compare-and-set! pulse-lock true false)) (println "Someone messed with the lock"))
         (println "Dropped the lock"))
       (println "Couldn't get the lock on pulse"))
@@ -157,6 +161,7 @@
   (move-to-position :stepperZ down-pos))
 
 (defn move-to-jar [jar]
+  (println "move-to-jar: " jar (type jar) jar-positions (get jar-positions jar))
   (move-to-up-position)
   (move-to-position :stepperX (get jar-positions jar))
   (move-to-down-position))
