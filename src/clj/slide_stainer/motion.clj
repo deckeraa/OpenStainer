@@ -108,7 +108,11 @@
                   (throw (ex-info "Limit switch hit" {:cause :limit-switch})))
                 (set-pin pul true)
                 (while (< (java.lang.System/nanoTime) tgt-one) nil) ; busy-wait
-                (let [tgt-two (+ (java.lang.System/nanoTime) wait-time)]
+                (let [latency (- (java.lang.System/nanoTime) tgt-one)]
+                      (when (> latency (* 1000 1000))
+                        (println "latency high: " latency)))
+                (let [now-two (java.lang.System/nanoTime)
+                      tgt-two (+ now-two wait-time)]
                                         ;              (java.util.concurrent.locks.LockSupport/parkNanos (hz-to-ns pulse-val))
                   (set-pin pul false)
                   (while (< (java.lang.System/nanoTime) tgt-two) nil))

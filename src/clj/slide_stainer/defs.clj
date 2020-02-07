@@ -11,28 +11,29 @@
   {:stepperZ {:output-pins
               {17 {::gpio/tag :stepperZ-ena
                    :inverted? false}
-               18 {::gpio/tag :stepperZ-dir
+               27 {::gpio/tag :stepperZ-dir
                    :inverted? false}
-               19 {::gpio/tag :stepperZ-pul
+               22 {::gpio/tag :stepperZ-pul
                    :inverted? false}}
-              :limit-switch-high  {:pin 23 :invert? false}
+              :limit-switch-high  {:pin 15 :invert? false}
               :travel_distance_per_turn 0.063
               :position-in-pulses 0
               :position_limit 3.5
               :pulses_per_revolution 800}
    :stepperX {:output-pins
-              {26 {::gpio/tag :stepperX-ena
+              {2 {::gpio/tag :stepperX-ena
                    :inverted? false}
-               27  {::gpio/tag :stepperX-dir
+               3  {::gpio/tag :stepperX-dir
                    :inverted? false}
-               21  {::gpio/tag :stepperX-pul
+               4  {::gpio/tag :stepperX-pul
                     :inverted? false}}
-              :limit-switch-low   {:pin 24 :invert? false}
+              :limit-switch-low   {:pin 14 :invert? false}
               :travel_distance_per_turn 0.063
               :position-in-pulses 0
               :position_limit 9
               :pulses_per_revolution 800}
-   :estop {:pin 4}
+   :estop {:pin 25}
+   :green-button {:pin 18}
    :led13 {:pins
            {13 {::gpio/tag :led13-led}}}
    ;; :switch {:pins
@@ -41,10 +42,13 @@
    ;;              ::gpio/edge-detection :rising}}}
    })
 
+;; red light: pin 24
+;; gree light: pin 23 
+
 (def up-pos (get-in pin-defs [:stepperZ :position_limit]))
 (def down-pos 0)
 (def left-homing-pos (* -1 (get-in pin-defs [:stepperX :position_limit])))
-(def jar-starting-position-in-inches 0.35) ; position of first jar center
+(def jar-starting-position-in-inches 0.30) ; position of first jar center
 (def jar-spacing-in-inches 1.9)
 (def jar-positions (mapv #(+ (* % jar-spacing-in-inches) jar-starting-position-in-inches) (range 6)))
 
@@ -237,7 +241,6 @@
     (is (= desired-output (init-tags-for-status-atm :stepperZ sample-device-map fetch-fn)))))
 
 (defn inches-to-pulses [id inches]
-  (println "foo " @state-atom)
   (let [axis-config (get-in @state-atom [:setup id])
         pulses-per-revolution (:pulses_per_revolution axis-config)
         travel-distance-per-turn (:travel_distance_per_turn axis-config)
