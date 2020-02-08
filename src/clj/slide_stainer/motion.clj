@@ -23,7 +23,7 @@
   "Stepper pulse generation function that uses a linear ramp-up"
   [step]
   (let [slope 15
-        initial_offset 80]
+        initial_offset 180]
     (min
      (+ (* step slope) initial_offset) ; y = mx+b
                                         ;     (* 18 1000)
@@ -95,7 +95,7 @@
         (set-pin ena true)
         (java.util.concurrent.locks.LockSupport/parkNanos 5000) ; 5us wait required by driver
         (set-pin dir dir-val)
-        (java.util.concurrent.locks.LockSupport/parkNanos (max 300000000 5000)) ; 5us wait required by driver
+        (java.util.concurrent.locks.LockSupport/parkNanos 5000) ; 5us wait required by driver
         (try
           (doseq [pulse-val precomputed-pulses]
             (do
