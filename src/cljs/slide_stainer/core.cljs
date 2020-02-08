@@ -13,7 +13,7 @@
 ;; Vars
 
 (defonce app-state
-  (reagent/atom {}))
+  (reagent/atom {:alarms {}}))
 
 (defn on-change-handler [atm evt]
   (reset! atm (-> evt .-target .-value)))
@@ -299,6 +299,12 @@
    [absolute-jog-control :stepperX]
    [jar-jog-control]
    [home-button]])
+
+(defn alarms-control [alarms-cursor]
+  [:div
+   (map (fn [[alarm val]]
+          [:div (str alarm)])
+        (:alarms @alarms-cursor))])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Page

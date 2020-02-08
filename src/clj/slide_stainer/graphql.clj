@@ -11,8 +11,12 @@
             [slide-stainer.motion :refer :all])
   (:import (clojure.lang IPersistentMap)))
 
+(defn resolve-alarms [context args value]
+  (:alarms @state-atom))
+
 (defn resolve-state [context args value]
-  {:contents (str @state-atom)})
+  {:contents (str @state-atom)
+   :alarms (resolve-alarms context args value)})
 
 (defn resolve-pin-by-id [context args value]
   (println "resolve-pin-by-id" args value)
@@ -122,12 +126,15 @@
   (home)
   (resolve-state context args value))
 
+(defn clear-alarms-graphql-handler [context args value]
+  (resolve-state context args value))
 
 (defn resolver-map []
   {:query/pin_by_id resolve-pin-by-id
    :query/ip resolve-ip
    :query/pins resolve-pins
    :mutation/set_pin set_pin
+   :query/alarms resolve-alarms
    :query/state resolve-state
    :query/axis resolve-axis
    :mutation/set_axis set-axis
@@ -137,6 +144,7 @@
    :mutation/move_to_jar move-to-jar-graphql-handler
    :mutation/clean_up_pins clean-up-pins-graphql-handler
    :mutation/home home-graphql-handler
+   :mutation/clear_alarms clear-alarms-graphql-handler
 })
 
 (defn simplify

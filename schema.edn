@@ -10,10 +10,16 @@
   {:description "The Raspberry Pi's IP address."
    :fields
    {:inet4 {:type String}}}
+  :alarms
+  {:description "Alarms states."
+   :fields
+   {:limit_switch_hit_unexpectedly {:type Boolean}}}
   :state
   {:description "State atom that stores configuration info, for internal use only."
    :fields
-   {:contents {:type String}}}
+   {:contents {:type String}
+    :alarms {:type :alarms}
+    }}
   :axis
   {:description "A axis of motion on the device."
    :fields {
@@ -22,8 +28,8 @@
             :position_inches {:type Float :description "Position in inches from the axis's home."}
             :travel_distance_per_turn {:type Float :description "Travel in inches per revolution"}
             :position_limit {:type Float :description "Maximum position in inches"}
-            :pulses_per_revolution {:type Int :description "The number of pulses to complete a single revolution."}}}}
- 
+            :pulses_per_revolution {:type Int :description "The number of pulses to complete a single revolution."}
+            :alarms {:type :alarms}}}}
  :queries
  {:pin_by_id
   {:type :pin
@@ -94,4 +100,9 @@
   :home
   {:type :state
    :description "Home both axis."
-   :resolve :mutation/home}}}
+   :resolve :mutation/home}
+  :clear_alarms
+  {:type :state
+   :description "Clears all alarms."
+   :resolve :mutation/clear_alarms
+   }}}

@@ -5,7 +5,8 @@
 (defn swap-in! [atom ks v]
   (swap-vals! atom #(assoc-in % ks v)))
 
-(defonce state-atom (atom {}))
+(defonce state-atom
+  (atom {:alarms {:limit-switch-hit-unexpectedly false}}))
 
 (def pin-defs
   {:stepperZ {:output-pins
