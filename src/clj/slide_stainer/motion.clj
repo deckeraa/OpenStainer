@@ -102,6 +102,7 @@
         precomputed-pulses (precompute-pulse pulse-linear-fn abs-pulses)
         hit-limit-switch? (atom false)
         current-position (get-in @state-atom [:setup id :position-in-pulses])
+        axis-upper-limit-in-pulses (inches-to-pulses id (:position_limit axis-config))
         ] ; friendly reminder not to take it lower than 7.5us
     (println "dir-val" dir-val)
     (println "move-by-pulses max calculated frequency (Hz): " (when (not (empty? precomputed-pulses)) (apply max precomputed-pulses)))
@@ -139,6 +140,12 @@
 ;              (java.util.concurrent.locks.LockSupport/parkNanos (hz-to-ns pulse-val))
               ))
           (catch Exception e (do
+                               (when (limit-switch-hit-unexpected? current-position dir-val
+                                                                   (:pulse-num (ex-data e))
+                                                                   axis-upper-limit-in-pulses)
+                                 (println "!!!!!!!!Limit switch hit unexpected!!!!!"
+                                          current-position dir-val
+                                          (:pulse-num (ex-data e)) axis-upper-limit-in-pulses))
                                (let [calculated-position (:pulse-num (ex-data e))] ; TODO fix calc
                                  (println (.getMessage e))
                                  (when (= :limit-switch
@@ -150,11 +157,11 @@
         (set-pin ena false)
         (let [new-position (if @hit-limit-switch?
                              (if dir-val
-                               (inches-to-pulses id (:position_limit axis-config))
+                               axis-upper-limit-in-pulses
                                0)
                              (+ current-position
                                 pulses))]
-          (println "New position: " new-position @hit-limit-switch? dir-val)
+          (println "New position: " new-position (nil? @hit-limit-switch?) dir-val)
           (swap-in! state-atom [:setup id :position-in-pulses] new-position))
         (when (not (compare-and-set! pulse-lock true false)) (println "Someone messed with the lock"))
         (println "Dropped the lock"))
