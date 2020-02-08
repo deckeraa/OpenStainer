@@ -20,6 +20,7 @@
                  [com.walmartlabs/lacinia "0.36.0-alpha-2"]
                  [com.ashafa/clutch "0.4.0"]
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]
+                 [org.clojure/math.numeric-tower "0.0.4"]
                  [com.cemerick/url "0.1.1"]]
 
   :main slide-stainer.core

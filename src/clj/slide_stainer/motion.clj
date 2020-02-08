@@ -1,6 +1,7 @@
 (ns slide-stainer.motion
   (:require [dvlopt.linux.gpio :as gpio]
             [incanter.core :refer [pow]]
+            [clojure.math.numeric-tower :refer [abs]]
             [slide-stainer.defs :refer :all]
             [slide-stainer.board-setup :refer :all])
   (:use clojure.test))
@@ -70,6 +71,22 @@
     (is (= (precompute-pulse testing-fn 4) [-1 -2 -2 -1]))
     (is (= (precompute-pulse testing-fn 5) [-1 -2 -3 -2 -1]))))
 
+(with-test
+  (defn limit-switch-hit-unexpected?
+    ([current-position-in-pulses direction-increasing? number-of-pulses-moved upper-limit-in-pulses]
+     (let [pulse-tolerance 1000]
+       (if direction-increasing?
+         (> (abs (- upper-limit-in-pulses (+ current-position-in-pulses number-of-pulses-moved)))
+            pulse-tolerance)
+         (> (abs (- current-position-in-pulses number-of-pulses-moved))
+            pulse-tolerance)))))
+  (is (= (limit-switch-hit-unexpected? 4000 false 10 nil) true))
+  (is (= (limit-switch-hit-unexpected? 1000 false 100 nil) false))
+  (is (= (limit-switch-hit-unexpected? 100 false 300 nil) false))
+  (is (= (limit-switch-hit-unexpected? 0 true 1000 1200) false))
+  (is (= (limit-switch-hit-unexpected? 1000 true 2000 1100) true))
+  (is (= (limit-switch-hit-unexpected? 1000 true 1 3000) true)))
+
 (defn move-by-pulses [id pulses]
   (when (not (:device @state-atom)) (init-pins))
   (let [ena (normalize-pin-tag (str id "-ena"))
@@ -81,9 +98,10 @@
         abs-pulses (if dir-val
                      pulses
                      (* -1 pulses))
-        nanosecond-wait 1000000 ;(max 1000000 7500)
+        nanosecond-wait (max 10000 7500)
         precomputed-pulses (precompute-pulse pulse-linear-fn abs-pulses)
         hit-limit-switch? (atom false)
+        current-position (get-in @state-atom [:setup id :position-in-pulses])
         ] ; friendly reminder not to take it lower than 7.5us
     (println "dir-val" dir-val)
     (println "move-by-pulses max calculated frequency (Hz): " (when (not (empty? precomputed-pulses)) (apply max precomputed-pulses)))
@@ -97,7 +115,7 @@
         (set-pin dir dir-val)
         (java.util.concurrent.locks.LockSupport/parkNanos 5000) ; 5us wait required by driver
         (try
-          (doseq [pulse-val precomputed-pulses]
+          (doseq [[pulse-num pulse-val] (map-indexed (fn [idx itm] [idx itm]) precomputed-pulses)]
             (do
               (let [start-time (java.lang.System/nanoTime)
                     wait-time (hz-to-ns pulse-val)
@@ -105,7 +123,8 @@
                 (when (:estop (deref (:status-atm @state-atom)))
                   (throw (ex-info "E-stop hit" {:cause :estop})))
                 (when (limit-switch (deref (:status-atm @state-atom)))
-                  (throw (ex-info "Limit switch hit" {:cause :limit-switch})))
+                  (throw (ex-info "Limit switch hit" {:cause :limit-switch
+                                                      :pulse-num pulse-num})))
                 (set-pin pul true)
                 (while (< (java.lang.System/nanoTime) tgt-one) nil) ; busy-wait
                 (let [latency (- (java.lang.System/nanoTime) tgt-one)]
@@ -120,10 +139,12 @@
 ;              (java.util.concurrent.locks.LockSupport/parkNanos (hz-to-ns pulse-val))
               ))
           (catch Exception e (do
-                               (println (.getMessage e))
-                               (when (= :limit-switch
-                                        (:cause (ex-data e)))
-                                 (reset! hit-limit-switch? true))
+                               (let [calculated-position (:pulse-num (ex-data e))] ; TODO fix calc
+                                 (println (.getMessage e))
+                                 (when (= :limit-switch
+                                          (:cause (ex-data e)))
+                                   (when (and dir-val (+ )))
+                                   (reset! hit-limit-switch? e)))
                                )))
         (java.util.concurrent.locks.LockSupport/parkNanos nanosecond-wait)
         (set-pin ena false)
@@ -131,7 +152,7 @@
                              (if dir-val
                                (inches-to-pulses id (:position_limit axis-config))
                                0)
-                             (+ (get-in @state-atom [:setup id :position-in-pulses])
+                             (+ current-position
                                 pulses))]
           (println "New position: " new-position @hit-limit-switch? dir-val)
           (swap-in! state-atom [:setup id :position-in-pulses] new-position))
