@@ -1,0 +1,16 @@
+#!/bin/sh -e
+#
+# This script needs to be /etc/rc.lcoal
+#
+# This script is executed at the end of each multiuser runlevel.
+# Make sure that the script will "exit 0" on success or any other
+# value on error.
+#
+# In order to enable or disable this script just change the execution
+# bits.
+
+# Disable motors -- the slide stainer program will turn them back on when it needs them
+raspi-gpio set 17 op pd dl
+raspi-gpio set 2 op pd dl
+
+exit 0
