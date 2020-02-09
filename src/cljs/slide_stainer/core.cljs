@@ -95,20 +95,27 @@
          } name])
 
 (def alarms-subquery "alarms{limit_switch_hit_unexpectedly}")
+(def alarms-query (str "{state{" alarms-subquery "}}"))
+
+(defn alarms-query-response-handler [alarms-cursor results]
+  (println "alarms-query-response-handler " results)
+  (reset! alarms-cursor (:alarms results)))
 
 (defn alarms-control [alarms-cursor]
   [:div
    (map (fn [[alarm val]]
-          [:div ^{:key alarm} {:width 300 :style {:background-color (if val "red" "green")}} (str alarm)])
+          ^{:key alarm} [:div {:width 300 :style {:background-color (if val "red" "green")}} (str alarm)])
         @alarms-cursor)
-   [:button {:on-click (graphql-click-handler (str "mutation{clear_alarms{" alarms-subquery "}}"))} "Clear alarms"]])
+   [:button {:on-click (graphql-click-handler
+                        (str "mutation{clear_alarms{" alarms-subquery "}}")
+                        (fn [resp] (alarms-query-response-handler
+                                alarms-cursor
+                                (:clear_alarms resp))))} "Clear alarms"]])
 
 (defcard-rg alarms-control-card
   (let [alarms-cursor (reagent/atom {:alarm-one true :alarm-two false})]
     (fn []
       [alarms-control alarms-cursor])))
-
-
 
 (defn pins-control-graphql []
   (let [pins (reagent/atom [])
@@ -308,15 +315,19 @@
     [:button {:on-click (graphql-click-handler "mutation {home{contents}}")}
      "Home"]))
 
-(defn jog-control []
-  [:div
-   [relative-jog-control]
-   [position-readout-jog-control :stepperZ]
-   [absolute-jog-control :stepperZ]
-      [position-readout-jog-control :stepperX]
-   [absolute-jog-control :stepperX]
-   [jar-jog-control]
-   [home-button]])
+(defn jog-control [ratom]
+  (let [alarms-cursor (reagent/cursor ratom [:alarms])]
+    (fn []
+      [:div
+       [relative-jog-control]
+       [position-readout-jog-control :stepperZ]
+       [absolute-jog-control :stepperZ]
+       [position-readout-jog-control :stepperX]
+       [absolute-jog-control :stepperX]
+       [jar-jog-control]
+       [home-button]
+       [alarms-control alarms-cursor]
+       ])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Page
@@ -333,7 +344,7 @@
      (when (= :graphql screen) [graphql-control])
      (when (= :main screen) [pins-control-graphql])
      (when (= :classic screen) [pins-control])
-     (when (= :jog screen) [jog-control])
+     (when (= :jog screen) [jog-control ratom])
      (when (= :program-creation screen) [slide-stainer.program-creation/program-creation])
      ]))
 
