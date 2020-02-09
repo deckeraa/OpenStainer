@@ -127,6 +127,7 @@
   (resolve-state context args value))
 
 (defn clear-alarms-graphql-handler [context args value]
+  (println "clear-alarms-graphql-handler")
   (resolve-state context args value))
 
 (defn resolver-map []

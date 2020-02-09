@@ -1,12 +1,14 @@
 (ns slide-stainer.core
   (:require
    [reagent.core :as reagent]
+   [devcards.core]
    [cljs-http.client :as http]
    [clojure.edn :as edn]
    [slide-stainer.program-creation]
    )
   (:require-macros
-   [cljs.core.async.macros :refer [go go-loop]]))
+   [cljs.core.async.macros :refer [go go-loop]]
+   [devcards.core :refer [defcard defcard-rg]]))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -91,6 +93,22 @@
                                                    :with-credentials? false))]
                            (println "POST Resp: " resp))))
          } name])
+
+(def alarms-subquery "alarms{limit_switch_hit_unexpectedly}")
+
+(defn alarms-control [alarms-cursor]
+  [:div
+   (map (fn [[alarm val]]
+          [:div ^{:key alarm} {:width 300 :style {:background-color (if val "red" "green")}} (str alarm)])
+        @alarms-cursor)
+   [:button {:on-click (graphql-click-handler (str "mutation{clear_alarms{" alarms-subquery "}}"))} "Clear alarms"]])
+
+(defcard-rg alarms-control-card
+  (let [alarms-cursor (reagent/atom {:alarm-one true :alarm-two false})]
+    (fn []
+      [alarms-control alarms-cursor])))
+
+
 
 (defn pins-control-graphql []
   (let [pins (reagent/atom [])
@@ -299,12 +317,6 @@
    [absolute-jog-control :stepperX]
    [jar-jog-control]
    [home-button]])
-
-(defn alarms-control [alarms-cursor]
-  [:div
-   (map (fn [[alarm val]]
-          [:div (str alarm)])
-        (:alarms @alarms-cursor))])
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Page
