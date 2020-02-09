@@ -235,20 +235,21 @@
        [:input {:type "number" :value @increment
                 :on-change (fn [evt] (do (println "change" (-> evt .-target .-value)) (reset! increment (-> evt .-target .-value))))}]
        [:table
-        [:tr
-         [:td]
-         ;(partial query-fn :stepperZ true increment)
-;         [:td [:button {:on-click (graphql-click-handler "mutation{move_relative(id:$device,increment:$increment){id}}" nil nil (partial variable-fn :stepperZ true increment))} "Up"]]
-         [:td [:button {:on-click (graphql-click-handler nil (partial query-fn :stepperZ false increment) nil)} "Up"]]
-         [:td]]
-        [:tr
-         [:td [:button {:on-click (graphql-click-handler nil (partial query-fn :stepperX true increment) nil)} "Left"]]
-         [:td]
-         [:td [:button {:on-click (graphql-click-handler nil (partial query-fn :stepperX false increment) nil)} "Right"]]]
-        [:tr
-         [:td]
-         [:td [:button {:on-click (graphql-click-handler nil (partial query-fn :stepperZ true increment) nil)} "Down"]]
-         [:td]]]])))
+        [:tbody
+         [:tr
+          [:td]
+                                        ;(partial query-fn :stepperZ true increment)
+                                        ;         [:td [:button {:on-click (graphql-click-handler "mutation{move_relative(id:$device,increment:$increment){id}}" nil nil (partial variable-fn :stepperZ true increment))} "Up"]]
+          [:td [:button {:on-click (graphql-click-handler nil (partial query-fn :stepperZ false increment) nil)} "Up"]]
+          [:td]]
+         [:tr
+          [:td [:button {:on-click (graphql-click-handler nil (partial query-fn :stepperX true increment) nil)} "Left"]]
+          [:td]
+          [:td [:button {:on-click (graphql-click-handler nil (partial query-fn :stepperX false increment) nil)} "Right"]]]
+         [:tr
+          [:td]
+          [:td [:button {:on-click (graphql-click-handler nil (partial query-fn :stepperZ true increment) nil)} "Down"]]
+          [:td]]]]])))
 
 (defn position-readout-jog-control [device-id]
   (let [pul-atm (reagent/atom "")
