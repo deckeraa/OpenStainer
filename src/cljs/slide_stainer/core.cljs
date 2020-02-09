@@ -102,15 +102,24 @@
   (reset! alarms-cursor (:alarms results)))
 
 (defn alarms-control [alarms-cursor]
-  [:div
-   (map (fn [[alarm val]]
-          ^{:key alarm} [:div {:width 300 :style {:background-color (if val "red" "green")}} (str alarm)])
-        @alarms-cursor)
-   [:button {:on-click (graphql-click-handler
-                        (str "mutation{clear_alarms{" alarms-subquery "}}")
-                        (fn [resp] (alarms-query-response-handler
-                                alarms-cursor
-                                (:clear_alarms resp))))} "Clear alarms"]])
+  (let [auto-loaded? (atom false)]
+    (fn []
+      (when (and (empty? @alarms-cursor) (not @auto-loaded?))
+        (do
+          (println "Need to auto-load here")
+          (reset! auto-loaded? true))
+        ((graphql-click-handler
+          alarms-query
+          (fn [resp] (alarms-query-response-handler alarms-cursor (:state resp))))))
+      [:div
+       (map (fn [[alarm val]]
+              ^{:key alarm} [:div {:width 300 :style {:background-color (if val "red" "green")}} (str alarm)])
+            @alarms-cursor)
+       [:button {:on-click (graphql-click-handler
+                            (str "mutation{clear_alarms{" alarms-subquery "}}")
+                            (fn [resp] (alarms-query-response-handler
+                                        alarms-cursor
+                                        (:clear_alarms resp))))} "Clear alarms"]])))
 
 (defcard-rg alarms-control-card
   (let [alarms-cursor (reagent/atom {:alarm-one true :alarm-two false})]
@@ -305,7 +314,7 @@
     (fn []
       [:div
        (map (fn [jar]
-              [:button {:on-click (graphql-click-handler nil (partial query-fn jar) nil)} (str "Jar #" (inc jar))])
+              ^{:key jar} [:button {:on-click (graphql-click-handler nil (partial query-fn jar) nil)} (str "Jar #" (inc jar))])
             (range 6))
 ;       [:button {:on-click (graphql-click-handler nil (partial query-fn :jar-one) nil)} ":jar-one"]
        ])))
