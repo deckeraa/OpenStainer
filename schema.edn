@@ -37,8 +37,7 @@
    :args {:id {:type ID}}
    :resolve :query/pin_by_id}
   :pins
-  {
-   :type (list :pin)
+  {:type (list :pin)
    :description "All pins utilized by the slide stainer app."
    :resolve :query/pins}
   :ip

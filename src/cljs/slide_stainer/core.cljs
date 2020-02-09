@@ -38,6 +38,7 @@
                resp (:data (edn/read-string (:body raw-resp)))]
            (println "resp: " resp)
            (println "raw-resp: " raw-resp)
+           (println "handler-fn " handler-fn)
            (if handler-fn (handler-fn resp raw-resp)))))))
 
 (defn graphql-control []
@@ -309,15 +310,19 @@
                             nil)
                  } "Move"]])))
 
-(defn jar-jog-control []
-  (let [query-fn (fn [jar] (str "mutation{move_to_jar(jar:" jar "){position}}"))
-        click-fn (graphql-click-handler nil query-fn nil)]
+(defn jar-jog-control [alarms-cursor]
+  (let [query-fn (fn [jar] (str "mutation{move_to_jar(jar:" jar "){position," alarms-subquery "}}"))]
     (fn []
       [:div
        (map (fn [jar]
-              ^{:key jar} [:button {:on-click (graphql-click-handler nil (partial query-fn jar) nil)} (str "Jar #" (inc jar))])
+              ^{:key jar} [:button {:on-click (graphql-click-handler
+                                               nil
+                                               (partial query-fn jar)
+                                               (fn [resp]
+                                                 (println "jar-jog-control response handler")
+                                                 (alarms-query-response-handler alarms-cursor (:move_to_jar resp))))}
+            (str "Jar #" (inc jar))])
             (range 6))
-;       [:button {:on-click (graphql-click-handler nil (partial query-fn :jar-one) nil)} ":jar-one"]
        ])))
 
 (defn home-button []
@@ -334,7 +339,7 @@
        [absolute-jog-control :stepperZ]
        [position-readout-jog-control :stepperX]
        [absolute-jog-control :stepperX]
-       [jar-jog-control]
+       [jar-jog-control alarms-cursor]
        [home-button]
        [alarms-control alarms-cursor]
        ])))
