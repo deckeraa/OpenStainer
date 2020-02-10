@@ -74,18 +74,22 @@
 (with-test
   (defn limit-switch-hit-unexpected?
     ([current-position-in-pulses direction-increasing? number-of-pulses-moved upper-limit-in-pulses]
+     (println "limit-switch-hit-unexpected? " current-position-in-pulses number-of-pulses-moved)
      (let [pulse-tolerance 1000]
-       (if direction-increasing?
-         (> (abs (- upper-limit-in-pulses (+ current-position-in-pulses number-of-pulses-moved)))
-            pulse-tolerance)
-         (> (abs (- current-position-in-pulses number-of-pulses-moved))
-            pulse-tolerance)))))
+       (if (nil? current-position-in-pulses)
+         false
+         (if direction-increasing?
+           (> (abs (- upper-limit-in-pulses (+ current-position-in-pulses number-of-pulses-moved)))
+              pulse-tolerance)
+           (> (abs (- current-position-in-pulses number-of-pulses-moved))
+              pulse-tolerance))))))
   (is (= (limit-switch-hit-unexpected? 4000 false 10 nil) true))
   (is (= (limit-switch-hit-unexpected? 1000 false 100 nil) false))
   (is (= (limit-switch-hit-unexpected? 100 false 300 nil) false))
   (is (= (limit-switch-hit-unexpected? 0 true 1000 1200) false))
   (is (= (limit-switch-hit-unexpected? 1000 true 2000 1100) true))
-  (is (= (limit-switch-hit-unexpected? 1000 true 1 3000) true)))
+  (is (= (limit-switch-hit-unexpected? 1000 true 1 3000) true))
+  (is (= (limit-switch-hit-unexpected? nil  true 1 3000) false)))
 
 (defn move-by-pulses [id pulses]
   (when (not (:device @state-atom)) (init-pins))
@@ -103,10 +107,11 @@
         hit-limit-switch? (atom false)
         current-position (get-in @state-atom [:setup id :position-in-pulses])
         axis-upper-limit-in-pulses (inches-to-pulses id (:position_limit axis-config))
+        can-run  (not (limit-switch-hit-unexpectedly-alarm?))
         ] ; friendly reminder not to take it lower than 7.5us
     (println "dir-val" dir-val)
     (println "move-by-pulses max calculated frequency (Hz): " (when (not (empty? precomputed-pulses)) (apply max precomputed-pulses)))
-    (if (compare-and-set! pulse-lock false true)
+    (if (and (compare-and-set! pulse-lock false true) can-run)
       (do
         (println "Got the lock")
         (println "Current limit switch: " limit-switch)
@@ -145,7 +150,9 @@
                                                                    axis-upper-limit-in-pulses)
                                  (println "!!!!!!!!Limit switch hit unexpected!!!!!"
                                           current-position dir-val
-                                          (:pulse-num (ex-data e)) axis-upper-limit-in-pulses))
+                                          (:pulse-num (ex-data e)) axis-upper-limit-in-pulses)
+                                 (slide-stainer.defs/set-limit-switch-hit-unexpectedly-alarm)
+                                 )
                                (let [calculated-position (:pulse-num (ex-data e))] ; TODO fix calc
                                  (println (.getMessage e))
                                  (when (= :limit-switch
@@ -165,7 +172,7 @@
           (swap-in! state-atom [:setup id :position-in-pulses] new-position))
         (when (not (compare-and-set! pulse-lock true false)) (println "Someone messed with the lock"))
         (println "Dropped the lock"))
-      (println "Couldn't get the lock on pulse"))
+      (println "Couldn't get the lock on pulse, or wasn't able to run. can-run: " can-run))
     (not @hit-limit-switch?) ; returns true if all steps were taken, false if the move was interrupted by hitting a limit switch
     ))
 
@@ -199,8 +206,9 @@
   (move-to-down-position))
 
 (defn home []
-  (move-to-up-position)
-  (move-to-position :stepperX left-homing-pos))
+  (slide-stainer.defs/clear-positioning)
+  (move-relative :stepperZ up-pos)
+  (move-relative :stepperX left-homing-pos))
 
 ;; (defn pulse [pin-tag wait-ms num-pulses]
 ;;   (println "Starting pulse" wait-ms num-pulses)

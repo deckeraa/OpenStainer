@@ -53,6 +53,22 @@
 (def jar-spacing-in-inches 1.9)
 (def jar-positions (mapv #(+ (* % jar-spacing-in-inches) jar-starting-position-in-inches) (range 6)))
 
+(defn limit-switch-hit-unexpectedly-alarm? [] (get-in @state-atom [:alarms :limit_switch_hit_unexpectedly]))
+
+(defn set-limit-switch-hit-unexpectedly-alarm
+  ([]
+   (set-limit-switch-hit-unexpectedly-alarm true))
+  ([val]
+   (set-limit-switch-hit-unexpectedly-alarm state-atom val))
+  ([state-atom val]
+   (swap! state-atom (fn [x] (assoc-in x [:alarms :limit_switch_hit_unexpectedly] val)))))
+
+(defn clear-positioning []
+  (swap! state-atom (fn [x]
+                      (as-> x $
+                        (assoc-in $ [:setup :stepperZ :position-in-pulses] nil)
+                        (assoc-in $ [:setup :stepperX :position-in-pulses] nil)))))
+
 (with-test
   (defn normalize-pin-tag [tag]
     "Take tag names and convert them to a keyword consistently."

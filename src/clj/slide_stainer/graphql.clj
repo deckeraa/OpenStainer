@@ -128,6 +128,7 @@
 
 (defn clear-alarms-graphql-handler [context args value]
   (println "clear-alarms-graphql-handler")
+  (set-limit-switch-hit-unexpectedly-alarm false)
   (resolve-state context args value))
 
 (defn resolver-map []
