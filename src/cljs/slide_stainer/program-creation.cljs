@@ -9,24 +9,24 @@
 
 (def sample-program
   {:name "H&E with Harris' Hematoxylin"
-   :jar-contents ["Hematoxylin" "Tap water" "70% ethanol/1% HCI" "Tap water" "Eosin"]
-   :procedure-steps
-   [{:substance "Hematoxylin" :time-in-seconds (* 25 60) :jar-number 1}
-    {:substance "Tap water" :time-in-seconds 150 :jar-number 2}]})
+   :jar_contents ["Hematoxylin" "Tap water" "70% ethanol/1% HCI" "Tap water" "Eosin"]
+   :procedure_steps
+   [{:substance "Hematoxylin" :time_in_seconds (* 25 60) :jar_number 1}
+    {:substance "Tap water" :time_in_seconds 150 :jar_number 2}]})
 
 (def sample-program-atom (reagent/atom sample-program))
 (def osk-atm (reagent/atom {}))
 
-(defn rename-substance [prog-atm jar-number new-substance]
-  "Don't forget that jar-number is 1-indexed."
+(defn rename-substance [prog-atm jar_number new-substance]
+  "Don't forget that jar_number is 1-indexed."
   (swap! prog-atm (fn [prog]
                     (as-> prog $
-                      (assoc-in $ [:jar-contents (dec jar-number)] new-substance)
-                      (assoc-in $ [:procedure-steps] (mapv (fn [step]
-                                                             (if (= jar-number (:jar-number step))
+                      (assoc-in $ [:jar_contents (dec jar_number)] new-substance)
+                      (assoc-in $ [:procedure_steps] (mapv (fn [step]
+                                                             (if (= jar_number (:jar_number step))
                                                                (assoc step :substance new-substance)
                                                                step))
-                                                           (:procedure-steps $)))
+                                                           (:procedure_steps $)))
                       ))))
 
 (defn extend-vector [coll n]
@@ -48,7 +48,7 @@
                                   ;; [:input {:type "text" :value substance
                              ;;          :on-change (fn [e] (rename-substance prog-atm (inc idx) (-> e .-target .-value)))}]
                            )
-                         (extend-vector (:jar-contents @prog-atm) number-of-jars))]]])
+                         (extend-vector (:jar_contents @prog-atm) number-of-jars))]]])
 
 (defn substance-selector [option-list step-cursor]
   "Ex: (substance-selector [\"Hematoxylin\" \"Tap water\" \"Eosin\"] \"Eosin\")"
@@ -61,7 +61,7 @@
                                       (fn [substance]
                                         (as-> substance $
                                           (assoc $ :substance new-substance)
-                                          (assoc $ :jar-number (inc (.indexOf option-list new-substance))))))))}
+                                          (assoc $ :jar_number (inc (.indexOf option-list new-substance))))))))}
        (map-indexed (fn [idx option] ^{:key idx} [:option {:value option} option])
                     (if (empty? substance) (cons "" option-list) option-list))])))
 
@@ -72,14 +72,14 @@
                     (filter #(= (:substance @step-cursor) (second %)) $)
                     (mapv first $))]
       (if (> (count options) 1)
-        [:select {:name "jar-number" :value (:jar-number @step-cursor)
-                  :on-change (fn [e] (swap! step-cursor #(assoc % :jar-number (-> e .-target .-value))))}
+        [:select {:name "jar_number" :value (:jar_number @step-cursor)
+                  :on-change (fn [e] (swap! step-cursor #(assoc % :jar_number (-> e .-target .-value))))}
          (map-indexed (fn [idx option] ^{:key idx} [:option {:value option} option]) options)]
-        [:div (:jar-number @step-cursor)]))))
+        [:div (:jar_number @step-cursor)]))))
 
-(defn render-time [time-in-seconds]
-  (let [minutes (Math/floor (/ time-in-seconds 60))
-        seconds (str (rem time-in-seconds 60))
+(defn render-time [time_in_seconds]
+  (let [minutes (Math/floor (/ time_in_seconds 60))
+        seconds (str (rem time_in_seconds 60))
         padded-seconds (if (= 1 (count seconds)) (str 0 seconds) seconds)]
     (str minutes ":" padded-seconds)))
 
@@ -98,14 +98,14 @@
   (is (= [0 "00"] (parse-and-pad ""))))
 
 (defn time-display [step-cursor]
-  (let [time-in-seconds (:time-in-seconds @step-cursor)
-        minutes (Math/floor (/  time-in-seconds 60))
+  (let [time_in_seconds (:time_in_seconds @step-cursor)
+        minutes (Math/floor (/  time_in_seconds 60))
         minutes-atm (reagent/atom (str minutes))
-        seconds (str (rem time-in-seconds 60))
+        seconds (str (rem time_in_seconds 60))
         padded-seconds (if (= 1 (count seconds)) (str 0 seconds) seconds)
         seconds-atm (reagent/atom padded-seconds)
         update-seconds (fn []
-                         (swap! step-cursor assoc :time-in-seconds (+ (* 60 (first (parse-and-pad @minutes-atm)))
+                         (swap! step-cursor assoc :time_in_seconds (+ (* 60 (first (parse-and-pad @minutes-atm)))
                                                                       (first (parse-and-pad @seconds-atm)))))]
     (fn [step-cursor]
       [:div
@@ -138,9 +138,8 @@
 
 (defn procedure-steps [prog-atm]
   (fn []
-    (let [steps-cursor (reagent/cursor prog-atm [:procedure-steps])
-          substance-options (:jar-contents @prog-atm)]
-                                        ;      (println "Re-running procedure-steps: " substance-options)
+    (let [steps-cursor (reagent/cursor prog-atm [:procedure_steps])
+          substance-options (:jar_contents @prog-atm)]
       [:div
        
        [:h3 "Procedure Steps"]
