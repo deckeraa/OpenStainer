@@ -54,7 +54,9 @@
     {:id (str id)
      :position        pos
      :position_inches (pulses-to-inches id pos) ;(get-in @state-atom [:setup id :position_inches])
+     :alarms (resolve-alarms context args value)
      }))
+
 (defn move-by-pulses-graphql-handler
   "Example query: mutation {move_by_pulses(id:\":stepperZ\",pulses:-3200){id}}"
   [context args value]
@@ -63,8 +65,6 @@
    (:pulses args))
   (resolve-axis context args value))
 
-
-
 (defn move-relative-graphql-handler
   "Example query: mutation {move_relative(id:\":stepperZ\",increment:-1){id}}"
   [context args value]
@@ -72,8 +72,6 @@
    (normalize-pin-tag (:id args))
    (:increment args))
   (resolve-axis context args value))
-
-
 
 (defn move-to-position-graphql-handler [context args value]
   (println "move-to-position-graphql-handler")
