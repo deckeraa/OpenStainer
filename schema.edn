@@ -104,4 +104,10 @@
   {:type :state
    :description "Clears all alarms."
    :resolve :mutation/clear_alarms
+   }
+  :run_procedure
+  {:type :state
+   :description "Runs a procedure with the given name."
+   :args {:name {:type String}}
+   :resolve :mutation/run_procedure
    }}}

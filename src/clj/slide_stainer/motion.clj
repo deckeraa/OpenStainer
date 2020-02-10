@@ -148,9 +148,11 @@
                                (when (limit-switch-hit-unexpected? current-position dir-val
                                                                    (:pulse-num (ex-data e))
                                                                    axis-upper-limit-in-pulses)
+                                 (println "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                                  (println "!!!!!!!!Limit switch hit unexpected!!!!!"
                                           current-position dir-val
                                           (:pulse-num (ex-data e)) axis-upper-limit-in-pulses)
+                                 (println "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                                  (slide-stainer.defs/set-limit-switch-hit-unexpectedly-alarm)
                                  )
                                (let [calculated-position (:pulse-num (ex-data e))] ; TODO fix calc
@@ -210,6 +212,23 @@
   (slide-stainer.defs/clear-positioning)
   (move-relative :stepperZ up-pos)
   (move-relative :stepperX left-homing-pos))
+
+(def sample-program
+  {:name "H&E with Harris' Hematoxylin"
+;   :jar-contents ["Hematoxylin" "Tap water" "70% ethanol/1% HCI" "Tap water" "Eosin"]
+   :procedure-steps
+   [{:substance "A" :time-in-seconds 10 :jar-number 2}
+    {:substance "B" :time-in-seconds 5  :jar-number 3}
+    {:substance "C" :time-in-seconds 15 :jar-number 4}]})
+
+(defn run-program [program]
+  (doseq [step (:procedure-steps program)]
+    (move-to-jar (:jar-number step))
+    (Thread/sleep (* 1000 (:time-in-seconds step))))
+  (move-to-up-position))
+
+(defn run-program-by-name [name]
+  (run-program sample-program))
 
 ;; (defn pulse [pin-tag wait-ms num-pulses]
 ;;   (println "Starting pulse" wait-ms num-pulses)

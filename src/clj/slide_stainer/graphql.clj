@@ -129,6 +129,12 @@
   (set-limit-switch-hit-unexpectedly-alarm false)
   (resolve-state context args value))
 
+(defn run-procedure-graphql-handler [context args value]
+  (let [name (:name args)]
+    (println "run-procedure-graphql-handler: " name)
+    (run-program-by-name name)
+    (resolve-state context args value)))
+
 (defn resolver-map []
   {:query/pin_by_id resolve-pin-by-id
    :query/ip resolve-ip
@@ -145,6 +151,7 @@
    :mutation/clean_up_pins clean-up-pins-graphql-handler
    :mutation/home home-graphql-handler
    :mutation/clear_alarms clear-alarms-graphql-handler
+   :mutation/run_procedure run-procedure-graphql-handler
 })
 
 (defn simplify
