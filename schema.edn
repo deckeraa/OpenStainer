@@ -29,7 +29,21 @@
             :travel_distance_per_turn {:type Float :description "Travel in inches per revolution"}
             :position_limit {:type Float :description "Maximum position in inches"}
             :pulses_per_revolution {:type Int :description "The number of pulses to complete a single revolution."}
-            :alarms {:type :alarms}}}}
+            :alarms {:type :alarms}}}
+  :procedure_step
+  {:description "A single step in a staining procedure."
+   :fields {:substance {:type String :description "The substance contained in the jar"}
+            :time_in_seconds {:type Int :description "The time (in seconds) to immerse the slide in the staining jar."}
+            :jar_number {:type Int :description "The zero-indexed jar number in which the slide is to be immersed."}}}
+  :procedure
+  {:description "A staining procedure"
+   :fields {:id   {:type ID :description "The CouchDB ID of the procedure."}
+            :name {:type String :description "Name of the procedure."}
+            :jar_contents {:type (list String) :description "List of contents of what substanc is in jar."}
+            :procedure_steps {:type (list :procedure_step) :description "A list of steps in the staining procedure."}
+              }}}
+
+ 
  :queries
  {:pin_by_id
   {:type :pin
@@ -51,6 +65,8 @@
   {:type :axis
    :args {:id {:type ID}}
    :resolve :query/axis}}
+
+ 
  
  :mutations
  {:set_pin
