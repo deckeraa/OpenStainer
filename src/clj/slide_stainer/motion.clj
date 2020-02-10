@@ -172,8 +172,7 @@
           (swap-in! state-atom [:setup id :position-in-pulses] new-position))
         (println "Attempting to release the lock: " pulse-lock)
         (when (not (compare-and-set! pulse-lock true false))
-          (println "Someone messed with the lock"))
-        (println "Dropped the lock. It is now: " ))
+          (println "Someone messed with the lock")))
       (println "Couldn't get the lock on pulse, or wasn't able to run. can-run: " can-run " pulse-lock" pulse-lock))
     (not @hit-limit-switch?) ; returns true if all steps were taken, false if the move was interrupted by hitting a limit switch
     ))
