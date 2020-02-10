@@ -215,16 +215,28 @@
 
 (def sample-program
   {:name "H&E with Harris' Hematoxylin"
-;   :jar-contents ["Hematoxylin" "Tap water" "70% ethanol/1% HCI" "Tap water" "Eosin"]
+                                        ;   :jar-contents ["Hematoxylin" "Tap water" "70% ethanol/1% HCI" "Tap water" "Eosin"]
    :procedure-steps
-   [{:substance "A" :time-in-seconds 10 :jar-number 2}
-    {:substance "B" :time-in-seconds 5  :jar-number 3}
-    {:substance "C" :time-in-seconds 15 :jar-number 4}]})
+   [{:substance "A" :time-in-seconds 10 :jar-number 1}
+    {:substance "B" :time-in-seconds 5  :jar-number 2}
+    {:substance "C" :time-in-seconds 15 :jar-number 3}]})
+
+(def motion-test-program
+  {:name "Motion Test Program"
+   :repeat 5
+   :procedure-steps
+   [{:substance "B" :time-in-seconds 1 :jar-number 1}
+    {:substance "C" :time-in-seconds 1 :jar-number 2}
+    {:substance "D" :time-in-seconds 1 :jar-number 3}
+    {:substance "E" :time-in-seconds 1 :jar-number 4}
+    {:substance "F" :time-in-seconds 1 :jar-number 5}]})
 
 (defn run-program [program]
-  (doseq [step (:procedure-steps program)]
-    (move-to-jar (:jar-number step))
-    (Thread/sleep (* 1000 (:time-in-seconds step))))
+  (doseq [repeat-time (range (or (:repeat program) 1))]
+    (doseq [step (:procedure-steps program)]
+      (move-to-jar (:jar-number step))
+      (Thread/sleep (* 1000 (:time-in-seconds step)))))
+  ; return to the up position so that the last step doesn't get excessive staining time
   (move-to-up-position))
 
 (defn run-program-by-name [name]

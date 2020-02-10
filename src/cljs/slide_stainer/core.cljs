@@ -43,7 +43,8 @@
 
 (defn graphql-control []
   (let [input  (reagent/atom
-                "mutation{move_to_position(id:\":stepperZ\",position:2.2){id,position_inches}}"
+                "mutation{run_procedure(name:\"foo\"){contents}}"
+;                "mutation{move_to_position(id:\":stepperZ\",position:2.2){id,position_inches}}"
                 ;"mutation {move_by_pulses(id:\":stepperX\",pulses:1000){id}}"
                 ;"{pin_by_id(id:\":stepperX-ena\"){board_value,logical_value,pin_number},ip{inet4}}"
                 )
