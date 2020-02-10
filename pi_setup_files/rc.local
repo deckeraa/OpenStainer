@@ -13,4 +13,8 @@
 raspi-gpio set 17 op pd dl
 raspi-gpio set 2 op pd dl
 
+# Start up couch as the couchdb user
+# We built couchdb from source (to run on the pi), so the install didn't configure it via systemd
+sudo -i -u couchdb /home/couchdb/bin/couchdb
+
 exit 0
