@@ -111,7 +111,7 @@
         ] ; friendly reminder not to take it lower than 7.5us
     (println "dir-val" dir-val)
     (println "move-by-pulses max calculated frequency (Hz): " (when (not (empty? precomputed-pulses)) (apply max precomputed-pulses)))
-    (if (and (compare-and-set! pulse-lock false true) can-run)
+    (if (and can-run (compare-and-set! pulse-lock false true)) ; uses AND short-circuiting. Otherwise causes a lock leak.
       (do
         (println "Got the lock")
         (println "Current limit switch: " limit-switch)
@@ -170,9 +170,11 @@
                                 pulses))]
           (println "New position: " new-position (nil? @hit-limit-switch?) dir-val)
           (swap-in! state-atom [:setup id :position-in-pulses] new-position))
-        (when (not (compare-and-set! pulse-lock true false)) (println "Someone messed with the lock"))
-        (println "Dropped the lock"))
-      (println "Couldn't get the lock on pulse, or wasn't able to run. can-run: " can-run))
+        (println "Attempting to release the lock: " pulse-lock)
+        (when (not (compare-and-set! pulse-lock true false))
+          (println "Someone messed with the lock"))
+        (println "Dropped the lock. It is now: " ))
+      (println "Couldn't get the lock on pulse, or wasn't able to run. can-run: " can-run " pulse-lock" pulse-lock))
     (not @hit-limit-switch?) ; returns true if all steps were taken, false if the move was interrupted by hitting a limit switch
     ))
 
