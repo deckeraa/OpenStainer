@@ -38,12 +38,30 @@
   :procedure
   {:description "A staining procedure"
    :fields {:_id  {:type ID :description "The CouchDB _id of the procedure."}
-            :_rev {:type ID :description "The CouchDB _rev of the procedure."} 
+            :_rev {:type ID :description "The CouchDB _rev of the procedure."}
+            :type {:type String :description "The CouchDB type of the procedure. Will always be :procedure."}
             :name {:type String :description "Name of the procedure."}
             :jar_contents {:type (list String) :description "List of contents of what substanc is in jar."}
             :procedure_steps {:type (list :procedure_step) :description "A list of steps in the staining procedure."}
               }}}
 
+ :input-objects
+ {
+  :procedure_step_input_object
+  {:description "A single step in a staining procedure."
+   :fields {:substance {:type String :description "The substance contained in the jar"}
+            :time_in_seconds {:type Int :description "The time (in seconds) to immerse the slide in the staining jar."}
+            :jar_number {:type Int :description "The zero-indexed jar number in which the slide is to be immersed."}}}
+  :procedure_input_object
+  {:description "A staining procedure"
+   :fields {:_id  {:type ID :description "The CouchDB _id of the procedure."}
+            :_rev {:type ID :description "The CouchDB _rev of the procedure."}
+            :type {:type String :description "The CouchDB type of the procedure. Will always be :procedure."}
+            :name {:type String :description "Name of the procedure."}
+            :jar_contents {:type (list String) :description "List of contents of what substanc is in jar."}
+            :procedure_steps {:type (list :procedure_step_input_object) :description "A list of steps in the staining procedure."}
+            }}
+  }
  
  :queries
  {:pin_by_id
@@ -120,11 +138,15 @@
   :clear_alarms
   {:type :state
    :description "Clears all alarms."
-   :resolve :mutation/clear_alarms
-   }
+   :resolve :mutation/clear_alarms}
   :run_procedure
   {:type :state
    :description "Runs a procedure with the given name."
    :args {:name {:type String}}
-   :resolve :mutation/run_procedure
-   }}}
+   :resolve :mutation/run_procedure}
+  :save_procedure
+  {:type :procedure
+   :description "Saves a procedure."
+   :args {:procedure {:type :procedure_input_object}}
+   :resolve :mutation/save_procedure}
+  }}

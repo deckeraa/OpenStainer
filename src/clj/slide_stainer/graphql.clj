@@ -135,6 +135,10 @@
     (run-program-by-name name)
     (resolve-state context args value)))
 
+(defn save-procedure-graphql-handler [context args value]
+  (let [procedure (:procedure args)]
+    (println "save-procedure-graphql-handler " procedure)))
+
 (defn resolver-map []
   {:query/pin_by_id resolve-pin-by-id
    :query/ip resolve-ip
@@ -152,6 +156,7 @@
    :mutation/home home-graphql-handler
    :mutation/clear_alarms clear-alarms-graphql-handler
    :mutation/run_procedure run-procedure-graphql-handler
+   :mutation/save_procedure save-procedure-graphql-handler
 })
 
 (defn simplify

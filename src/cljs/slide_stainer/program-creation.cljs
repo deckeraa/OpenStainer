@@ -2,6 +2,7 @@
   (:require [reagent.core :as reagent]
             [cljs-http.client :as http]
             [cljs.test :refer-macros [deftest is testing run-tests]]
+            [slide-stainer.graphql]
             [slide-stainer.onscreen-keyboard :as osk])
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
 
@@ -9,6 +10,7 @@
 
 (def sample-program
   {:name "H&E with Harris' Hematoxylin"
+   :type :procedure
    :jar_contents ["Hematoxylin" "Tap water" "70% ethanol/1% HCI" "Tap water" "Eosin"]
    :procedure_steps
    [{:substance "Hematoxylin" :time_in_seconds (* 25 60) :jar_number 1}
@@ -160,7 +162,11 @@
                                                                      (println (drop-nth steps idx))
                                                                      (drop-nth steps idx))))} "x"]]]))
                       @steps-cursor)]]
-       [:button {:on-click (fn [e] (swap! steps-cursor conj {}))} "+"]])))
+       [:button {:on-click (fn [e] (swap! steps-cursor conj {}))} "+"]
+       [:button {:on-click (slide-stainer.graphql/graphql-fn
+                            {:query "abc"
+                             :handler-fn (fn [resp]
+                                           (println "Save button's response"))})} "Save"]])))
 
 (defn program-creation
   ([] (program-creation sample-program-atom))
