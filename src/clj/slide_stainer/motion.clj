@@ -3,7 +3,8 @@
             [incanter.core :refer [pow]]
             [clojure.math.numeric-tower :refer [abs]]
             [slide-stainer.defs :refer :all]
-            [slide-stainer.board-setup :refer :all])
+            [slide-stainer.board-setup :refer :all]
+            [slide-stainer.db :as db])
   (:use clojure.test))
 
 (defonce pulse-lock
@@ -240,8 +241,10 @@
   (move-to-up-position))
 
 (defn run-program-by-id [id]
-  ;; TODO do an actual lookup here
-  (run-program sample-program))
+  (let [program (db/get-doc id)]
+    (println "Loaded program: " program)
+    (when (not (empty? program))
+      (run-program program))))
 
 ;; (defn pulse [pin-tag wait-ms num-pulses]
 ;;   (println "Starting pulse" wait-ms num-pulses)
