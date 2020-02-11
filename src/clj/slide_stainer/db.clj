@@ -21,3 +21,6 @@
 
 (defn put-doc [doc]
   (couch/put-document @db doc))
+
+(defn get-doc [id]
+  (couch/get-document @db id))

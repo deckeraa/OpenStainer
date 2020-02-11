@@ -73,6 +73,11 @@
   {:type (list :pin)
    :description "All pins utilized by the slide stainer app."
    :resolve :query/pins}
+  :procedure_by_id
+  {:type :procedure
+   :description "Looks up a staining procedure, given an ID."
+   :args {:_id {:type ID}}
+   :resolve :query/procedure_by_id}
   :ip
   {:type :ip
    :description "The Raspberry Pi's IP address."

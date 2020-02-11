@@ -36,6 +36,9 @@
   (map #(resolve-pin-by-id context {:id %} value)
        (vec (keys (:setup-index @state-atom)))))
 
+(defn resolve-procedure-by-id [context args value]
+  (db/get-doc (:_id args)))
+
 (defn get-ip-address []
   (as-> (sh "ifconfig" "wlan0") $ ; why not use hostname -I instead? Less parsing would be needed.
       (:out $)
@@ -150,6 +153,7 @@
   {:query/pin_by_id resolve-pin-by-id
    :query/ip resolve-ip
    :query/pins resolve-pins
+   :query/procedure_by_id resolve-procedure-by-id
    :mutation/set_pin set_pin
    :query/alarms resolve-alarms
    :query/state resolve-state

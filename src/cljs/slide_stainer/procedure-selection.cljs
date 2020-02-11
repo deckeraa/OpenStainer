@@ -8,7 +8,7 @@
             [slide-stainer.onscreen-keyboard :as osk])
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
 
-(defn procedure-selection [selection-cursor selected-fn]
+(defn procedure-selection [selection-cursor selected-success-fn]
   (let [procedure-list [{:_id "8e17e6aa10dee3e07cc42c2107006cfc"
                          :_rev "4-9d6dd9148fc2a3d46894a82d35af2497"
                          :name "H&E with Harris' Hematoxylin"}
@@ -20,11 +20,14 @@
        [:ul
         (map (fn [procedure]
                ^{:key (:_id procedure)}
-               [:li {:on-click (fn [e]
-                                 (reset! selection-cursor procedure)
-                                 (when selected-fn (selected-fn)))}
+               [:li {:on-click
+                     (graphql/graphql-fn {:query (str "{procedure_by_id(_id:\"" (:_id procedure) "\"){" graphql/procedure-keys "}}")
+                                          :handler-fn (fn [resp]
+                                                        (reset! selection-cursor (:procedure_by_id resp))
+                                                        (when selected-success-fn (selected-success-fn))
+                                                        (println "procedure_by_id resp: " resp))})}
                 (:name procedure)])
              procedure-list)]
        [:button {:on-click (fn [e]
                              (reset! selection-cursor {:type "procedure"})
-                             (when selected-fn (selected-fn)))} "+"]])))
+                             (when selected-success-fn (selected-success-fn)))} "+"]])))
