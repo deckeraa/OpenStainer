@@ -78,6 +78,10 @@
    :description "Looks up a staining procedure, given an ID."
    :args {:_id {:type ID}}
    :resolve :query/procedure_by_id}
+  :procedures
+  {:type (list :procedure)
+   :description "Retrieves information for all procedures."
+   :resolve :query/procedures}
   :ip
   {:type :ip
    :description "The Raspberry Pi's IP address."

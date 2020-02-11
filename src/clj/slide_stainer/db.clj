@@ -24,3 +24,13 @@
 
 (defn get-doc [id]
   (couch/get-document @db id))
+
+(defn get-procedures [everything?]
+  (couch/get-view @db "procedures" "procedures" {:include_docs everything?}))
+
+(defn install-views! [db]
+  (couch/save-view db "procedures"
+                   (couch/view-server-fns
+                    :javascript
+                    {:procedures {:map
+                               "function (doc) { if(doc.type == \"procedure\") { emit(doc._id, doc.name); } }"}})))

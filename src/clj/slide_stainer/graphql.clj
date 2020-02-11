@@ -39,6 +39,9 @@
 (defn resolve-procedure-by-id [context args value]
   (db/get-doc (:_id args)))
 
+(defn resolve-procedures [context args value] ;; TODO this doesn't yet retrieve all the requested fields
+  (mapv #(clojure.set/rename-keys % {:key :_id :value :name}) (db/get-procedures false)))
+
 (defn get-ip-address []
   (as-> (sh "ifconfig" "wlan0") $ ; why not use hostname -I instead? Less parsing would be needed.
       (:out $)
@@ -154,6 +157,7 @@
    :query/ip resolve-ip
    :query/pins resolve-pins
    :query/procedure_by_id resolve-procedure-by-id
+   :query/procedures resolve-procedures
    :mutation/set_pin set_pin
    :query/alarms resolve-alarms
    :query/state resolve-state
