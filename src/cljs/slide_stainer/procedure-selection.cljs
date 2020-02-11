@@ -8,17 +8,23 @@
             [slide-stainer.onscreen-keyboard :as osk])
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
 
-(defn procedure-selection [selection-cursor]
+(defn procedure-selection [selection-cursor selected-fn]
   (let [procedure-list [{:_id "8e17e6aa10dee3e07cc42c2107006cfc"
                          :_rev "4-9d6dd9148fc2a3d46894a82d35af2497"
                          :name "H&E with Harris' Hematoxylin"}
                         {:_id "123"
                          :name "Carpet stain"}]]
     (fn []
-      [:div
+      [:div {:class "procedure_selection"}
        [:h3 "Procedure Selection"]
        [:ul
         (map (fn [procedure]
                ^{:key (:_id procedure)}
-               [:li (:name procedure)])
-             procedure-list)]])))
+               [:li {:on-click (fn [e]
+                                 (reset! selection-cursor procedure)
+                                 (when selected-fn (selected-fn)))}
+                (:name procedure)])
+             procedure-list)]
+       [:button {:on-click (fn [e]
+                             (reset! selection-cursor {:type "procedure"})
+                             (when selected-fn (selected-fn)))} "+"]])))

@@ -2,3 +2,10 @@
     font-family: "Roboto","sans-serif";
 }
 
+.procedure_selection ul{
+    list-style: none;
+}
+
+.procedure_selection li:hover {
+    background-color: orange;
+}

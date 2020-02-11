@@ -16,7 +16,8 @@
 ;; Vars
 
 (defonce app-state
-  (reagent/atom {:alarms {}}))
+  (reagent/atom {:alarms {}
+                 :current-procedure nil}))
 
 (defn on-change-handler [atm evt]
   (reset! atm (-> evt .-target .-value)))
@@ -352,22 +353,24 @@
 ;; Page
 
 (defn page [ratom]
-  (let [screen (or (:screen @ratom) :main)]
-    [:div
-     [:div {:class "header"}
-      [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :main)))} "Main"]
-      [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :graphql)))} "GraphQL"]
-      [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :classic)))} "Classic"]
-      [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :jog)))} "Jog"]
-      [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :program-creation)))} "Program Creation"]
-      [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :procedure-selection)))} "Procedure Selection"]]
-     (when (= :graphql screen) [graphql-control])
-     (when (= :main screen) [pins-control-graphql])
-     (when (= :classic screen) [pins-control])
-     (when (= :jog screen) [jog-control ratom])
-     (when (= :program-creation screen) [slide-stainer.program-creation/program-creation])
-     (when (= :procedure-selection screen) [slide-stainer.procedure-selection/procedure-selection])
-     ]))
+  (let [procedure-cursor (reagent/cursor ratom [:current-procedure])]
+    (fn []
+      (let [screen (or (:screen @ratom) :main)]
+        [:div
+         [:div {:class "header"}
+          [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :main)))} "Main"]
+          [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :graphql)))} "GraphQL"]
+          [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :classic)))} "Classic"]
+          [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :jog)))} "Jog"]
+          [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :program-creation)))} "Program Creation"]
+          [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :procedure-selection)))} "Procedure Selection"]]
+         (when (= :graphql screen) [graphql-control])
+         (when (= :main screen) [pins-control-graphql])
+         (when (= :classic screen) [pins-control])
+         (when (= :jog screen) [jog-control ratom])
+         (when (= :program-creation screen) [slide-stainer.program-creation/program-creation])
+         (when (= :procedure-selection screen) [slide-stainer.procedure-selection/procedure-selection procedure-cursor (fn [] (swap! ratom (fn [v] (assoc v :screen :program-creation))))])
+         ]))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Initialize App
