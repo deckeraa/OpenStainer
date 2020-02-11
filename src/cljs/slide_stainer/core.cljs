@@ -5,6 +5,7 @@
    [cljs-http.client :as http]
    [clojure.edn :as edn]
    [slide-stainer.program-creation]
+   [slide-stainer.procedure-selection]
    )
   (:require-macros
    [cljs.core.async.macros :refer [go go-loop]]
@@ -358,12 +359,14 @@
       [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :graphql)))} "GraphQL"]
       [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :classic)))} "Classic"]
       [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :jog)))} "Jog"]
-      [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :program-creation)))} "Program Creation"]]
+      [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :program-creation)))} "Program Creation"]
+      [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :procedure-selection)))} "Procedure Selection"]]
      (when (= :graphql screen) [graphql-control])
      (when (= :main screen) [pins-control-graphql])
      (when (= :classic screen) [pins-control])
      (when (= :jog screen) [jog-control ratom])
      (when (= :program-creation screen) [slide-stainer.program-creation/program-creation])
+     (when (= :procedure-selection screen) [slide-stainer.procedure-selection/procedure-selection])
      ]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
