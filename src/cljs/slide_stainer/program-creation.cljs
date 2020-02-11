@@ -160,7 +160,7 @@
   (fn []
     (let [steps-cursor (reagent/cursor prog-atm [:procedure_steps])
           substance-options (:jar_contents @prog-atm)
-          query (str "mutation{save_procedure(procedure:"
+          save-query (str "mutation{save_procedure(procedure:"
                      (-> @prog-atm
                          (jsonify)
                          (remove-quotes-from-keys))
@@ -187,11 +187,14 @@
                       @steps-cursor)]]
        [:button {:on-click (fn [e] (swap! steps-cursor conj {}))} "+"]
        [:button {:on-click (slide-stainer.graphql/graphql-fn
-                            {:query query
+                            {:query save-query
                              :handler-fn (fn [resp]
                                            (println "Save button's response" resp)
                                            (reset! prog-atm (:save_procedure resp)))})} "Save"]
-       [:p query]])))
+       [:button {:on-click (slide-stainer.graphql/graphql-fn
+                            {:query (str "mutation{run_procedure(_id:\"" (:_id @prog-atm) "\"){contents}}")})} "Run"]
+;       [:p save-query]
+       ])))
 
 (defn program-creation
   ([] (program-creation sample-program-atom))

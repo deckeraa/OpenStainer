@@ -239,7 +239,8 @@
   ; return to the up position so that the last step doesn't get excessive staining time
   (move-to-up-position))
 
-(defn run-program-by-name [name]
+(defn run-program-by-id [id]
+  ;; TODO do an actual lookup here
   (run-program sample-program))
 
 ;; (defn pulse [pin-tag wait-ms num-pulses]

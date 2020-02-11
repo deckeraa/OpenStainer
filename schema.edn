@@ -151,7 +151,7 @@
   :run_procedure
   {:type :state
    :description "Runs a procedure with the given name."
-   :args {:name {:type String}}
+   :args {:_id {:type ID}}
    :resolve :mutation/run_procedure}
   :save_procedure
   {:type :procedure
