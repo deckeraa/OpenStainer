@@ -23,14 +23,23 @@
 
 (defn pulse-linear-fn
   "Stepper pulse generation function that uses a linear ramp-up"
-  [step]
-  (let [slope 15
-        initial_offset 180]
-    (min
-     (+ (* step slope) initial_offset) ; y = mx+b
+  ([max-khz step]
+   (let [slope 15
+         initial_offset 180]
+     (min
+      (+ (* step slope) initial_offset) ; y = mx+b
                                         ;     (* 18 1000)
-     (* 15 1000)
-     )))
+      (* max-khz 1000)
+      ))
+   )
+  ([step]
+   (pulse-linear-fn 15 step)))
+
+(defn pulse-linear-by-axis [id step]
+  (let [max-khz (if (= :stepperX id)
+                  5
+                  15)]
+    (pulse-linear-fn max-khz step)))
 
 (defn pulse-logistic-fn
   "Stepper pulse generaiton function that uses a logistic-function shape for ramp-up"
@@ -104,7 +113,8 @@
                      pulses
                      (* -1 pulses))
         nanosecond-wait (max 10000 7500)
-        precomputed-pulses (precompute-pulse pulse-linear-fn abs-pulses)
+                                        ;        precomputed-pulses (precompute-pulse pulse-linear-fn abs-pulses)
+        precomputed-pulses (precompute-pulse (partial pulse-linear-by-axis id) abs-pulses)
         hit-limit-switch? (atom false)
         current-position (get-in @state-atom [:setup id :position-in-pulses])
         axis-upper-limit-in-pulses (inches-to-pulses id (:position_limit axis-config))
