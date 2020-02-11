@@ -4,37 +4,46 @@
   (:require-macros
    [devcards.core :refer [defcard defcard-rg]]))
 
+(def RETURN_KEY_CODE 13)
+
 (defn get-supported-args [args]
   (select-keys args [:size]))
 
 (defn osk-input [osk-atm args]
   (let [input-atm (reagent/atom (or (:value args) ""))
-        ref-atm   (clojure.core/atom nil)]
-    (fn []
-      [:input (merge
-               (get-supported-args args)
-               {:type :text
-                :class "onscreen-keyboard-input"
-                :on-focus (fn [e]
+        ref-atm   (clojure.core/atom nil)
+        focus-fn (fn [e]
                             (swap! osk-atm (fn [osk-map]
                                              (-> osk-map
                                                  (assoc :input-atm input-atm) ; set the on-screen keyboard to point to this input field's input
                                                  (assoc :el-atm ref-atm)
                                                  (assoc :args args)
                                                  (assoc :open? true))))
-                            (js/setTimeout (fn [] (.scrollIntoView @ref-atm)) 100)) ; TODO putting this in a timeout is kind of hacky -- we need to call scrollIntoView after the onscreen-keyboard-placeholder becomes visible. Hence the timeout as a poor man's way of making that happen.
-                :on-blur (fn [e]
-                           (when (:on-blur args) ((:on-blur args) @input-atm))
-                           (swap! osk-atm (fn [osk-map]
-                                            (-> osk-map
-                                                (assoc :input-atm nil)
-                                                (assoc :el-atm nil)
-                                                (assoc :args nil)
-                                                (assoc :open? false)))))
+                                        ; TODO putting the scrollIntoView in a timeout is kind of hacky -- we need to call scrollIntoView after the onscreen-keyboard-placeholder becomes visible. Hence the timeout as a poor man's way of making that happen.
+                   (js/setTimeout (fn [] (.scrollIntoView @ref-atm)) 100))
+        blur-fn (fn []
+                  (when (:on-blur args) ((:on-blur args) @input-atm))
+                  (swap! osk-atm (fn [osk-map]
+                                   (-> osk-map
+                                       (assoc :input-atm nil)
+                                       (assoc :el-atm nil)
+                                       (assoc :args nil)
+                                       (assoc :open? false)))))]
+    (fn []
+      [:input (merge
+               (get-supported-args args)
+               {:type :text
+                :class "onscreen-keyboard-input"
+                :on-focus focus-fn
+                :on-click focus-fn
+                :on-blur blur-fn
                 :on-change (fn [e]
                              (reset! input-atm (-> e .-target .-value))
                              (println "on-change" args)
                              (when (:on-change args) ((:on-change args) @input-atm)))
+                :on-key-down (fn [e]
+                               (when (= RETURN_KEY_CODE (-> e .-keyCode))
+                                 (blur-fn)))
                 :ref (fn [el] (reset! ref-atm el))
                 :value @input-atm})])))
 
