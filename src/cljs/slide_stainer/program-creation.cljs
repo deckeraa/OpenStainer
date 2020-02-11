@@ -196,7 +196,12 @@
   ([] (program-creation sample-program-atom))
   ([prog-atm]
    [:div
-    [:h2 (:name @prog-atm)]
+    [osk/osk-input osk-atm
+                                  {:on-change (fn [new-val]
+                                                (println "Change handler called: " new-val)
+                                                (swap! prog-atm (fn [x] (assoc x :name new-val))))
+                                   :value (:name @prog-atm)
+                                   :size 40}]
     [jar-contents prog-atm]
     [procedure-steps prog-atm]
     [:div (str @prog-atm)]
