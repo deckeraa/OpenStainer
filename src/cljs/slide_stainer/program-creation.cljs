@@ -1,7 +1,7 @@
 (ns slide-stainer.program-creation
   (:require [reagent.core :as reagent]
             [cljs-http.client :as http]
-            [devcards.core :refer-macros [deftest]]
+            [devcards.core :refer-macros [deftest defcard-rg]]
             [cljs.test :refer-macros [is testing run-tests]]
             [clojure.edn :as edn]
             [slide-stainer.graphql :as graphql]
@@ -202,3 +202,6 @@
     [:div (str @prog-atm)]
     [:div (str @osk-atm)]
     [slide-stainer.onscreen-keyboard/onscreen-keyboard osk-atm]]))
+
+(defcard-rg procedure-edit-card
+  [program-creation])

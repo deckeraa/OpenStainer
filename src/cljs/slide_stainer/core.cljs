@@ -368,7 +368,7 @@
          (when (= :main screen) [pins-control-graphql])
          (when (= :classic screen) [pins-control])
          (when (= :jog screen) [jog-control ratom])
-         (when (= :program-creation screen) [slide-stainer.program-creation/program-creation])
+         (when (= :program-creation screen) [slide-stainer.program-creation/program-creation procedure-cursor])
          (when (= :procedure-selection screen) [slide-stainer.procedure-selection/procedure-selection procedure-cursor (fn [] (swap! ratom (fn [v] (assoc v :screen :program-creation))))])
          ]))))
 
