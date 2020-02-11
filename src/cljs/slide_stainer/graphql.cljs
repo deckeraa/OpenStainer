@@ -9,6 +9,11 @@
    [cljs.core.async.macros :refer [go go-loop]]
    [devcards.core :refer [defcard defcard-rg]]))
 
+(def procedure-keys
+;;  "Contains a comma-delimited string of all keys in the procedure object"
+  "_id,_rev,type,name,jar_contents,procedure_steps{substance,time_in_seconds,jar_number}"
+  )
+
 (defn graphql-fn [{query :query query-fn :query-fn handler-fn :handler-fn variable-fn :variable-fn :as args}]
   (fn []
     (go (let [raw-resp (<! (http/post "http://localhost:3000/graphql"

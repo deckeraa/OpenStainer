@@ -8,7 +8,8 @@
             [com.walmartlabs.lacinia :as lacinia]
             [slide-stainer.defs :refer :all]
             [slide-stainer.board-setup :refer :all]
-            [slide-stainer.motion :refer :all])
+            [slide-stainer.motion :refer :all]
+            [slide-stainer.db :as db])
   (:import (clojure.lang IPersistentMap)))
 
 (defn resolve-alarms [context args value]
@@ -137,7 +138,13 @@
 
 (defn save-procedure-graphql-handler [context args value]
   (let [procedure (:procedure args)]
-    (println "save-procedure-graphql-handler " procedure (type procedure))))
+    (println "save-procedure-graphql-handler " procedure (type procedure))
+    (if (= (:type procedure) "procedure")
+      (db/put-doc procedure)
+      (do
+        (let [error-msg "procedure passed into save-procedure-graphql-handler is not of the proper type."]
+          (println error-msg)
+          {:error error-msg})))))
 
 (defn resolver-map []
   {:query/pin_by_id resolve-pin-by-id

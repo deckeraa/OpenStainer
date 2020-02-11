@@ -4,7 +4,7 @@
             [devcards.core :refer-macros [deftest]]
             [cljs.test :refer-macros [is testing run-tests]]
             [clojure.edn :as edn]
-            [slide-stainer.graphql]
+            [slide-stainer.graphql :as graphql]
             [slide-stainer.onscreen-keyboard :as osk])
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
 
@@ -161,10 +161,10 @@
     (let [steps-cursor (reagent/cursor prog-atm [:procedure_steps])
           substance-options (:jar_contents @prog-atm)
           query (str "mutation{save_procedure(procedure:"
-                     (-> sample-program
+                     (-> @prog-atm
                          (jsonify)
                          (remove-quotes-from-keys))
-                     "){_id,_rev}}")]
+                     "){" graphql/procedure-keys "}}")]
       [:div
        
        [:h3 "Procedure Steps"]
@@ -189,7 +189,8 @@
        [:button {:on-click (slide-stainer.graphql/graphql-fn
                             {:query query
                              :handler-fn (fn [resp]
-                                           (println "Save button's response"))})} "Save"]])))
+                                           (println "Save button's response" resp)
+                                           (reset! prog-atm (:save_procedure resp)))})} "Save"]])))
 
 (defn program-creation
   ([] (program-creation sample-program-atom))
