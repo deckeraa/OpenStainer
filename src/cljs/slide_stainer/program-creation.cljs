@@ -1,7 +1,8 @@
 (ns slide-stainer.program-creation
   (:require [reagent.core :as reagent]
             [cljs-http.client :as http]
-            [cljs.test :refer-macros [deftest is testing run-tests]]
+            [devcards.core :refer-macros [deftest]]
+            [cljs.test :refer-macros [is testing run-tests]]
             [clojure.edn :as edn]
             [slide-stainer.graphql]
             [slide-stainer.onscreen-keyboard :as osk])
@@ -24,6 +25,17 @@
   (clojure.walk/postwalk (fn [x]  (if (keyword? x)
                                     (name x)
                                     x)) sample-program))
+
+(defn remove-quotes-from-keys
+  "This removes quotes from the keyword in a JSON string to make it compatible with GraphQL."
+  [s]
+  (clojure.string/replace s #"\"(\w+)\":" "$1:"))
+
+(deftest remove-quotes-from-keys-test
+  (is (= (remove-quotes-from-keys "{\"name\":\"foo\"}") "{name:\"foo\"}")))
+
+(defn jsonify [s]
+  (.stringify js/JSON (clj->js s)))
 
 (defn rename-substance [prog-atm jar_number new-substance]
   "Don't forget that jar_number is 1-indexed."
@@ -149,8 +161,10 @@
     (let [steps-cursor (reagent/cursor prog-atm [:procedure_steps])
           substance-options (:jar_contents @prog-atm)
           query (str "mutation{save_procedure(procedure:"
-                                         (convert-keywords-to-strings sample-program)
-                                         "){_id,_rev}}")]
+                     (-> sample-program
+                         (jsonify)
+                         (remove-quotes-from-keys))
+                     "){_id,_rev}}")]
       [:div
        
        [:h3 "Procedure Steps"]
@@ -175,7 +189,7 @@
        [:button {:on-click (slide-stainer.graphql/graphql-fn
                             {:query query
                              :handler-fn (fn [resp]
-                                           (println "Save button's response"))})} query]])))
+                                           (println "Save button's response"))})} "Save"]])))
 
 (defn program-creation
   ([] (program-creation sample-program-atom))

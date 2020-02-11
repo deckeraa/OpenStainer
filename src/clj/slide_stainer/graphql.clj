@@ -137,7 +137,7 @@
 
 (defn save-procedure-graphql-handler [context args value]
   (let [procedure (:procedure args)]
-    (println "save-procedure-graphql-handler " procedure)))
+    (println "save-procedure-graphql-handler " procedure (type procedure))))
 
 (defn resolver-map []
   {:query/pin_by_id resolve-pin-by-id
