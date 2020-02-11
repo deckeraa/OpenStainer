@@ -74,7 +74,7 @@
   "Ex: (substance-selector [\"Hematoxylin\" \"Tap water\" \"Eosin\"] \"Eosin\")"
   (fn [option-list step-cursor]
     (let [substance (:substance @step-cursor)]
-      [:select {:name "substance" :value substance
+      [:select {:name "substance" :value (or substance "")
                 :on-change (fn [e]
                              (let [new-substance (-> e .-target .-value)]
                                (swap! step-cursor
@@ -92,7 +92,7 @@
                     (filter #(= (:substance @step-cursor) (second %)) $)
                     (mapv first $))]
       (if (> (count options) 1)
-        [:select {:name "jar_number" :value (:jar_number @step-cursor)
+        [:select {:name "jar_number" :value (or (:jar_number @step-cursor) "")
                   :on-change (fn [e] (swap! step-cursor #(assoc % :jar_number (-> e .-target .-value))))}
          (map-indexed (fn [idx option] ^{:key idx} [:option {:value option} option]) options)]
         [:div (:jar_number @step-cursor)]))))
