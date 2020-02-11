@@ -36,5 +36,5 @@
                 (:name procedure)])
              @procedure-list-atom)]
        [:button {:on-click (fn [e]
-                             (reset! selection-cursor {:type "procedure"})
+                             (reset! selection-cursor graphql/empty-procedure)
                              (when selected-success-fn (selected-success-fn)))} "+"]])))

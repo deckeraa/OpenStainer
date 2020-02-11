@@ -9,6 +9,8 @@
    [cljs.core.async.macros :refer [go go-loop]]
    [devcards.core :refer [defcard defcard-rg]]))
 
+(def empty-procedure {:type "procedure" :jar-contents [] :procedure-steps []})
+
 (def procedure-keys
 ;;  "Contains a comma-delimited string of all keys in the procedure object"
   "_id,_rev,type,name,jar_contents,procedure_steps{substance,time_in_seconds,jar_number}"

@@ -190,7 +190,8 @@
                             {:query query
                              :handler-fn (fn [resp]
                                            (println "Save button's response" resp)
-                                           (reset! prog-atm (:save_procedure resp)))})} "Save"]])))
+                                           (reset! prog-atm (:save_procedure resp)))})} "Save"]
+       [:p query]])))
 
 (defn program-creation
   ([] (program-creation sample-program-atom))
