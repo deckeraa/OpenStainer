@@ -190,7 +190,7 @@
                             {:query save-query
                              :handler-fn (fn [resp]
                                            (println "Save button's response" resp)
-                                           (reset! prog-atm (:save_procedure resp)))})} "Save"]
+                                           (when resp (reset! prog-atm (:save_procedure resp))))})} "Save"]
        [:button {:on-click (slide-stainer.graphql/graphql-fn
                             {:query (str "mutation{run_procedure(_id:\"" (:_id @prog-atm) "\"){contents}}")})} "Run"]
 ;       [:p save-query]
