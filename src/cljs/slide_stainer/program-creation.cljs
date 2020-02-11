@@ -2,6 +2,7 @@
   (:require [reagent.core :as reagent]
             [cljs-http.client :as http]
             [cljs.test :refer-macros [deftest is testing run-tests]]
+            [clojure.edn :as edn]
             [slide-stainer.graphql]
             [slide-stainer.onscreen-keyboard :as osk])
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
@@ -18,6 +19,11 @@
 
 (def sample-program-atom (reagent/atom sample-program))
 (def osk-atm (reagent/atom {}))
+
+(defn convert-keywords-to-strings [form]
+  (clojure.walk/postwalk (fn [x]  (if (keyword? x)
+                                    (name x)
+                                    x)) sample-program))
 
 (defn rename-substance [prog-atm jar_number new-substance]
   "Don't forget that jar_number is 1-indexed."
@@ -141,7 +147,10 @@
 (defn procedure-steps [prog-atm]
   (fn []
     (let [steps-cursor (reagent/cursor prog-atm [:procedure_steps])
-          substance-options (:jar_contents @prog-atm)]
+          substance-options (:jar_contents @prog-atm)
+          query (str "mutation{save_procedure(procedure:"
+                                         (convert-keywords-to-strings sample-program)
+                                         "){_id,_rev}}")]
       [:div
        
        [:h3 "Procedure Steps"]
@@ -164,9 +173,9 @@
                       @steps-cursor)]]
        [:button {:on-click (fn [e] (swap! steps-cursor conj {}))} "+"]
        [:button {:on-click (slide-stainer.graphql/graphql-fn
-                            {:query "abc"
+                            {:query query
                              :handler-fn (fn [resp]
-                                           (println "Save button's response"))})} "Save"]])))
+                                           (println "Save button's response"))})} query]])))
 
 (defn program-creation
   ([] (program-creation sample-program-atom))

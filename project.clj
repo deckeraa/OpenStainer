@@ -21,6 +21,7 @@
                  [com.ashafa/clutch "0.4.0"]
                  [com.lucasbradstreet/cljs-uuid-utils "1.0.2"]
                  [org.clojure/math.numeric-tower "0.0.4"]
+                 [org.clojure/data.json "0.2.7"]
                  [com.cemerick/url "0.1.1"]]
 
   :main slide-stainer.core
