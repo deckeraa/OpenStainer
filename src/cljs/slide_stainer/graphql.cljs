@@ -14,7 +14,7 @@
 
 (def procedure-keys
 ;;  "Contains a comma-delimited string of all keys in the procedure object"
-  "_id,_rev,type,name,jar_contents,procedure_steps{substance,time_in_seconds,jar_number}"
+  "_id,_rev,type,name,jar_contents,procedure_steps{substance,time_in_seconds,jar_number},repeat"
   )
 
 (defn graphql-fn [{query :query query-fn :query-fn handler-fn :handler-fn variable-fn :variable-fn :as args}]

@@ -186,6 +186,13 @@
                                                                      (drop-nth steps idx))))} "x"]]]))
                       @steps-cursor)]]
        [:button {:on-click (fn [e] (swap! steps-cursor conj {}))} "+"]
+       [:div
+        [:p (str "Repeat: " (:repeat @prog-atm))]
+        [:button {:on-click (fn [e] (swap! prog-atm (fn [x]
+                                                      (assoc x :repeat (dec (or (:repeat x) 0))))))} "-"]
+        [:button {:on-click (fn [e] (swap! prog-atm (fn [x]
+                                                      (assoc x :repeat (inc (or (:repeat x) 0))))))} "+"]]
+       
        [:button {:on-click (slide-stainer.graphql/graphql-fn
                             {:query save-query
                              :handler-fn (fn [resp]
