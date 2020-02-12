@@ -45,7 +45,8 @@
 
 (defn graphql-control []
   (let [input  (reagent/atom
-                "mutation{run_procedure(name:\"foo\"){contents}}"
+                "{state{procedure_run_status{current_procedure_id,current_procedure_name,current_procedure_step_number,current_procedure_step_start_time}}}"
+;                "mutation{run_procedure(name:\"foo\"){contents}}"
 ;                "mutation{move_to_position(id:\":stepperZ\",position:2.2){id,position_inches}}"
                 ;"mutation {move_by_pulses(id:\":stepperX\",pulses:1000){id}}"
                 ;"{pin_by_id(id:\":stepperX-ena\"){board_value,logical_value,pin_number},ip{inet4}}"

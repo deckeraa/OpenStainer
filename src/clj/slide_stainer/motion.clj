@@ -38,7 +38,7 @@
 
 (defn pulse-linear-by-axis [id step]
   (let [max-khz (if (= :stepperX id)
-                  5
+                  10
                   15)]
     (pulse-linear-fn max-khz step)))
 
@@ -145,9 +145,9 @@
                                                       :pulse-num pulse-num})))
                 (set-pin pul true)
                 (while (< (java.lang.System/nanoTime) tgt-one) nil) ; busy-wait
-                (let [latency (- (java.lang.System/nanoTime) tgt-one)]
-                      (when (> latency (* 1000 1000))
-                        (println "latency high: " latency)))
+                ;; (let [latency (- (java.lang.System/nanoTime) tgt-one)]
+                ;;       (when (> latency (* 1000 1000))
+                ;;         (println "latency high: " latency)))
                 (let [now-two (java.lang.System/nanoTime)
                       tgt-two (+ now-two wait-time)]
                                         ;              (java.util.concurrent.locks.LockSupport/parkNanos (hz-to-ns pulse-val))
@@ -253,8 +253,9 @@
   (doseq [repeat-time (range (or (:repeat procedure) 1))]
     (swap! state-atom (fn [x] (assoc-in x [:procedure_run_status :current_procedure_step_number] 0)))
     (doseq [step (:procedure_steps procedure)]
-      (println "get-in " (get-in @state-atom [:procedure_run_status :current_procedure_step_number]))
-      (swap! state-atom (fn [x] (assoc-in x [:procedure_run_status :current_procedure_step_number] (inc (or 0 (get-in x [:procedure_run_status :current_procedure_step_number]))))))
+      (swap! state-atom (fn [x]
+                          (assoc-in x [:procedure_run_status :current_procedure_step_number]
+                                    (inc (get-in x [:procedure_run_status :current_procedure_step_number])))))
       (move-to-jar (:jar_number step))
       (swap! state-atom (fn [x] (assoc-in x [:procedure_run_status :current_procedure_step_start_time] (java-time/local-date-time))))
       (Thread/sleep (* 1000 (:time_in_seconds step)))))
