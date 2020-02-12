@@ -34,7 +34,7 @@
   {:description "A single step in a staining procedure."
    :fields {:substance {:type String :description "The substance contained in the jar"}
             :time_in_seconds {:type Int :description "The time (in seconds) to immerse the slide in the staining jar."}
-            :jar_number {:type Int :description "The zero-indexed jar number in which the slide is to be immersed."}}}
+            :jar_number {:type Int :description "The one-indexed jar number in which the slide is to be immersed."}}}
   :procedure
   {:description "A staining procedure"
    :fields {:_id  {:type ID :description "The CouchDB _id of the procedure."}
@@ -51,7 +51,7 @@
   {:description "A single step in a staining procedure."
    :fields {:substance {:type String :description "The substance contained in the jar"}
             :time_in_seconds {:type Int :description "The time (in seconds) to immerse the slide in the staining jar."}
-            :jar_number {:type Int :description "The zero-indexed jar number in which the slide is to be immersed."}}}
+            :jar_number {:type Int :description "The one-indexed jar number in which the slide is to be immersed."}}}
   :procedure_input_object
   {:description "A staining procedure"
    :fields {:_id  {:type ID :description "The CouchDB _id of the procedure."}

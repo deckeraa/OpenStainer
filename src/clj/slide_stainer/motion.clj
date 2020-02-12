@@ -214,9 +214,9 @@
   (move-to-position :stepperZ down-pos))
 
 (defn move-to-jar [jar]
-  (println "move-to-jar: " jar (type jar) jar-positions (get jar-positions jar))
+  (println "move-to-jar: " jar (type jar) jar-positions (get jar-positions (dec jar)))
   (move-to-up-position)
-  (move-to-position :stepperX (get jar-positions jar))
+  (move-to-position :stepperX (get jar-positions (dec jar)))
   (move-to-down-position))
 
 (defn home []
