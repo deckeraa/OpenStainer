@@ -15,9 +15,13 @@
 (defn resolve-alarms [context args value]
   (:alarms @state-atom))
 
+(defn resolve-procedure-run-status [context args value]
+  (:procedure_run_status @state-atom))
+
 (defn resolve-state [context args value]
   {:contents (str @state-atom)
-   :alarms (resolve-alarms context args value)})
+   :alarms (resolve-alarms context args value)
+   :procedure_run_status (resolve-procedure-run-status context args value)})
 
 (defn resolve-pin-by-id [context args value]
   (println "resolve-pin-by-id" args value)

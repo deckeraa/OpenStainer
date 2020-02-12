@@ -242,19 +242,31 @@
     {:substance "E" :time-in-seconds 1 :jar-number 4}
     {:substance "F" :time-in-seconds 1 :jar-number 5}]})
 
-(defn run-program [program]
-  (doseq [repeat-time (range (or (:repeat program) 1))]
-    (doseq [step (:procedure_steps program)]
+(defn run-program [procedure]
+  ;; set up state atom
+  (swap! state-atom (fn [x]
+                      (-> x
+                          (assoc-in [:procedure_run_status :current_procedure_id] (:_id procedure))
+                          (assoc-in [:procedure_run_status :current_procedure_name] (:name procedure)))))
+  ;; run the procedure
+  (doseq [repeat-time (range (or (:repeat procedure) 1))]
+    (doseq [step (:procedure_steps procedure)]
       (move-to-jar (:jar_number step))
       (Thread/sleep (* 1000 (:time_in_seconds step)))))
-  ; return to the up position so that the last step doesn't get excessive staining time
-  (move-to-up-position))
+  ;; return to the up position so that the last step doesn't get excessive staining time
+  (move-to-up-position)
+  ;; clean up the state atom
+  (swap! state-atom (fn [x]
+                      (-> x
+                          (assoc-in [:procedure_run_status :current_procedure_id] nil)
+                          (assoc-in [:procedure_run_status :current_procedure_name] nil))))
+  )
 
 (defn run-program-by-id [id]
-  (let [program (db/get-doc id)]
-    (println "Loaded program: " program)
-    (when (not (empty? program))
-      (run-program program))))
+  (let [procedure (db/get-doc id)]
+    (println "Loaded procedure: " procedure)
+    (when (not (empty? procedure))
+      (run-program procedure))))
 
 ;; (defn pulse [pin-tag wait-ms num-pulses]
 ;;   (println "Starting pulse" wait-ms num-pulses)

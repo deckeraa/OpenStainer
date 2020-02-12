@@ -14,11 +14,18 @@
   {:description "Alarms states."
    :fields
    {:limit_switch_hit_unexpectedly {:type Boolean}}}
-  :state
-  {:description "State atom that stores configuration info, for internal use only."
+  :procedure_run_status
+  {:description "Contains information about the currently running procedure, if any."
    :fields
-   {:contents {:type String}
+   {:current_procedure_id {:type ID :description "CouchDB ID of the currently running procedure. Nil if no procedure is running."}
+    :current_procedure_name {:type String :description "Name of the currently running procedure. Nil if no procedure is running."}}
+   }
+  :state
+  {:description "Information about the current state of the device."
+   :fields
+   {:contents {:type String :description "State atom that stores configuration info, for internal use only."}
     :alarms {:type :alarms}
+    :procedure_run_status {:type :procedure_run_status}
     }}
   :axis
   {:description "A axis of motion on the device."
