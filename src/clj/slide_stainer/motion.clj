@@ -222,7 +222,7 @@
 
 (defn home []
   (slide-stainer.defs/clear-positioning)
-  (move-relative :stepperZ up-pos)
+  (move-relative :stepperZ up-pos-home)
   (move-relative :stepperX left-homing-pos))
 
 (def sample-program

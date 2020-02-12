@@ -31,7 +31,7 @@
               :limit-switch-low   {:pin 14 :invert? false}
               :travel_distance_per_turn 0.063
               :position-in-pulses 0
-              :position_limit 9
+              :position_limit 10
               :pulses_per_revolution 800}
    :estop {:pin 25}
    :green-button {:pin 18}
@@ -46,10 +46,11 @@
 ;; red light: pin 24
 ;; gree light: pin 23 
 
-(def up-pos (get-in pin-defs [:stepperZ :position_limit]))
+(def up-pos-home (get-in pin-defs [:stepperZ :position_limit]))
+(def up-pos (- up-pos-home 0.25)) ; back off a quarter inch in the up position so we're not constantly triggering the limit switch
 (def down-pos 0)
 (def left-homing-pos (* -1 (get-in pin-defs [:stepperX :position_limit])))
-(def jar-starting-position-in-inches 0.30) ; position of first jar center
+(def jar-starting-position-in-inches 0.40) ; position of first jar center
 (def jar-spacing-in-inches 1.9)
 (def jar-positions (mapv #(+ (* % jar-spacing-in-inches) jar-starting-position-in-inches) (range 6)))
 
