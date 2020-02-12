@@ -19,7 +19,7 @@
               :limit-switch-high  {:pin 15 :invert? false}
               :travel_distance_per_turn 0.063
               :position-in-pulses 0
-              :position_limit 3.5
+              :position_limit 3.75
               :pulses_per_revolution 800}
    :stepperX {:output-pins
               {2 {::gpio/tag :stepperX-ena
@@ -47,7 +47,7 @@
 ;; gree light: pin 23 
 
 (def up-pos-home (get-in pin-defs [:stepperZ :position_limit]))
-(def up-pos (- up-pos-home 0.25)) ; back off a quarter inch in the up position so we're not constantly triggering the limit switch
+(def up-pos (- up-pos-home 0.25)) ; back off from the up position so we're not constantly triggering the limit switch
 (def down-pos 0)
 (def left-homing-pos (* -1 (get-in pin-defs [:stepperX :position_limit])))
 (def jar-starting-position-in-inches 0.40) ; position of first jar center

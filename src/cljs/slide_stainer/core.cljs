@@ -6,7 +6,7 @@
    [clojure.edn :as edn]
    [slide-stainer.program-creation]
    [slide-stainer.procedure-selection]
-   )
+   [slide-stainer.procedure-run])
   (:require-macros
    [cljs.core.async.macros :refer [go go-loop]]
    [devcards.core :refer [defcard defcard-rg]]))
@@ -327,8 +327,8 @@
                                                (fn [resp]
                                                  (println "jar-jog-control response handler" resp)
                                                  (alarms-query-response-handler alarms-cursor (:move_to_jar resp))))}
-            (str "Jar #" (inc jar))])
-            (range 6))
+            (str "Jar #" jar)])
+            (range 1 7))
        ])))
 
 (defn home-button []
@@ -364,13 +364,15 @@
           [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :classic)))} "Classic"]
           [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :jog)))} "Jog"]
           [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :program-creation)))} "Program Creation"]
-          [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :procedure-selection)))} "Procedure Selection"]]
+          [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :procedure-selection)))} "Procedure Selection"]
+          [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :procedure-run)))} "Procedure Run Status"]]
          (when (= :graphql screen) [graphql-control])
          (when (= :main screen) [pins-control-graphql])
          (when (= :classic screen) [pins-control])
          (when (= :jog screen) [jog-control ratom])
          (when (= :program-creation screen) [slide-stainer.program-creation/program-creation procedure-cursor])
          (when (= :procedure-selection screen) [slide-stainer.procedure-selection/procedure-selection procedure-cursor (fn [] (swap! ratom (fn [v] (assoc v :screen :program-creation))))])
+         (when (= :procedure-run screen) [slide-stainer.procedure-run/procedure-run-status])
          ]))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
