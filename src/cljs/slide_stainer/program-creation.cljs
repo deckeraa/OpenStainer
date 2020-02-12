@@ -93,7 +93,7 @@
                     (mapv first $))]
       (if (> (count options) 1)
         [:select {:name "jar_number" :value (or (:jar_number @step-cursor) "")
-                  :on-change (fn [e] (swap! step-cursor #(assoc % :jar_number (-> e .-target .-value))))}
+                  :on-change (fn [e] (swap! step-cursor #(assoc % :jar_number (js/parseInt (-> e .-target .-value)))))}
          (map-indexed (fn [idx option] ^{:key idx} [:option {:value option} option]) options)]
         [:div (:jar_number @step-cursor)]))))
 

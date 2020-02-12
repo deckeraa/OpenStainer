@@ -244,9 +244,9 @@
 
 (defn run-program [program]
   (doseq [repeat-time (range (or (:repeat program) 1))]
-    (doseq [step (:procedure-steps program)]
-      (move-to-jar (:jar-number step))
-      (Thread/sleep (* 1000 (:time-in-seconds step)))))
+    (doseq [step (:procedure_steps program)]
+      (move-to-jar (:jar_number step))
+      (Thread/sleep (* 1000 (:time_in_seconds step)))))
   ; return to the up position so that the last step doesn't get excessive staining time
   (move-to-up-position))
 
