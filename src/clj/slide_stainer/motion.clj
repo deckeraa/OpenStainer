@@ -4,10 +4,11 @@
             [clojure.math.numeric-tower :refer [abs]]
             [slide-stainer.defs :refer :all]
             [slide-stainer.board-setup :refer :all]
-            [slide-stainer.db :as db])
+            [slide-stainer.db :as db]
+            [java-time])
   (:use clojure.test))
 
-(defonce pulse-lock
+(def pulse-lock
   (atom false))
 
 (defn set-pin [pin-tag state]
@@ -250,8 +251,12 @@
                           (assoc-in [:procedure_run_status :current_procedure_name] (:name procedure)))))
   ;; run the procedure
   (doseq [repeat-time (range (or (:repeat procedure) 1))]
+    (swap! state-atom (fn [x] (assoc-in x [:procedure_run_status :current_procedure_step_number] 0)))
     (doseq [step (:procedure_steps procedure)]
+      (println "get-in " (get-in @state-atom [:procedure_run_status :current_procedure_step_number]))
+      (swap! state-atom (fn [x] (assoc-in x [:procedure_run_status :current_procedure_step_number] (inc (or 0 (get-in x [:procedure_run_status :current_procedure_step_number]))))))
       (move-to-jar (:jar_number step))
+      (swap! state-atom (fn [x] (assoc-in x [:procedure_run_status :current_procedure_step_start_time] (java-time/local-date-time))))
       (Thread/sleep (* 1000 (:time_in_seconds step)))))
   ;; return to the up position so that the last step doesn't get excessive staining time
   (move-to-up-position)
@@ -259,8 +264,9 @@
   (swap! state-atom (fn [x]
                       (-> x
                           (assoc-in [:procedure_run_status :current_procedure_id] nil)
-                          (assoc-in [:procedure_run_status :current_procedure_name] nil))))
-  )
+                          (assoc-in [:procedure_run_status :current_procedure_name] nil)
+                          (assoc-in [:procedure_run_status :current_procedure_step_number] nil)
+                          (assoc-in [:procedure_run_status :current_procedure_step_start_time] nil)))))
 
 (defn run-program-by-id [id]
   (let [procedure (db/get-doc id)]

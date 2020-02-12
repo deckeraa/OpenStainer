@@ -18,7 +18,9 @@
   {:description "Contains information about the currently running procedure, if any."
    :fields
    {:current_procedure_id {:type ID :description "CouchDB ID of the currently running procedure. Nil if no procedure is running."}
-    :current_procedure_name {:type String :description "Name of the currently running procedure. Nil if no procedure is running."}}
+    :current_procedure_name {:type String :description "Name of the currently running procedure. Nil if no procedure is running."}
+    :current_procedure_step_number {:type Int :description "One-indexed number of the current procedure step in the currently running procedure. Nil if no procedure is running."}
+    :current_procedure_step_start_time {:type String :description "Start time of the current procedure step in the currently running procedure. Nil if no procedure is running or if the slide holder is currently en route to a staining jar."}}
    }
   :state
   {:description "Information about the current state of the device."

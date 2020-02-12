@@ -9,14 +9,20 @@
             [slide-stainer.defs :refer :all]
             [slide-stainer.board-setup :refer :all]
             [slide-stainer.motion :refer :all]
-            [slide-stainer.db :as db])
+            [slide-stainer.db :as db]
+            [java-time])
   (:import (clojure.lang IPersistentMap)))
 
 (defn resolve-alarms [context args value]
   (:alarms @state-atom))
 
 (defn resolve-procedure-run-status [context args value]
-  (:procedure_run_status @state-atom))
+  (let [proc_run_status (:procedure_run_status @state-atom)]
+    {:current_procedure_id (:current_procedure_id proc_run_status)
+     :current_procedure_name (:current_procedure_name proc_run_status)
+     :current_procedure_step_number (:current_procedure_step_number proc_run_status)
+     :current_procedure_step_start_time (java-time/format (:current_procedure_step_start_time proc_run_status))})
+  )
 
 (defn resolve-state [context args value]
   {:contents (str @state-atom)
