@@ -375,7 +375,8 @@
                                              (fn [procedure-id]
                                                (swap! ratom (fn [v] (-> v
                                                                         (assoc :current-procedure procedure-id)
-                                                                        (assoc :screen :procedure-run)))))])
+                                                                        (assoc :screen :procedure-run))))
+                                               (swap! procedure-cursor (fn [v] (assoc v :current_procedure_step_number 1))))])
          (when (= :procedure-run screen) [slide-stainer.procedure-run/procedure-run-status procedure-cursor])
          [:div {} (str @ratom)]
          ]))))

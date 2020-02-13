@@ -29,7 +29,7 @@
         (map-indexed (fn [idx step]
                        ^{:key idx}
                        [:tr
-                        [:td ""]
+                        [:td (if (= (inc idx) (:current_procedure_step_number @procedure-cursor)) "->" "")]
                         [:td (inc idx)]
                         [:td (:substance step)]
                         [:td ""]
