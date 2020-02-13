@@ -162,7 +162,7 @@
     (remove (fn [[idx itm]] (= n idx)) $)
     (mapv (fn [[idx itm]] itm) $)))
 
-(defn procedure-steps [prog-atm run-fn]
+(defn procedure-steps [prog-atm procedure-run-status-cursor run-fn]
   (fn []
     (let [steps-cursor (reagent/cursor prog-atm [:procedure_steps])
           repeat-cursor (reagent/cursor prog-atm [:repeat])
@@ -203,14 +203,22 @@
        [:button {:on-click (fn [e]
                              ;; ((slide-stainer.graphql/graphql-fn
                              ;;          {:query (str "mutation{run_procedure(_id:\"" (:_id @prog-atm) "\"){contents}}")}))
-                             (when run-fn (run-fn @prog-atm)))
+                             ((graphql/graphql-fn
+                               {:query (str "mutation{run_procedure(_id:\"" (:_id @prog-atm) "\"){procedure_run_status{" graphql/procedure-run-status-keys "}}}" );(str "{state{procedure_run_status{" graphql/procedure-run-status-keys "}}}")
+                                :handler-fn (fn [resp]
+                                              (println "Run button resp: " resp)
+                                              (reset! procedure-run-status-cursor (get-in resp [:run_procedure :procedure_run_status]))
+                                              (println "run-fn: " run-fn)
+                                              (when run-fn (run-fn @prog-atm)))
+                                }))
+                             )
                  } "Run"]
 ;       [:p save-query]
        ])))
 
 (defn program-creation
-  ([] (program-creation sample-program-atom nil))
-  ([prog-atm run-fn]
+  ([] (program-creation sample-program-atom (reagent/atom {}) nil))
+  ([prog-atm procedure-run-status-cursor run-fn]
    [:div
     [osk/osk-input osk-atm
                                   {:on-change (fn [new-val]
@@ -219,7 +227,7 @@
                                    :value (:name @prog-atm)
                                    :size 40}]
     [jar-contents prog-atm]
-    [procedure-steps prog-atm run-fn]
+    [procedure-steps prog-atm procedure-run-status-cursor run-fn]
     [:div (str @prog-atm)]
     [:div (str @osk-atm)]
     [slide-stainer.onscreen-keyboard/onscreen-keyboard osk-atm]]))

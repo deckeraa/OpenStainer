@@ -17,7 +17,8 @@
 
 (defonce app-state
   (reagent/atom {:alarms {}
-                 :current-procedure nil}))
+                 :current-procedure nil
+                 :procedure_run_status {}}))
 
 (defn on-change-handler [atm evt]
   (reset! atm (-> evt .-target .-value)))
@@ -354,7 +355,8 @@
 ;; Page
 
 (defn page [ratom]
-  (let [procedure-cursor (reagent/cursor ratom [:current-procedure])]
+  (let [procedure-cursor (reagent/cursor ratom [:current-procedure])
+        procedure-run-status-cursor (reagent/cursor ratom [:procedure_run_status])]
     (fn []
       (let [screen (or (:screen @ratom) :main)]
         [:div
@@ -371,13 +373,19 @@
          (when (= :classic screen) [pins-control])
          (when (= :jog screen) [jog-control ratom])
          (when (= :procedure-selection screen) [slide-stainer.procedure-selection/procedure-selection procedure-cursor (fn [] (swap! ratom (fn [v] (assoc v :screen :program-creation))))])
-         (when (= :program-creation screen) [slide-stainer.program-creation/program-creation procedure-cursor
-                                             (fn [procedure-id]
-                                               (swap! ratom (fn [v] (-> v
-                                                                        (assoc :current-procedure procedure-id)
-                                                                        (assoc :screen :procedure-run))))
-                                               (swap! procedure-cursor (fn [v] (assoc v :current_procedure_step_number 1))))])
-         (when (= :procedure-run screen) [slide-stainer.procedure-run/procedure-run-status procedure-cursor])
+         (when (= :program-creation screen)
+           [slide-stainer.program-creation/program-creation
+            procedure-cursor
+            procedure-run-status-cursor
+            (fn [procedure]
+              (println "Running run-fn")
+              (swap! ratom (fn [v] (-> v
+                                       (assoc :current-procedure procedure)
+                                       (assoc :screen :procedure-run))))
+              (println "(:screen @ratom) is now: " (:screen @ratom))
+;              (swap! procedure-cursor (fn [v] (assoc v :current_procedure_step_number 1)))
+              )])
+         (when (= :procedure-run screen) [slide-stainer.procedure-run/procedure-run-status procedure-cursor procedure-run-status-cursor])
          [:div {} (str @ratom)]
          ]))))
 

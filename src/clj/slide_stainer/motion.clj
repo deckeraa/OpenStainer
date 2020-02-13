@@ -8,7 +8,7 @@
             [java-time])
   (:use clojure.test))
 
-(def pulse-lock
+(defonce pulse-lock
   (atom false))
 
 (defn set-pin [pin-tag state]

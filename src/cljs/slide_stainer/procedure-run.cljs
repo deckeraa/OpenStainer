@@ -19,22 +19,25 @@
     {:substance "Tap water" :time_in_seconds 150 :jar_number 2}]})
 
 (defn procedure-run-status
-  ([] (procedure-run-status (reagent/atom sample-procedure)))
-  ([procedure-cursor]
+  ([] (procedure-run-status (reagent/atom sample-procedure) (reagent/atom {:current_procedure_step_number 2})))
+  ([procedure-cursor procedure-run-status-cursor]
    (fn []
      [:div
       [:h1 (:name @procedure-cursor)]
       [:table
        [:tbody [:tr [:th ""] [:th "Step #"] [:th "Substance"] [:th "Time"] [:th "Jar #"]]
-        (map-indexed (fn [idx step]
-                       ^{:key idx}
-                       [:tr
-                        [:td (if (= (inc idx) (:current_procedure_step_number @procedure-cursor)) "->" "")]
-                        [:td (inc idx)]
-                        [:td (:substance step)]
-                        [:td ""]
-                        [:td (:jar_number step)]])
-                     (:procedure_steps @procedure-cursor))]]])))
+        (doall (map-indexed (fn [idx step]
+                              ^{:key idx}
+                              [:tr
+                               [:td (if (= (inc idx) (:current_procedure_step_number @procedure-run-status-cursor)) "->" "")]
+                               [:td (inc idx)]
+                               [:td (:substance step)]
+                               [:td ""]
+                               [:td (:jar_number step)]])
+                            (:procedure_steps @procedure-cursor)))]]
+      [:button {:on-click (graphql/graphql-fn
+                           {:query (str "{state{procedure_run_status{" graphql/procedure-run-status-keys "}}}")
+                            :handler-fn (fn [resp] (reset! procedure-run-status-cursor (get-in resp [:state :procedure_run_status])))})} "Refresh"]])))
 
 (defcard-rg procedure-run-status-card
   [procedure-run-status])
