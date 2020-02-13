@@ -19,11 +19,11 @@
     {:substance "Tap water" :time_in_seconds 150 :jar_number 2}]})
 
 (defn procedure-run-status
-  ([] (procedure-run-status sample-procedure))
-  ([procedure]
+  ([] (procedure-run-status (reagent/atom sample-procedure)))
+  ([procedure-cursor]
    (fn []
      [:div
-      [:h1 (:name procedure)]
+      [:h1 (:name @procedure-cursor)]
       [:table
        [:tbody [:tr [:th ""] [:th "Step #"] [:th "Substance"] [:th "Time"] [:th "Jar #"]]
         (map-indexed (fn [idx step]
@@ -34,7 +34,7 @@
                         [:td (:substance step)]
                         [:td ""]
                         [:td (:jar_number step)]])
-                     (:procedure_steps procedure))]]])))
+                     (:procedure_steps @procedure-cursor))]]])))
 
 (defcard-rg procedure-run-status-card
   [procedure-run-status])

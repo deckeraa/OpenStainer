@@ -363,16 +363,21 @@
           [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :graphql)))} "GraphQL"]
           [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :classic)))} "Classic"]
           [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :jog)))} "Jog"]
-          [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :program-creation)))} "Program Creation"]
           [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :procedure-selection)))} "Procedure Selection"]
+          [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :program-creation)))} "Program Creation"]
           [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :procedure-run)))} "Procedure Run Status"]]
          (when (= :graphql screen) [graphql-control])
          (when (= :main screen) [pins-control-graphql])
          (when (= :classic screen) [pins-control])
          (when (= :jog screen) [jog-control ratom])
-         (when (= :program-creation screen) [slide-stainer.program-creation/program-creation procedure-cursor])
          (when (= :procedure-selection screen) [slide-stainer.procedure-selection/procedure-selection procedure-cursor (fn [] (swap! ratom (fn [v] (assoc v :screen :program-creation))))])
-         (when (= :procedure-run screen) [slide-stainer.procedure-run/procedure-run-status])
+         (when (= :program-creation screen) [slide-stainer.program-creation/program-creation procedure-cursor
+                                             (fn [procedure-id]
+                                               (swap! ratom (fn [v] (-> v
+                                                                        (assoc :current-procedure procedure-id)
+                                                                        (assoc :screen :procedure-run)))))])
+         (when (= :procedure-run screen) [slide-stainer.procedure-run/procedure-run-status procedure-cursor])
+         [:div {} (str @ratom)]
          ]))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

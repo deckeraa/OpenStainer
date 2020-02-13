@@ -162,7 +162,7 @@
     (remove (fn [[idx itm]] (= n idx)) $)
     (mapv (fn [[idx itm]] itm) $)))
 
-(defn procedure-steps [prog-atm]
+(defn procedure-steps [prog-atm run-fn]
   (fn []
     (let [steps-cursor (reagent/cursor prog-atm [:procedure_steps])
           repeat-cursor (reagent/cursor prog-atm [:repeat])
@@ -200,14 +200,17 @@
                              :handler-fn (fn [resp]
                                            (println "Save button's response" resp)
                                            (when resp (reset! prog-atm (:save_procedure resp))))})} "Save"]
-       [:button {:on-click (slide-stainer.graphql/graphql-fn
-                            {:query (str "mutation{run_procedure(_id:\"" (:_id @prog-atm) "\"){contents}}")})} "Run"]
+       [:button {:on-click (fn [e]
+                             ;; ((slide-stainer.graphql/graphql-fn
+                             ;;          {:query (str "mutation{run_procedure(_id:\"" (:_id @prog-atm) "\"){contents}}")}))
+                             (when run-fn (run-fn @prog-atm)))
+                 } "Run"]
 ;       [:p save-query]
        ])))
 
 (defn program-creation
-  ([] (program-creation sample-program-atom))
-  ([prog-atm]
+  ([] (program-creation sample-program-atom nil))
+  ([prog-atm run-fn]
    [:div
     [osk/osk-input osk-atm
                                   {:on-change (fn [new-val]
@@ -216,7 +219,7 @@
                                    :value (:name @prog-atm)
                                    :size 40}]
     [jar-contents prog-atm]
-    [procedure-steps prog-atm]
+    [procedure-steps prog-atm run-fn]
     [:div (str @prog-atm)]
     [:div (str @osk-atm)]
     [slide-stainer.onscreen-keyboard/onscreen-keyboard osk-atm]]))
