@@ -150,6 +150,12 @@
                       (update-seconds)))}]
        ])))
 
+(defn up-down-field [label atm]
+  [:div
+   [:div {:style {:display "inline-block"}} (str label @atm)]
+   [:button {:on-click (fn [e] (swap! atm (fn [x] (dec (or x 0)))))} "-"]
+   [:button {:on-click (fn [e] (swap! atm (fn [x] (inc (or x 0)))))} "+"]])
+
 (defn drop-nth [coll n]
   (as-> coll $
     (map-indexed vector $)
@@ -159,6 +165,7 @@
 (defn procedure-steps [prog-atm]
   (fn []
     (let [steps-cursor (reagent/cursor prog-atm [:procedure_steps])
+          repeat-cursor (reagent/cursor prog-atm [:repeat])
           substance-options (:jar_contents @prog-atm)
           save-query (str "mutation{save_procedure(procedure:"
                      (-> @prog-atm
@@ -186,12 +193,7 @@
                                                                      (drop-nth steps idx))))} "x"]]]))
                       @steps-cursor)]]
        [:button {:on-click (fn [e] (swap! steps-cursor conj {}))} "+"]
-       [:div
-        [:p (str "Repeat: " (:repeat @prog-atm))]
-        [:button {:on-click (fn [e] (swap! prog-atm (fn [x]
-                                                      (assoc x :repeat (dec (or (:repeat x) 0))))))} "-"]
-        [:button {:on-click (fn [e] (swap! prog-atm (fn [x]
-                                                      (assoc x :repeat (inc (or (:repeat x) 0))))))} "+"]]
+       [up-down-field "Repeat: " repeat-cursor]
        
        [:button {:on-click (slide-stainer.graphql/graphql-fn
                             {:query save-query
