@@ -257,7 +257,8 @@
                       (-> x
                           (assoc-in [:procedure_run_status :current_procedure_id] (:_id procedure))
                           (assoc-in [:procedure_run_status :current_procedure_name] (:name procedure))
-                          (assoc-in [:procedure_run_status :current_cycle_number] 0))))
+                          (assoc-in [:procedure_run_status :current_cycle_number] 0)
+                          (assoc :stopped false))))
   ;; run the procedure
   (try
     (doseq [repeat-time (range (or (:repeat procedure) 1))]
