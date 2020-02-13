@@ -19,7 +19,7 @@
 
 (def procedure-run-status-keys
   ;;  "Contains a comma-delimited string of all keys in the procedure_run_status object"
-  "current_procedure_id,current_procedure_name,current_procedure_step_number,current_procedure_step_start_time")
+  "current_procedure_id,current_procedure_name,current_procedure_step_number,current_procedure_step_start_time,current_cycle_number")
 
 (defn graphql-fn [{query :query query-fn :query-fn handler-fn :handler-fn variable-fn :variable-fn :as args}]
   (fn []

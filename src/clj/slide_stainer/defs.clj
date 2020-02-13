@@ -6,7 +6,8 @@
   (swap-vals! atom #(assoc-in % ks v)))
 
 (defonce state-atom
-  (atom {:alarms {:limit-switch-hit-unexpectedly false}}))
+  (atom {:alarms {:limit-switch-hit-unexpectedly false}
+         :stopped false}))
 
 (def pin-defs
   {:stepperZ {:output-pins
@@ -55,6 +56,12 @@
 (def jar-positions (mapv #(+ (* % jar-spacing-in-inches) jar-starting-position-in-inches) (range 6)))
 
 (defn limit-switch-hit-unexpectedly-alarm? [] (get-in @state-atom [:alarms :limit_switch_hit_unexpectedly]))
+
+(defn set-stopped! [stopped?]
+  (swap! state-atom #(assoc % :stopped stopped?)))
+
+(defn is-stopped? []
+  (:stopped @state-atom))
 
 (defn set-limit-switch-hit-unexpectedly-alarm
   ([]

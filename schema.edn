@@ -20,7 +20,8 @@
    {:current_procedure_id {:type ID :description "CouchDB ID of the currently running procedure. Nil if no procedure is running."}
     :current_procedure_name {:type String :description "Name of the currently running procedure. Nil if no procedure is running."}
     :current_procedure_step_number {:type Int :description "One-indexed number of the current procedure step in the currently running procedure. Nil if no procedure is running."}
-    :current_procedure_step_start_time {:type String :description "Start time of the current procedure step in the currently running procedure. Nil if no procedure is running or if the slide holder is currently en route to a staining jar."}}
+    :current_procedure_step_start_time {:type String :description "Start time of the current procedure step in the currently running procedure. Nil if no procedure is running or if the slide holder is currently en route to a staining jar."}
+    :current_cycle_number {:type Int :description "The cycle number, one-indexed, of how many times the procedure has been repeated in a single run."}}
    }
   :state
   {:description "Information about the current state of the device."
@@ -28,6 +29,7 @@
    {:contents {:type String :description "State atom that stores configuration info, for internal use only."}
     :alarms {:type :alarms}
     :procedure_run_status {:type :procedure_run_status}
+    :stopped {:type Boolean :description "Whether or not the current motion is stopped & cancelled."}
     }}
   :axis
   {:description "A axis of motion on the device."

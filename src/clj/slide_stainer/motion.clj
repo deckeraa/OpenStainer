@@ -157,20 +157,28 @@
 ;              (java.util.concurrent.locks.LockSupport/parkNanos (hz-to-ns pulse-val))
               ))
           (catch Exception e (do
-                               (when (limit-switch-hit-unexpected? current-position dir-val
-                                                                   (:pulse-num (ex-data e))
-                                                                   axis-upper-limit-in-pulses)
-                                 (println "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                                 (println "!!!!!!!!Limit switch hit unexpected!!!!!"
-                                          current-position dir-val
-                                          (:pulse-num (ex-data e)) axis-upper-limit-in-pulses)
-                                 (println "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-                                 (slide-stainer.defs/set-limit-switch-hit-unexpectedly-alarm)
+                               (let [cause (:cause (ex-data e))]
+                                 ;; check to see if we need to trigger the alarm for an unexpected
+                                 ;; limit switch hit
+                                 (when (and (= :limit-switch cause)
+                                            (limit-switch-hit-unexpected? current-position dir-val
+                                                                          (:pulse-num (ex-data e))
+                                                                          axis-upper-limit-in-pulses))
+                                   (println "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                                   (println "!!!!!!!!Limit switch hit unexpected!!!!!"
+                                            current-position dir-val
+                                            (:pulse-num (ex-data e)) axis-upper-limit-in-pulses)
+                                   (println "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                                   (slide-stainer.defs/set-limit-switch-hit-unexpectedly-alarm)
+                                   )
+                                 (when (= :estop cause)
+                                   (slide-stainer.defs/set-stopped! true))
                                  )
+                               ;; if it was the estop, signal that the device is stopped
+                               ;; TODO not sure what the next section was intended to do
                                (let [calculated-position (:pulse-num (ex-data e))] ; TODO fix calc
                                  (println (.getMessage e))
-                                 (when (= :limit-switch
-                                          (:cause (ex-data e)))
+                                 (when (= :limit-switch (:cause (ex-data e)))
                                    (when (and dir-val (+ )))
                                    (reset! hit-limit-switch? e)))
                                )))
@@ -248,19 +256,30 @@
   (swap! state-atom (fn [x]
                       (-> x
                           (assoc-in [:procedure_run_status :current_procedure_id] (:_id procedure))
-                          (assoc-in [:procedure_run_status :current_procedure_name] (:name procedure)))))
+                          (assoc-in [:procedure_run_status :current_procedure_name] (:name procedure))
+                          (assoc-in [:procedure_run_status :current_cycle_number] 0))))
   ;; run the procedure
-  (doseq [repeat-time (range (or (:repeat procedure) 1))]
-    (swap! state-atom (fn [x] (assoc-in x [:procedure_run_status :current_procedure_step_number] 0)))
-    (doseq [step (:procedure_steps procedure)]
+  (try
+    (doseq [repeat-time (range (or (:repeat procedure) 1))]
       (swap! state-atom (fn [x]
-                          (assoc-in x [:procedure_run_status :current_procedure_step_number]
-                                    (inc (get-in x [:procedure_run_status :current_procedure_step_number])))))
-      (move-to-jar (:jar_number step))
-      (swap! state-atom (fn [x] (assoc-in x [:procedure_run_status :current_procedure_step_start_time] (java-time/local-date-time))))
-      (Thread/sleep (* 1000 (:time_in_seconds step)))))
-  ;; return to the up position so that the last step doesn't get excessive staining time
-  (move-to-up-position)
+                          (-> x
+                              (assoc-in [:procedure_run_status :current_procedure_step_number] 0)
+                              (assoc-in [:procedure_run_status :current_cycle_number]
+                                        (inc (get-in x [:procedure_run_status :current_cycle_number]))))))
+      (doseq [step (:procedure_steps procedure)]
+        ;; break out of the procedure early if needed
+        (when (slide-stainer.defs/is-stopped?) (throw (ex-info "Stopped" {:cause :estop})))
+        (swap! state-atom (fn [x]
+                            (assoc-in x [:procedure_run_status :current_procedure_step_number]
+                                      (inc (get-in x [:procedure_run_status :current_procedure_step_number])))))
+        (move-to-jar (:jar_number step))
+        (swap! state-atom (fn [x] (assoc-in x [:procedure_run_status :current_procedure_step_start_time] (java-time/local-date-time))))
+        (Thread/sleep (* 1000 (:time_in_seconds step)))))
+    
+    ;; return to the up position so that the last step doesn't get excessive staining time
+    (move-to-up-position)
+    (catch Exception e
+      (println "caught execption in run-program (no need to do anything): " (:cause (ex-data e)))))
   ;; clean up the state atom
   (swap! state-atom (fn [x]
                       (-> x

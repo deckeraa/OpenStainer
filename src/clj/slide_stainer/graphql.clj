@@ -21,13 +21,15 @@
     {:current_procedure_id (:current_procedure_id proc_run_status)
      :current_procedure_name (:current_procedure_name proc_run_status)
      :current_procedure_step_number (:current_procedure_step_number proc_run_status)
-     :current_procedure_step_start_time (java-time/format (:current_procedure_step_start_time proc_run_status))})
+     :current_procedure_step_start_time (java-time/format (:current_procedure_step_start_time proc_run_status))
+     :current_cycle_number (:current_cycle_number proc_run_status)})
   )
 
 (defn resolve-state [context args value]
   {:contents (str @state-atom)
    :alarms (resolve-alarms context args value)
-   :procedure_run_status (resolve-procedure-run-status context args value)})
+   :procedure_run_status (resolve-procedure-run-status context args value)
+   :stopped (is-stopped?)})
 
 (defn resolve-pin-by-id [context args value]
   (println "resolve-pin-by-id" args value)
