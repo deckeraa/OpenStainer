@@ -8,9 +8,6 @@
             [java-time])
   (:use clojure.test))
 
-(defonce pulse-lock
-  (atom false))
-
 (defn set-pin [pin-tag state]
 ;  (when (not (:device @state-atom)) (init-pins))
   (gpio/write (:handle @state-atom) (-> (:buffer @state-atom) (gpio/set-line pin-tag state))))

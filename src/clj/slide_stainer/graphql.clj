@@ -164,6 +164,10 @@
           (println error-msg)
           {:error error-msg})))))
 
+(defn drop-motor-lock-graphql-handler [context args value]
+  (reset! pulse-lock false)
+  (resolve-state context args value))
+
 (defn resolver-map []
   {:query/pin_by_id resolve-pin-by-id
    :query/ip resolve-ip
@@ -184,6 +188,7 @@
    :mutation/clear_alarms clear-alarms-graphql-handler
    :mutation/run_procedure run-procedure-graphql-handler
    :mutation/save_procedure save-procedure-graphql-handler
+   :mutation/drop_motor_lock drop-motor-lock-graphql-handler
 })
 
 (defn simplify

@@ -9,6 +9,9 @@
   (atom {:alarms {:limit-switch-hit-unexpectedly false}
          :stopped false}))
 
+(defonce pulse-lock
+  (atom false))
+
 (def pin-defs
   {:stepperZ {:output-pins
               {17 {::gpio/tag :stepperZ-ena
