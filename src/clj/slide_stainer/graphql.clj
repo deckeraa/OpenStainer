@@ -104,6 +104,7 @@
 
 (defn move-to-jar-graphql-handler [context args value]
   (println "move-to-jar-graphql-handler")
+  (set-stopped! false)
   (move-to-jar (:jar args))
   (resolve-axis context (assoc args :id :stepperX) value))
 
@@ -141,6 +142,7 @@
 
 (defn home-graphql-handler [context args value]
   (println "Homing")
+  (set-stopped! false)
   (home)
   (resolve-state context args value))
 

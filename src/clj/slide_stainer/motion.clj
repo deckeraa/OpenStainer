@@ -230,14 +230,19 @@
 
 (defn move-to-jar [jar]
   (println "move-to-jar: " jar (type jar) jar-positions (get jar-positions (dec jar)))
-  (move-to-up-position)
-  (move-to-position :stepperX (get jar-positions (dec jar)))
-  (move-to-down-position))
+  (when (not (slide-stainer.defs/is-stopped?))
+    (move-to-up-position))
+  (when (not (slide-stainer.defs/is-stopped?))
+    (move-to-position :stepperX (get jar-positions (dec jar))))
+  (when (not (slide-stainer.defs/is-stopped?))
+    (move-to-down-position)))
 
 (defn home []
   (slide-stainer.defs/clear-positioning)
-  (move-relative :stepperZ up-pos-home)
-  (move-relative :stepperX left-homing-pos))
+  (when (not (slide-stainer.defs/is-stopped?))
+    (move-relative :stepperZ up-pos-home))
+  (when (not (slide-stainer.defs/is-stopped?))
+    (move-relative :stepperX left-homing-pos)))
 
 (def sample-program
   {:name "H&E with Harris' Hematoxylin"
