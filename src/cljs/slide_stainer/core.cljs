@@ -339,7 +339,7 @@
      "Home"]))
 
 (defn drop-motor-lock-button []
-  [:button {:on-click (graphql/graphql-fn {:query "mutation{drop_motor_lock{motion_lock}}"})} "Drop motor lock"])
+  [:button {:on-click (graphql/graphql-fn {:query "mutation{drop_motor_lock{motor_lock}}"})} "Drop motor lock"])
 
 (defn jog-control [ratom]
   (let [alarms-cursor (reagent/cursor ratom [:alarms])]

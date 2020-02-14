@@ -30,7 +30,7 @@
     :alarms {:type :alarms}
     :procedure_run_status {:type :procedure_run_status}
     :stopped {:type Boolean :description "Whether or not the current motion is stopped & cancelled."}
-    :motion_lock {:type Boolean :description "A lock used internally to ensure only one function is trying to turn motors at once. True = locked, False = unlocked."}
+    :motor_lock {:type Boolean :description "A lock used internally to ensure only one function is trying to turn motors at once. True = locked, False = unlocked."}
     }}
   :axis
   {:description "A axis of motion on the device."
