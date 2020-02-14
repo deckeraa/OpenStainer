@@ -29,7 +29,8 @@
   {:contents (str @state-atom)
    :alarms (resolve-alarms context args value)
    :procedure_run_status (resolve-procedure-run-status context args value)
-   :stopped (is-stopped?)})
+   :stopped (is-stopped?)
+   :motion_lock @slide-stainer.defs/pulse-lock})
 
 (defn resolve-pin-by-id [context args value]
   (println "resolve-pin-by-id" args value)

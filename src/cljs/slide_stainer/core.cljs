@@ -4,6 +4,7 @@
    [devcards.core]
    [cljs-http.client :as http]
    [clojure.edn :as edn]
+   [slide-stainer.graphql :as graphql]
    [slide-stainer.program-creation]
    [slide-stainer.procedure-selection]
    [slide-stainer.procedure-run])
@@ -337,6 +338,9 @@
     [:button {:on-click (graphql-click-handler "mutation {home{contents}}")}
      "Home"]))
 
+(defn drop-motor-lock-button []
+  [:button {:on-click (graphql/graphql-fn {:query "mutation{drop_motor_lock{motion_lock}}"})} "Drop motor lock"])
+
 (defn jog-control [ratom]
   (let [alarms-cursor (reagent/cursor ratom [:alarms])]
     (fn []
@@ -349,6 +353,7 @@
        [jar-jog-control alarms-cursor]
        [home-button]
        [alarms-control alarms-cursor]
+       [drop-motor-lock-button]
        ])))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
