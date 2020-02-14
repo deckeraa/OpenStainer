@@ -9,7 +9,7 @@
   (atom {:alarms {:limit-switch-hit-unexpectedly false}
          :stopped false}))
 
-(defonce pulse-lock
+(defonce motor-lock
   (atom false))
 
 (def pin-defs

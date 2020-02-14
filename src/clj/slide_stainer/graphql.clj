@@ -30,7 +30,7 @@
    :alarms (resolve-alarms context args value)
    :procedure_run_status (resolve-procedure-run-status context args value)
    :stopped (is-stopped?)
-   :motor_lock @slide-stainer.defs/pulse-lock})
+   :motor_lock @slide-stainer.defs/motor-lock})
 
 (defn resolve-pin-by-id [context args value]
   (println "resolve-pin-by-id" args value)
@@ -166,7 +166,7 @@
           {:error error-msg})))))
 
 (defn drop-motor-lock-graphql-handler [context args value]
-  (reset! pulse-lock false)
+  (reset! motor-lock false)
   (resolve-state context args value))
 
 (defn resolver-map []
