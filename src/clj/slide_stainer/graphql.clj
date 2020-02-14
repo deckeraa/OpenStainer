@@ -155,7 +155,7 @@
 (defn run-procedure-graphql-handler [context args value]
   (let [id (:_id args)]
     (println "run-procedure-graphql-handler: " id)
-    (run-program-by-id id)
+    (.start (Thread. (fn [] (run-program-by-id id))))
     (resolve-state context args value)))
 
 (defn save-procedure-graphql-handler [context args value]
