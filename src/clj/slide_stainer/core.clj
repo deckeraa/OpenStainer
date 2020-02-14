@@ -40,49 +40,8 @@
     (println "graphql query: " body)
     (content-type (response/response (str (q (:query body) (:variables body)))) "text/html")))
 
-(defn led-handler [req]
-  (println req))
-
-(defn pulse-handler [req]
-  (let [body (keywordize-keys (json/read-str (request/body-string req)))]
-    (println body)
-    ;; (pulse (keyword (:pin-tag body))
-    ;;        (Integer/parseInt (:wait-ms body))
-    ;;        (Integer/parseInt (:num-pulses body)))
-    (content-type (response/response "<h1>Success.</h1>") "text/html")))
-
-(defn blink [pin_num]
-  (try
-    (let [device (gpio/device 0)
-          handle (gpio/handle device
-                              {pin_num {::gpio/tag :red}}
-                              {::gpio/direction :output})
-          buff (gpio/buffer handle)]
-      (println "Setting " pin_num " high")
-      (gpio/write handle (-> buff (gpio/set-line :red true)))
-                                        ;   (println (gpio/describe-line device 17))
-      (Thread/sleep 2000)
-      (println "Setting " pin_num " low")
-      (gpio/write handle (-> buff (gpio/set-line :red false)))
-                                        ;    (println (gpio/describe-line device 17))
-      (gpio/close handle)
-      (gpio/close device))
-    (catch Exception e
-      (println e))))
-
-(defn blink-handler [req]
-  (let [body (keywordize-keys (json/read-str (request/body-string req)))]
-    (println body)
-    (blink (:port body))
-    (content-type (response/response "<h1>Success.</h1>") "text/html"))
-  )
-
 (def api-routes
-  ["/" [["led" led-handler]
-        ["blink" blink-handler]
-        ["pin" pin-handler]
-        ["pulse" pulse-handler]
-        ["ip" get-ip-address-handler]
+  ["/" [["ip" get-ip-address-handler]
         ["graphql" graphql-handler]
         ["cleanup" (fn [req]
                      (clean-up-pins)
