@@ -117,6 +117,7 @@
         current-position (get-in @state-atom [:setup id :position-in-pulses])
         axis-upper-limit-in-pulses (inches-to-pulses id (:position_limit axis-config))
         can-run  (not (limit-switch-hit-unexpectedly-alarm?))
+        rel-number-of-pulses-moved (atom nil)
         ] ; friendly reminder not to take it lower than 7.5us
     (println "dir-val" dir-val)
     (println "move-by-pulses max calculated frequency (Hz): " (when (not (empty? precomputed-pulses)) (apply max precomputed-pulses)))
@@ -136,7 +137,8 @@
                     wait-time (hz-to-ns pulse-val)
                     tgt-one (+ start-time wait-time)]
                 (when (:estop (deref (:status-atm @state-atom)))
-                  (throw (ex-info "E-stop hit" {:cause :estop})))
+                  (throw (ex-info "E-stop hit" {:cause :estop
+                                                :pulse-num pulse-num})))
                 (when (limit-switch (deref (:status-atm @state-atom)))
                   (throw (ex-info "Limit switch hit" {:cause :limit-switch
                                                       :pulse-num pulse-num})))
@@ -155,6 +157,9 @@
               ))
           (catch Exception e (do
                                (let [cause (:cause (ex-data e))]
+                                 ;; Set the rel-number-of-pulses-moved atom
+                                 (reset! rel-number-of-pulses-moved (* (:pulse-num (ex-data e))
+                                                                   (if dir-val 1 -1)))
                                  ;; check to see if we need to trigger the alarm for an unexpected
                                  ;; limit switch hit
                                  (when (and (= :limit-switch cause)
@@ -179,12 +184,15 @@
                                  (println (.getMessage e))
                                  (when (= :limit-switch (:cause (ex-data e)))
                                    (when (and dir-val (+ )))
-                                   (reset! hit-limit-switch? e)))
+                                   (reset! hit-limit-switch? true)))
                                )))
         (java.util.concurrent.locks.LockSupport/parkNanos nanosecond-wait)
         (set-pin ena false)
 
-        (println "current-position: " current-position " @hit-limit-switch? " @hit-limit-switch?)
+        ;; if rel-number-of-pulses-moved hasn't been set yet, then that means we moved the
+        ;; desired amount
+        (when (nil? @rel-number-of-pulses-moved) (reset! rel-number-of-pulses-moved pulses))
+        
         (if (and (nil? current-position) (not @hit-limit-switch?))
           ;; If we don't know where we are, then we must have been homing.
           ;; If the limit switch didn't trigger, we still don't know where we are.
@@ -196,7 +204,7 @@
                                  axis-upper-limit-in-pulses
                                  0)
                                (+ current-position
-                                  pulses))]
+                                  @rel-number-of-pulses-moved))]
             (println "New position: " new-position (pulses-to-inches id new-position) (nil? @hit-limit-switch?) dir-val)
             (swap-in! state-atom [:setup id :position-in-pulses] new-position)))
         (println "Attempting to release the lock: " motor-lock)
