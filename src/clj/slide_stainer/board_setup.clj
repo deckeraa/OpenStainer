@@ -90,6 +90,7 @@
    (swap! state-atom assoc :buffer (gpio/buffer (:handle @state-atom)))
    (println "Calling init-watcher")
    (init-watcher pin-defs)
+   (Thread/sleep 250) ; give the watcher a little bit of time to wake up
    ))
 
 (defn clean-up-pins

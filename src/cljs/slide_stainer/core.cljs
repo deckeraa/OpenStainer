@@ -101,7 +101,7 @@
                            (println "POST Resp: " resp))))
          } name])
 
-(def alarms-subquery "alarms{limit_switch_hit_unexpectedly}")
+(def alarms-subquery "alarms{limit_switch_hit_unexpectedly,homing_failed}")
 (def alarms-query (str "{state{" alarms-subquery "}}"))
 
 (defn alarms-query-response-handler [alarms-cursor results]

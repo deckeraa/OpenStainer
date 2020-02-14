@@ -184,6 +184,7 @@
         (java.util.concurrent.locks.LockSupport/parkNanos nanosecond-wait)
         (set-pin ena false)
 
+        (println "current-position: " current-position " @hit-limit-switch? " @hit-limit-switch?)
         (if (and (nil? current-position) (not @hit-limit-switch?))
           ;; If we don't know where we are, then we must have been homing.
           ;; If the limit switch didn't trigger, we still don't know where we are.
@@ -196,7 +197,7 @@
                                  0)
                                (+ current-position
                                   pulses))]
-            (println "New position: " new-position (nil? @hit-limit-switch?) dir-val)
+            (println "New position: " new-position (pulses-to-inches id new-position) (nil? @hit-limit-switch?) dir-val)
             (swap-in! state-atom [:setup id :position-in-pulses] new-position)))
         (println "Attempting to release the lock: " motor-lock)
         (when (not (compare-and-set! motor-lock true false))

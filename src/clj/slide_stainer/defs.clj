@@ -81,7 +81,8 @@
   ([val]
    (set-homing-failed-alarm state-atom val))
   ([state-atom val]
-   (swap! state-atom (fn [x] (assoc-in x [:alarms :homing_failed] val)))))
+   (swap! state-atom (fn [x] (assoc-in x [:alarms :homing_failed] val)))
+   (println "Set homing failed alarm to " val @state-atom)))
 
 (defn clear-positioning []
   (swap! state-atom (fn [x]

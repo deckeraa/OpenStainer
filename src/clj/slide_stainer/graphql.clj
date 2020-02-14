@@ -149,6 +149,7 @@
 (defn clear-alarms-graphql-handler [context args value]
   (println "clear-alarms-graphql-handler")
   (set-limit-switch-hit-unexpectedly-alarm false)
+  (set-homing-failed-alarm false)
   (resolve-state context args value))
 
 (defn run-procedure-graphql-handler [context args value]
