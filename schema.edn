@@ -13,7 +13,8 @@
   :alarms
   {:description "Alarms states."
    :fields
-   {:limit_switch_hit_unexpectedly {:type Boolean}}}
+   {:limit_switch_hit_unexpectedly {:type Boolean}
+    :homing_failed {:type Boolean}}}
   :procedure_run_status
   {:description "Contains information about the currently running procedure, if any."
    :fields

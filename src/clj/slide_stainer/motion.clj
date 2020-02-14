@@ -168,10 +168,12 @@
                                    (println "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                                    (slide-stainer.defs/set-limit-switch-hit-unexpectedly-alarm)
                                    )
+                                 ;; if it was the estop, signal that the device is stopped
                                  (when (= :estop cause)
                                    (slide-stainer.defs/set-stopped! true))
                                  )
-                               ;; if it was the estop, signal that the device is stopped
+                               ;; If it was a limit switch hit, save off the exception into an
+                               ;; atom so that we can use the :pulse-num value to update the positions properly
                                ;; TODO not sure what the next section was intended to do
                                (let [calculated-position (:pulse-num (ex-data e))] ; TODO fix calc
                                  (println (.getMessage e))
@@ -181,14 +183,21 @@
                                )))
         (java.util.concurrent.locks.LockSupport/parkNanos nanosecond-wait)
         (set-pin ena false)
-        (let [new-position (if @hit-limit-switch?
-                             (if dir-val
-                               axis-upper-limit-in-pulses
-                               0)
-                             (+ current-position
-                                pulses))]
-          (println "New position: " new-position (nil? @hit-limit-switch?) dir-val)
-          (swap-in! state-atom [:setup id :position-in-pulses] new-position))
+
+        (if (and (nil? current-position) (not @hit-limit-switch?))
+          ;; If we don't know where we are, then we must have been homing.
+          ;; If the limit switch didn't trigger, we still don't know where we are.
+          ;; Therefore, set the homing-failed alarm.
+          (set-homing-failed-alarm true)
+          ;; Otherwise, go ahead and set our new position
+          (let [new-position (if @hit-limit-switch?
+                               (if dir-val
+                                 axis-upper-limit-in-pulses
+                                 0)
+                               (+ current-position
+                                  pulses))]
+            (println "New position: " new-position (nil? @hit-limit-switch?) dir-val)
+            (swap-in! state-atom [:setup id :position-in-pulses] new-position)))
         (println "Attempting to release the lock: " motor-lock)
         (when (not (compare-and-set! motor-lock true false))
           (println "Someone messed with the lock")))

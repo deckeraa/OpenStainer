@@ -6,7 +6,8 @@
   (swap-vals! atom #(assoc-in % ks v)))
 
 (defonce state-atom
-  (atom {:alarms {:limit-switch-hit-unexpectedly false}
+  (atom {:alarms {:limit-switch-hit-unexpectedly false
+                  :homing_failed false}
          :stopped false}))
 
 (defonce motor-lock
@@ -73,6 +74,14 @@
    (set-limit-switch-hit-unexpectedly-alarm state-atom val))
   ([state-atom val]
    (swap! state-atom (fn [x] (assoc-in x [:alarms :limit_switch_hit_unexpectedly] val)))))
+
+(defn set-homing-failed-alarm
+  ([]
+   (set-homing-failed-alarm true))
+  ([val]
+   (set-homing-failed-alarm state-atom val))
+  ([state-atom val]
+   (swap! state-atom (fn [x] (assoc-in x [:alarms :homing_failed] val)))))
 
 (defn clear-positioning []
   (swap! state-atom (fn [x]
