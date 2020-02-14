@@ -155,7 +155,10 @@
 (defn run-procedure-graphql-handler [context args value]
   (let [id (:_id args)]
     (println "run-procedure-graphql-handler: " id)
-    (.start (Thread. (fn [] (run-program-by-id id))))
+    (let [thr (Thread. (fn [] (run-program-by-id id)))
+          max-pri (.getMaxPriority (.getThreadGroup thr))]
+      (.setPriority thr max-pri)
+      (.start thr))
     (resolve-state context args value)))
 
 (defn save-procedure-graphql-handler [context args value]
