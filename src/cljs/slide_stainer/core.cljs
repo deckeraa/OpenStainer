@@ -176,56 +176,6 @@
        [:p]
        [:button {:on-click (graphql-click-handler "mutation {clean_up_pins{contents}}")} "Clean up pins"]])))
 
-
-(defn pin-control [pin-tag]
-  (let [style {:background-color :red
-               :color :white
-               :font-size "40px"
-               :margin "5px"
-               :width "75px"
-               :height "75px"}]
-    [:tr
-     [:td (str pin-tag)]
-     [:td
-      [:div {:style style
-             :on-click (fn [e]
-                         (go (let [resp (http/post "http://localhost:3000/pin"
-                                                   {:json-params {:pin-tag pin-tag :state true}}
-                                                   :with-credentials? false)]
-                               (println "POST Resp: " resp))))
-             } "Off"]]
-     [:td
-      [:div {:style (assoc style :background-color :green)
-             :on-click (fn [e]
-                         (go (let [resp (http/post "http://localhost:3000/pin"
-                                                   {:json-params {:pin-tag pin-tag :state false}}
-                                                   :with-credentials? false)]
-                               (println "POST Resp: " resp))))
-             } "On"]]]))
-
-(defn pulse-control [pin-tag]
-  (let [wait-ms    (reagent/atom "100")
-        num-pulses (reagent/atom "40000")]
-    (fn []
-      [:tr (str pin-tag)
-       [:td [:input {:type "button" :value "Pulse"
-                     :style {:height 100}
-                     :on-click (fn [e]
-                                 (go (let [resp (http/post "http://localhost:3000/pulse"
-                                                           {:json-params {:pin-tag pin-tag :wait-ms @wait-ms :num-pulses @num-pulses}}
-                                                           :with-credentials? false)]
-                                       (println "POST resp: " resp))))}]]
-       [:td [:input {:type "text" :value @wait-ms
-                     :on-change #(reset! wait-ms (-> % .-target .-value))}]]
-       [:td [:input {:type "text" :value @num-pulses
-                     :on-change #(reset! num-pulses (-> % .-target .-value))}]]])))
-
-(defn pins-control []
-  (into
-   [:table [pulse-control :stepperX-pul]]
-   (map pin-control [:stepperX-ena :stepperX-dir]))
-  )
-
 (defn relative-jog-control []
   (let [query-fn (fn [device invert? inc-atm]
                    (str "mutation {move_relative(id:\""
@@ -368,14 +318,12 @@
          [:div {:class "header"}
           [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :main)))} "Main"]
           [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :graphql)))} "GraphQL"]
-          [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :classic)))} "Classic"]
           [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :jog)))} "Jog"]
           [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :procedure-selection)))} "Procedure Selection"]
           [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :program-creation)))} "Program Creation"]
           [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :procedure-run)))} "Procedure Run Status"]]
          (when (= :graphql screen) [graphql-control])
          (when (= :main screen) [pins-control-graphql])
-         (when (= :classic screen) [pins-control])
          (when (= :jog screen) [jog-control ratom])
          (when (= :procedure-selection screen) [slide-stainer.procedure-selection/procedure-selection procedure-cursor (fn [] (swap! ratom (fn [v] (assoc v :screen :program-creation))))])
          (when (= :program-creation screen)
