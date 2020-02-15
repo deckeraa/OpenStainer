@@ -24,7 +24,8 @@
                  [org.clojure/data.json "0.2.7"]
                  [com.cemerick/url "0.1.1"]
                  [clojure.java-time "0.3.2"]
-                 [cljc.java-time "0.1.8"]]
+                 [com.andrewmcveigh/cljs-time "0.5.2"]
+                 ]
 
   :main slide-stainer.core
 
