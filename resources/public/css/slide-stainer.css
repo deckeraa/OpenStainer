@@ -9,3 +9,54 @@
 .procedure_selection li:hover {
     background-color: orange;
 }
+
+/* Header styles */
+
+.header {
+    height: 36px;
+    width: 100%;
+    background-color: #94411b;
+    margin: 0px;
+    padding: 0px;
+    position: absolute;
+    left: 0px;
+    top:  0px;
+}
+
+.header h1 {
+    font-size: 24px;
+    color: white;
+    margin: 0px;
+    position: absolute;
+    top: 2px;
+    left: 4px;
+}
+
+.header h2 {
+    font-size: 9px;
+    color: white;
+    position: absolute;
+    top: 18px;
+    left: 124px;
+}
+
+.header img {
+    color: white;
+    width: 24px;
+    height: 24px;
+    position: absolute;
+    top: 6px;
+    right: 6px;
+}
+
+.header .cog {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+}
+
+/* Body styles */
+.body {
+    position: absolute;
+    top: 48px;
+}

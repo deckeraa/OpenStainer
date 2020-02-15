@@ -4,6 +4,7 @@
    [devcards.core]
    [cljs-http.client :as http]
    [clojure.edn :as edn]
+   [slide-stainer.svg :as svg]
    [slide-stainer.graphql :as graphql]
    [slide-stainer.periodic-updater]
    [slide-stainer.program-creation]
@@ -319,30 +320,37 @@
     (let [screen (or (:screen @ratom) :main)]
       [:div
        [:div {:class "header"}
-        [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :main)))} "Main"]
-        [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :graphql)))} "GraphQL"]
-        [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :jog)))} "Jog"]
-        [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :procedure-selection)))} "Procedure Selection"]
-        [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :program-creation)))} "Program Creation"]
-        [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :procedure-run)))} "Procedure Run Status"]]
-       (when (= :graphql screen) [graphql-control])
-       (when (= :main screen) [pins-control-graphql])
-       (when (= :jog screen) [jog-control ratom])
-       (when (= :procedure-selection screen) [slide-stainer.procedure-selection/procedure-selection procedure-cursor (fn [] (swap! ratom (fn [v] (assoc v :screen :program-creation))))])
-       (when (= :program-creation screen)
-         [slide-stainer.program-creation/program-creation
-          procedure-cursor
-          procedure-run-status-cursor
-          (fn [procedure]
-            (println "Running run-fn")
-            (swap! ratom (fn [v] (-> v
-                                     (assoc :current-procedure procedure)
-                                     (assoc :screen :procedure-run))))
-            (println "(:screen @ratom) is now: " (:screen @ratom))
+        [:h1 "OpenStain"]
+        [:h2 "v1.0.0"]
+        [svg/cog {:class "cog" :on-click #(println "cog clicked")} "white" 24]
+        ;; [:img {:src "/open-iconic/svg/cog.svg"}]
+        ]
+       [:div {:class "body"}
+        [:div {:class "button-bar"}
+         [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :main)))} "Main"]
+         [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :graphql)))} "GraphQL"]
+         [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :jog)))} "Jog"]
+         [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :procedure-selection)))} "Procedure Selection"]
+         [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :program-creation)))} "Program Creation"]
+         [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :procedure-run)))} "Procedure Run Status"]]
+        (when (= :graphql screen) [graphql-control])
+        (when (= :main screen) [pins-control-graphql])
+        (when (= :jog screen) [jog-control ratom])
+        (when (= :procedure-selection screen) [slide-stainer.procedure-selection/procedure-selection procedure-cursor (fn [] (swap! ratom (fn [v] (assoc v :screen :program-creation))))])
+        (when (= :program-creation screen)
+          [slide-stainer.program-creation/program-creation
+           procedure-cursor
+           procedure-run-status-cursor
+           (fn [procedure]
+             (println "Running run-fn")
+             (swap! ratom (fn [v] (-> v
+                                      (assoc :current-procedure procedure)
+                                      (assoc :screen :procedure-run))))
+             (println "(:screen @ratom) is now: " (:screen @ratom))
                                         ;              (swap! procedure-cursor (fn [v] (assoc v :current_procedure_step_number 1)))
-            )])
-       (when (= :procedure-run screen) [slide-stainer.procedure-run/procedure-run-status procedure-cursor procedure-run-status-cursor])
-       [:div {} (str @ratom)]
+             )])
+        (when (= :procedure-run screen) [slide-stainer.procedure-run/procedure-run-status procedure-cursor procedure-run-status-cursor])
+        [:div {} (str @ratom)]]
        ])))
 
 (def queries-to-run
