@@ -46,13 +46,21 @@
       [:table
        [:tbody [:tr [:th ""] [:th "Step #"] [:th "Substance"] [:th "Time"] [:th "Jar #"]]
         (doall (map-indexed (fn [idx step]
-                              ^{:key idx}
-                              [:tr
-                               [:td (if (= (inc idx) (:current_procedure_step_number @procedure-run-status-cursor)) "->" "")]
-                               [:td (inc idx)]
-                               [:td (:substance step)]
-                               [:td (format-time-in-seconds (:time_in_seconds step))]
-                               [:td (:jar_number step)]])
+                              (let [current-step? (= (inc idx) (:current_procedure_step_number @procedure-run-status-cursor))
+                                    current-start-time (format/parse (:current_procedure_step_start_time @procedure-run-status-cursor))]
+                                ^{:key idx}
+                                [:tr
+                                 [:td (if current-step? "->" "")]
+                                 [:td (inc idx)]
+                                 [:td (:substance step)]
+                                 [:td (format-time-in-seconds (:time_in_seconds step))
+;;                                   (if (and current-step?)
+;;       ;                                  (:current_procedure_step_start_time @procedure-run-status-cursor)
+;;                                    ;     (str current-start-time)
+;; ;                                        (str (time/in-seconds (time/interval current-start-time (time/now))))
+                                  ;;                                         (format-time-in-seconds (:time_in_seconds step)))
+                                  ]
+                                 [:td (:jar_number step)]]))
                             (:procedure_steps @procedure-cursor)))]]
       [:p {} (str "Cycle " (:current_cycle_number @procedure-run-status-cursor) " of " (:repeat @procedure-cursor))]
       [:button {:on-click (refresh-fn procedure-cursor procedure-run-status-cursor)} "Refresh"]])))

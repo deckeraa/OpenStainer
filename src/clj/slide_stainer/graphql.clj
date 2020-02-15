@@ -10,6 +10,8 @@
             [slide-stainer.board-setup :refer :all]
             [slide-stainer.motion :refer :all]
             [slide-stainer.db :as db]
+            [clj-time.core :as time]
+            [clj-time.format :as format]
             [java-time])
   (:import (clojure.lang IPersistentMap)))
 
@@ -21,7 +23,9 @@
     {:current_procedure_id (:current_procedure_id proc_run_status)
      :current_procedure_name (:current_procedure_name proc_run_status)
      :current_procedure_step_number (:current_procedure_step_number proc_run_status)
-     :current_procedure_step_start_time (java-time/format (:current_procedure_step_start_time proc_run_status))
+     :current_procedure_step_start_time (format/unparse (format/formatters :date-hour-minute-second-ms)
+                                                        (:current_procedure_step_start_time proc_run_status))
+                                        ;(java-time/format (:current_procedure_step_start_time proc_run_status))
      :current_cycle_number (:current_cycle_number proc_run_status)})
   )
 

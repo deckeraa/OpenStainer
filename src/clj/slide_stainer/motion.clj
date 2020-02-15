@@ -5,6 +5,7 @@
             [slide-stainer.defs :refer :all]
             [slide-stainer.board-setup :refer :all]
             [slide-stainer.db :as db]
+            [clj-time.core :as time]
             [java-time])
   (:use clojure.test))
 
@@ -294,7 +295,8 @@
                             (assoc-in x [:procedure_run_status :current_procedure_step_number]
                                       (inc (get-in x [:procedure_run_status :current_procedure_step_number])))))
         (move-to-jar (:jar_number step))
-        (swap! state-atom (fn [x] (assoc-in x [:procedure_run_status :current_procedure_step_start_time] (java-time/local-date-time))))
+        (swap! state-atom (fn [x] (assoc-in x [:procedure_run_status :current_procedure_step_start_time] (time/now) ;(java-time/local-date-time)
+                                            )))
         (Thread/sleep (* 1000 (:time_in_seconds step)))))
     
     ;; return to the up position so that the last step doesn't get excessive staining time

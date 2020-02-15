@@ -29,7 +29,7 @@
                                                      :variables (if variable-fn (variable-fn) nil)}}
                                        :with-credentials? false))
                resp (:data (edn/read-string (:body raw-resp)))]
-           (println "resp: " resp)
-           (println "raw-resp: " raw-resp)
-           (println "handler-fn " handler-fn)
+           ;; (println "resp: " resp)
+           ;; (println "raw-resp: " raw-resp)
+           ;; (println "handler-fn " handler-fn)
            (if handler-fn (handler-fn resp raw-resp))))))
