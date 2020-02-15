@@ -41,9 +41,7 @@
                                [:td (:jar_number step)]])
                             (:procedure_steps @procedure-cursor)))]]
       [:p {} (str "Cycle " (:current_cycle_number @procedure-run-status-cursor) " of " (:repeat @procedure-cursor))]
-      [:button {:on-click (graphql/graphql-fn
-                           {:query (str "{state{procedure_run_status{" graphql/procedure-run-status-keys "}}}")
-                            :handler-fn (fn [resp] (reset! procedure-run-status-cursor (get-in resp [:state :procedure_run_status])))})} "Refresh"]])))
+      [:button {:on-click (refresh-fn procedure-cursor procedure-run-status-cursor)} "Refresh"]])))
 
 (defcard-rg procedure-run-status-card
   [procedure-run-status])
