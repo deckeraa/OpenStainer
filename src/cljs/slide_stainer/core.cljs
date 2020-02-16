@@ -22,7 +22,8 @@
   (reagent/atom {:alarms {}
                  :current-procedure nil
                  :procedure_run_status {}
-                 :screen :main}))
+                 :screen :main
+                 :screen-stack [:main]}))
 
 (defonce procedure-cursor            (reagent/cursor app-state [:current-procedure]))
 (defonce procedure-run-status-cursor (reagent/cursor app-state [:procedure_run_status]))
@@ -312,33 +313,46 @@
        [drop-motor-lock-button]
        ])))
 
+(defn settings-control [ratom back-fn]
+  (fn []
+    [:div
+     [:div {:class "nav-header"}
+      [svg/chevron-left {:class "chevron-left" :on-click back-fn} "blue" 36]
+      [:h1 "Settings"]]]))
+
+(defn replace-current-screen [screen-cursor new-screen]
+  (swap! screen-cursor (fn [v] (conj (pop v) new-screen))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Page
 
 (defn page [ratom]
   (fn []
-    (let [screen (or (:screen @ratom) :main)]
+    (let [screen (or (:screen @ratom) :main)
+          screen-cursor (reagent/cursor ratom [:screen-stack])]
       [:div
        [:div {:class "header"}
         [:h1 "OpenStain"]
         [:h2 "v1.0.0"]
         [svg/bell {:class "bell" :on-click #(println "bell clicked")} "white" 36]
-        [svg/cog {:class "cog" :on-click #(println "cog clicked")} "white" 36]
-        ;; [:img {:src "/open-iconic/svg/cog.svg"}]
-        ]
+        [svg/cog {:class "cog" :on-click #(println "cog clicked")} "white" 36]]
        [:div {:class "body"}
         [:div {:class "button-bar"}
-         [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :main)))} "Main"]
-         [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :graphql)))} "GraphQL"]
-         [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :jog)))} "Jog"]
-         [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :procedure-selection)))} "Procedure Selection"]
-         [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :program-creation)))} "Program Creation"]
-         [:button {:on-click #(swap! ratom (fn [v]  (assoc v :screen :procedure-run)))} "Procedure Run Status"]]
-        (when (= :graphql screen) [graphql-control])
-        (when (= :main screen) [pins-control-graphql])
-        (when (= :jog screen) [jog-control ratom])
-        (when (= :procedure-selection screen) [slide-stainer.procedure-selection/procedure-selection procedure-cursor (fn [] (swap! ratom (fn [v] (assoc v :screen :program-creation))))])
-        (when (= :program-creation screen)
+         [:button {:on-click #(replace-current-screen screen-cursor :main)} "Main"]
+         [:button {:on-click #(replace-current-screen screen-cursor :graphql)} "GraphQL"]
+         [:button {:on-click #(replace-current-screen screen-cursor :jog)} "Jog"]
+         [:button {:on-click #(replace-current-screen screen-cursor :procedure-selection)} "Procedure Selection"]
+         [:button {:on-click #(replace-current-screen screen-cursor :program-creation)} "Program Creation"]
+         [:button {:on-click #(replace-current-screen screen-cursor :procedure-run)} "Procedure Run Status"]]
+        (when (= :graphql (peek @screen-cursor)) [graphql-control])
+        (when (= :main (peek @screen-cursor)) [pins-control-graphql])
+        (when (= :jog (peek @screen-cursor)) [jog-control ratom])
+        (when (= :procedure-selection (peek @screen-cursor))
+          [slide-stainer.procedure-selection/procedure-selection procedure-cursor
+           #(replace-current-screen screen-cursor :program-creation)
+;           (fn [] (swap! ratom (fn [v] (assoc v :screen :program-creation))))
+           ])
+        (when (= :program-creation (peek @screen-cursor))
           [slide-stainer.program-creation/program-creation
            procedure-cursor
            procedure-run-status-cursor
@@ -347,10 +361,11 @@
              (swap! ratom (fn [v] (-> v
                                       (assoc :current-procedure procedure)
                                       (assoc :screen :procedure-run))))
-             (println "(:screen @ratom) is now: " (:screen @ratom))
+             (println "@screen-cursor is now: " @screen-cursor)
                                         ;              (swap! procedure-cursor (fn [v] (assoc v :current_procedure_step_number 1)))
              )])
-        (when (= :procedure-run screen) [slide-stainer.procedure-run/procedure-run-status procedure-cursor procedure-run-status-cursor])
+        (when (= :procedure-run (peek @screen-cursor)) [slide-stainer.procedure-run/procedure-run-status procedure-cursor procedure-run-status-cursor])
+        (when (= :procedure-run (peek @screen-cursor)) [settings-control ratom nil])
         [:div {} (str @ratom)]]
        ])))
 
