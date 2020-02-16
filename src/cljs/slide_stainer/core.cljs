@@ -322,7 +322,8 @@
        [:div {:class "header"}
         [:h1 "OpenStain"]
         [:h2 "v1.0.0"]
-        [svg/cog {:class "cog" :on-click #(println "cog clicked")} "white" 24]
+        [svg/bell {:class "bell" :on-click #(println "bell clicked")} "white" 36]
+        [svg/cog {:class "cog" :on-click #(println "cog clicked")} "white" 36]
         ;; [:img {:src "/open-iconic/svg/cog.svg"}]
         ]
        [:div {:class "body"}

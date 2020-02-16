@@ -13,7 +13,7 @@
 /* Header styles */
 
 .header {
-    height: 36px;
+    height: 54px;
     width: 100%;
     background-color: #94411b;
     margin: 0px;
@@ -24,7 +24,7 @@
 }
 
 .header h1 {
-    font-size: 24px;
+    font-size: 32px;
     color: white;
     margin: 0px;
     position: absolute;
@@ -33,10 +33,10 @@
 }
 
 .header h2 {
-    font-size: 9px;
+    font-size: 10px;
     color: white;
     position: absolute;
-    top: 18px;
+    top: 27px;
     left: 124px;
 }
 
@@ -53,10 +53,23 @@
     position: absolute;
     top: 6px;
     right: 6px;
+    height: 100%;
+}
+
+.header .bell {
+    position: absolute;
+    top: 6px;
+    right: 64px;
+    height: 100%;
+}
+
+.header svg {
+    display: block;
+    margin: auto;
 }
 
 /* Body styles */
 .body {
     position: absolute;
-    top: 48px;
+    top: 64px;
 }
