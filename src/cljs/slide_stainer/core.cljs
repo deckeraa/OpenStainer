@@ -22,7 +22,6 @@
   (reagent/atom {:alarms {}
                  :current-procedure nil
                  :procedure_run_status {}
-                 :screen :main
                  :screen-stack [:main]}))
 
 (defonce procedure-cursor            (reagent/cursor app-state [:current-procedure]))
@@ -328,8 +327,7 @@
 
 (defn page [ratom]
   (fn []
-    (let [screen (or (:screen @ratom) :main)
-          screen-cursor (reagent/cursor ratom [:screen-stack])]
+    (let [screen-cursor (reagent/cursor ratom [:screen-stack])]
       [:div
        [:div {:class "header"}
         [:h1 "OpenStain"]
@@ -350,7 +348,6 @@
         (when (= :procedure-selection (peek @screen-cursor))
           [slide-stainer.procedure-selection/procedure-selection procedure-cursor
            #(replace-current-screen screen-cursor :program-creation)
-;           (fn [] (swap! ratom (fn [v] (assoc v :screen :program-creation))))
            ])
         (when (= :program-creation (peek @screen-cursor))
           [slide-stainer.program-creation/program-creation
@@ -360,7 +357,8 @@
              (println "Running run-fn")
              (swap! ratom (fn [v] (-> v
                                       (assoc :current-procedure procedure)
-                                      (assoc :screen :procedure-run))))
+                                      )))
+             (swap! screen-cursor conj :procedure-run)
              (println "@screen-cursor is now: " @screen-cursor)
                                         ;              (swap! procedure-cursor (fn [v] (assoc v :current_procedure_step_number 1)))
              )])
