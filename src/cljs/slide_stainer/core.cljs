@@ -333,7 +333,7 @@
         [:h1 "OpenStain"]
         [:h2 "v1.0.0"]
         [svg/bell {:class "bell" :on-click #(println "bell clicked")} "white" 36]
-        [svg/cog {:class "cog" :on-click #(println "cog clicked")} "white" 36]]
+        [svg/cog {:class "cog" :on-click #(swap! screen-cursor conj :settings)} "white" 36]]
        [:div {:class "body"}
         [:div {:class "button-bar"}
          [:button {:on-click #(replace-current-screen screen-cursor :main)} "Main"]
@@ -363,7 +363,7 @@
                                         ;              (swap! procedure-cursor (fn [v] (assoc v :current_procedure_step_number 1)))
              )])
         (when (= :procedure-run (peek @screen-cursor)) [slide-stainer.procedure-run/procedure-run-status procedure-cursor procedure-run-status-cursor])
-        (when (= :procedure-run (peek @screen-cursor)) [settings-control ratom nil])
+        (when (= :settings (peek @screen-cursor)) [settings-control ratom #(swap! screen-cursor pop)])
         [:div {} (str @ratom)]]
        ])))
 
