@@ -63,6 +63,19 @@
     height: 100%;
 }
 
+.nav-header {
+    display: flex;
+    align-items: center;
+    height: 36px;
+}
+
+.nav-header .chevron-left {
+    width: 45px;
+}
+
+.nav-header h1 {
+}
+
 .header svg {
     display: block;
     margin: auto;
