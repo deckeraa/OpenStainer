@@ -86,3 +86,15 @@
     position: absolute;
     top: 64px;
 }
+
+button {
+    border: none;
+    color: white;
+    background-color: #af5f23;
+    margin: 1px;
+    box-shadow: 2px 3px 5px #0000005c;
+}
+
+button:hover {
+    background-color: #dd9945;
+}

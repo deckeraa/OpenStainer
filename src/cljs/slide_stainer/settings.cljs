@@ -17,9 +17,13 @@
                                      (swap! stepperZ-cursor (fn [v] (merge v (:stepperZ resp)))))}))
 
 (defn positions-and-home [position-x position-z]
-  [:div {:class "positions-and-home"}
-   [:div {} (str "X: " position-x)]
-   [:div {} (str "Z: " position-z)]
+  [:div {:class "positions-and-home" :style {:display :flex :align-items :center}}
+   [:div {:style {:font-size "24px" :margin "16px"}}
+    [:div {} (str "X: " position-x)]
+    [:div {} (str "Z: " position-z)]]
+   [:button {:style {:width "64px" :height "64px"}}
+    [svg/home {}
+     "white" 32] "Home"]
    ])
 
 (defn settings-control [ratom back-fn]
@@ -27,5 +31,5 @@
     [:div
      [:div {:class "nav-header"}
       [svg/chevron-left {:class "chevron-left" :on-click back-fn} "blue" 36]
-      [:h1 "Settings"]
-      [positions-and-home (get-in @ratom [:stepperX :position_inches]) (get-in @ratom [:stepperZ :position_inches])]]]))
+      [:h1 "Settings"]]
+     [positions-and-home (get-in @ratom [:stepperX :position_inches]) (get-in @ratom [:stepperZ :position_inches])]]))
