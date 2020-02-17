@@ -10,13 +10,22 @@
    [cljs.core.async.macros :refer [go go-loop]]
    [devcards.core :refer [defcard defcard-rg]]))
 
-(defn refresh-fn []
+(defn refresh-fn [stepperX-cursor stepperZ-cursor]
   (graphql/graphql-fn {:query (str "{stepperX: axis(id:\"stepperX\"){position_inches}, stepperZ: axis(id:\"stepperZ\"){position_inches}}")
-                       :handler-fn (fn [resp] (println "resp: " resp))}))
+                       :handler-fn (fn [resp]
+                                     (swap! stepperX-cursor (fn [v] (merge v (:stepperX resp))))
+                                     (swap! stepperZ-cursor (fn [v] (merge v (:stepperZ resp)))))}))
+
+(defn positions-and-home [position-x position-z]
+  [:div {:class "positions-and-home"}
+   [:div {} (str "X: " position-x)]
+   [:div {} (str "Z: " position-z)]
+   ])
 
 (defn settings-control [ratom back-fn]
   (fn []
     [:div
      [:div {:class "nav-header"}
       [svg/chevron-left {:class "chevron-left" :on-click back-fn} "blue" 36]
-      [:h1 "Settings"]]]))
+      [:h1 "Settings"]
+      [positions-and-home (get-in @ratom [:stepperX :position_inches]) (get-in @ratom [:stepperZ :position_inches])]]]))

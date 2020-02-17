@@ -23,11 +23,15 @@
   (reagent/atom {:alarms {}
                  :current-procedure nil
                  :procedure_run_status {}
-                 :screen-stack [:main]}))
+                 :screen-stack [:main]
+                 :stepperX {}
+                 :stepperZ {}}))
 
 (defonce procedure-cursor            (reagent/cursor app-state [:current-procedure]))
 (defonce procedure-run-status-cursor (reagent/cursor app-state [:procedure_run_status]))
 (defonce screen-cursor               (reagent/cursor app-state [:screen-stack]))
+(defonce stepperX-cursor             (reagent/cursor app-state [:stepperX]))
+(defonce stepperZ-cursor             (reagent/cursor app-state [:stepperZ]))
 
 (defn on-change-handler [atm evt]
   (reset! atm (-> evt .-target .-value)))
@@ -363,7 +367,7 @@
 
 (def queries-to-run
   {:procedure-run {:query-fn (slide-stainer.procedure-run/refresh-fn procedure-cursor procedure-run-status-cursor)}
-   :settings {:query-fn (slide-stainer.settings/refresh-fn) :anim-fn (fn [resp] (println "resp"))}})
+   :settings {:query-fn (slide-stainer.settings/refresh-fn stepperX-cursor stepperZ-cursor) :anim-fn (fn [resp] (println "resp"))}})
 
 ;; start the updater
 (defonce periodic-updater-instance
