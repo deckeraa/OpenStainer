@@ -13,6 +13,9 @@
    [devcards.core :refer [defcard defcard-rg]]))
 
 (defn periodic-updater [screen-cursor queries-to-run]
-  (let [refresh-fn (get queries-to-run @screen-cursor)]
-    (when refresh-fn (refresh-fn)))
-  (js/setTimeout (partial periodic-updater screen-cursor queries-to-run) (* 5 1000)))
+  (let [screen (peek @screen-cursor)]
+;    (println "screen: " screen)
+    (let [query-fn    (get-in queries-to-run [screen :query-fn])
+          response-fn (get-in queries-to-run [screen :response-fn])]
+      (when query-fn (query-fn)))
+    (js/setTimeout (partial periodic-updater screen-cursor queries-to-run) (* 5 1000))))

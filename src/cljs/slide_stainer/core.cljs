@@ -7,6 +7,7 @@
    [slide-stainer.svg :as svg]
    [slide-stainer.graphql :as graphql]
    [slide-stainer.periodic-updater]
+   [slide-stainer.settings]
    [slide-stainer.program-creation]
    [slide-stainer.procedure-selection]
    [slide-stainer.procedure-run])
@@ -26,6 +27,7 @@
 
 (defonce procedure-cursor            (reagent/cursor app-state [:current-procedure]))
 (defonce procedure-run-status-cursor (reagent/cursor app-state [:procedure_run_status]))
+(defonce screen-cursor               (reagent/cursor app-state [:screen-stack]))
 
 (defn on-change-handler [atm evt]
   (reset! atm (-> evt .-target .-value)))
@@ -312,13 +314,6 @@
        [drop-motor-lock-button]
        ])))
 
-(defn settings-control [ratom back-fn]
-  (fn []
-    [:div
-     [:div {:class "nav-header"}
-      [svg/chevron-left {:class "chevron-left" :on-click back-fn} "blue" 36]
-      [:h1 "Settings"]]]))
-
 (defn replace-current-screen [screen-cursor new-screen]
   (swap! screen-cursor (fn [v] (conj (pop v) new-screen))))
 
@@ -327,53 +322,53 @@
 
 (defn page [ratom]
   (fn []
-    (let [screen-cursor (reagent/cursor ratom [:screen-stack])]
-      [:div
-       [:div {:class "header"}
-        [:h1 "OpenStain"]
-        [:h2 "v1.0.0"]
-        [svg/bell {:class "bell" :on-click #(println "bell clicked")} "white" 36]
-        [svg/cog {:class "cog" :on-click #(swap! screen-cursor conj :settings)} "white" 36]]
-       [:div {:class "body"}
-        [:div {:class "button-bar"}
-         [:button {:on-click #(replace-current-screen screen-cursor :main)} "Main"]
-         [:button {:on-click #(replace-current-screen screen-cursor :graphql)} "GraphQL"]
-         [:button {:on-click #(replace-current-screen screen-cursor :jog)} "Jog"]
-         [:button {:on-click #(replace-current-screen screen-cursor :procedure-selection)} "Procedure Selection"]
-         [:button {:on-click #(replace-current-screen screen-cursor :program-creation)} "Program Creation"]
-         [:button {:on-click #(replace-current-screen screen-cursor :procedure-run)} "Procedure Run Status"]]
-        (when (= :graphql (peek @screen-cursor)) [graphql-control])
-        (when (= :main (peek @screen-cursor)) [pins-control-graphql])
-        (when (= :jog (peek @screen-cursor)) [jog-control ratom])
-        (when (= :procedure-selection (peek @screen-cursor))
-          [slide-stainer.procedure-selection/procedure-selection procedure-cursor
-           #(replace-current-screen screen-cursor :program-creation)
-           ])
-        (when (= :program-creation (peek @screen-cursor))
-          [slide-stainer.program-creation/program-creation
-           procedure-cursor
-           procedure-run-status-cursor
-           (fn [procedure]
-             (println "Running run-fn")
-             (swap! ratom (fn [v] (-> v
-                                      (assoc :current-procedure procedure)
-                                      )))
-             (swap! screen-cursor conj :procedure-run)
-             (println "@screen-cursor is now: " @screen-cursor)
+    [:div
+     [:div {:class "header"}
+      [:h1 "OpenStain"]
+      [:h2 "v1.0.0"]
+      [svg/bell {:class "bell" :on-click #(println "bell clicked")} "white" 36]
+      [svg/cog {:class "cog" :on-click #(swap! screen-cursor conj :settings)} "white" 36]]
+     [:div {:class "body"}
+      [:div {:class "button-bar"}
+       [:button {:on-click #(replace-current-screen screen-cursor :main)} "Main"]
+       [:button {:on-click #(replace-current-screen screen-cursor :graphql)} "GraphQL"]
+       [:button {:on-click #(replace-current-screen screen-cursor :jog)} "Jog"]
+       [:button {:on-click #(replace-current-screen screen-cursor :procedure-selection)} "Procedure Selection"]
+       [:button {:on-click #(replace-current-screen screen-cursor :program-creation)} "Program Creation"]
+       [:button {:on-click #(replace-current-screen screen-cursor :procedure-run)} "Procedure Run Status"]]
+      (when (= :graphql (peek @screen-cursor)) [graphql-control])
+      (when (= :main (peek @screen-cursor)) [pins-control-graphql])
+      (when (= :jog (peek @screen-cursor)) [jog-control ratom])
+      (when (= :procedure-selection (peek @screen-cursor))
+        [slide-stainer.procedure-selection/procedure-selection procedure-cursor
+         #(replace-current-screen screen-cursor :program-creation)
+         ])
+      (when (= :program-creation (peek @screen-cursor))
+        [slide-stainer.program-creation/program-creation
+         procedure-cursor
+         procedure-run-status-cursor
+         (fn [procedure]
+           (println "Running run-fn")
+           (swap! ratom (fn [v] (-> v
+                                    (assoc :current-procedure procedure)
+                                    )))
+           (swap! screen-cursor conj :procedure-run)
+           (println "@screen-cursor is now: " @screen-cursor)
                                         ;              (swap! procedure-cursor (fn [v] (assoc v :current_procedure_step_number 1)))
-             )])
-        (when (= :procedure-run (peek @screen-cursor)) [slide-stainer.procedure-run/procedure-run-status procedure-cursor procedure-run-status-cursor])
-        (when (= :settings (peek @screen-cursor)) [settings-control ratom #(swap! screen-cursor pop)])
-        [:div {} (str @ratom)]]
-       ])))
+           )])
+      (when (= :procedure-run (peek @screen-cursor)) [slide-stainer.procedure-run/procedure-run-status procedure-cursor procedure-run-status-cursor])
+      (when (= :settings (peek @screen-cursor)) [slide-stainer.settings/settings-control ratom #(swap! screen-cursor pop)])
+      [:div {} (str @ratom)]]
+     ]))
 
 (def queries-to-run
-  {:procedure-run (slide-stainer.procedure-run/refresh-fn procedure-cursor procedure-run-status-cursor)})
+  {:procedure-run {:query-fn (slide-stainer.procedure-run/refresh-fn procedure-cursor procedure-run-status-cursor)}
+   :settings {:query-fn (slide-stainer.settings/refresh-fn) :anim-fn (fn [resp] (println "resp"))}})
 
 ;; start the updater
 (defonce periodic-updater-instance
   (js/setTimeout (fn [] (slide-stainer.periodic-updater/periodic-updater
-                         (reagent/cursor app-state [:screen]) queries-to-run))
+                         screen-cursor queries-to-run))
                  (* 5 1000)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
