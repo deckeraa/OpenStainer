@@ -16,36 +16,31 @@
                                      (swap! stepperX-cursor (fn [v] (merge v (:stepperX resp))))
                                      (swap! stepperZ-cursor (fn [v] (merge v (:stepperZ resp)))))}))
 
-;; (defn alarm-line [alarms-cursor alarm]
-;;   [:div
-;;    [svg/bell {} ]]
-;;   )
-
 (defn alarm-line [alarmed? label]
-  [:div {:style {:display :flex :flex-direction :row :align-items :center}}
-   [svg/bell {:style {:margin "5px"}} (if alarmed? "red" "green") 32]
-   label])
+  (fn []
+    [:div {:style {:display :flex :flex-direction :row :align-items :center}}
+     [svg/bell {:style {:margin "5px"}} (if alarmed? "red" "green") 32]
+     label]))
 
 (defn alarms [alarms-cursor]
-  [:div {:style {:display :flex :flex-direction :column}}
-   [alarm-line (:homing_failed @alarms-cursor) "Homing failed"]
-   [alarm-line (:limit_switch_hit_unexpectedly @alarms-cursor) "Limit switch hit unexpectedly"]
-   ;; [:div {:style {:display :flex :flex-direction :row :align-items :center}}
-   ;;  [svg/bell {:style {:margin "5px"}} (if (:homing_failed @alarms-cursor) "red" "green") 32]
-   ;;  "Homing failed"]
-   ])
+  (fn []
+    [:div {:style {:display :flex :flex-direction :column}}
+     [alarm-line (:homing_failed @alarms-cursor) "Homing failed"]
+     [alarm-line (:limit_switch_hit_unexpectedly @alarms-cursor) "Limit switch hit unexpectedly"]
+     ]))
 
 (defn positions-and-home [position-x position-z]
-  [:div {:class "positions-and-home" :style {:display :flex :align-items :center}}
-   [:div {:style {:font-size "24px" :margin "16px"}}
-    [:div {} (str "X: " position-x)]
-    [:div {} (str "Z: " position-z)]]
-   [:button {:style {:width "64px" :height "64px"}
-             :on-click (graphql/graphql-fn {:query (str "mutation{home{alarms{" graphql/alarm-keys "}}}")
-                                            :handler-fn (fn [resp] (println "home resp" resp))})}
-    [svg/home {}
-     "white" 32] "Home"]
-   ])
+  (fn []
+    [:div {:class "positions-and-home" :style {:display :flex :align-items :center}}
+     [:div {:style {:font-size "24px" :margin "16px"}}
+      [:div {} (str "X: " position-x)]
+      [:div {} (str "Z: " position-z)]]
+     [:button {:style {:width "64px" :height "64px"}
+               :on-click (graphql/graphql-fn {:query (str "mutation{home{alarms{" graphql/alarm-keys "}}}")
+                                              :handler-fn (fn [resp] (println "home resp" resp))})}
+      [svg/home {}
+       "white" 32] "Home"]
+     ]))
 
 (defn settings-control [ratom back-fn]
   (let [alarms-cursor (reagent/cursor ratom [:alarms])]

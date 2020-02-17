@@ -4,6 +4,7 @@
    [devcards.core]
    [cljs-http.client :as http]
    [clojure.edn :as edn]
+   [slide-stainer.atoms :as atoms]
    [slide-stainer.svg :as svg]
    [slide-stainer.graphql :as graphql]
    [slide-stainer.periodic-updater]
@@ -14,24 +15,6 @@
   (:require-macros
    [cljs.core.async.macros :refer [go go-loop]]
    [devcards.core :refer [defcard defcard-rg]]))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Vars
-
-(defonce app-state
-  (reagent/atom {:alarms {}
-                 :current-procedure nil
-                 :procedure_run_status {}
-                 :screen-stack [:main]
-                 :stepperX {}
-                 :stepperZ {}}))
-
-(defonce procedure-cursor            (reagent/cursor app-state [:current-procedure]))
-(defonce procedure-run-status-cursor (reagent/cursor app-state [:procedure_run_status]))
-(defonce screen-cursor               (reagent/cursor app-state [:screen-stack]))
-(defonce stepperX-cursor             (reagent/cursor app-state [:stepperX]))
-(defonce stepperZ-cursor             (reagent/cursor app-state [:stepperZ]))
 
 (defn on-change-handler [atm evt]
   (reset! atm (-> evt .-target .-value)))
@@ -331,48 +314,48 @@
       [:h1 "OpenStain"]
       [:h2 "v1.0.0"]
       [svg/bell {:class "bell" :on-click #(println "bell clicked")} "white" 36]
-      [svg/cog {:class "cog" :on-click #(swap! screen-cursor conj :settings)} "white" 36]]
+      [svg/cog {:class "cog" :on-click #(swap! atoms/screen-cursor conj :settings)} "white" 36]]
      [:div {:class "body"}
       [:div {:class "button-bar"}
-       [:button {:on-click #(replace-current-screen screen-cursor :main)} "Main"]
-       [:button {:on-click #(replace-current-screen screen-cursor :graphql)} "GraphQL"]
-       [:button {:on-click #(replace-current-screen screen-cursor :jog)} "Jog"]
-       [:button {:on-click #(replace-current-screen screen-cursor :procedure-selection)} "Procedure Selection"]
-       [:button {:on-click #(replace-current-screen screen-cursor :program-creation)} "Program Creation"]
-       [:button {:on-click #(replace-current-screen screen-cursor :procedure-run)} "Procedure Run Status"]]
-      (when (= :graphql (peek @screen-cursor)) [graphql-control])
-      (when (= :main (peek @screen-cursor)) [pins-control-graphql])
-      (when (= :jog (peek @screen-cursor)) [jog-control ratom])
-      (when (= :procedure-selection (peek @screen-cursor))
-        [slide-stainer.procedure-selection/procedure-selection procedure-cursor
-         #(replace-current-screen screen-cursor :program-creation)
+       [:button {:on-click #(replace-current-screen atoms/screen-cursor :main)} "Main"]
+       [:button {:on-click #(replace-current-screen atoms/screen-cursor :graphql)} "GraphQL"]
+       [:button {:on-click #(replace-current-screen atoms/screen-cursor :jog)} "Jog"]
+       [:button {:on-click #(replace-current-screen atoms/screen-cursor :procedure-selection)} "Procedure Selection"]
+       [:button {:on-click #(replace-current-screen atoms/screen-cursor :program-creation)} "Program Creation"]
+       [:button {:on-click #(replace-current-screen atoms/screen-cursor :procedure-run)} "Procedure Run Status"]]
+      (when (= :graphql (peek @atoms/screen-cursor)) [graphql-control])
+      (when (= :main (peek @atoms/screen-cursor)) [pins-control-graphql])
+      (when (= :jog (peek @atoms/screen-cursor)) [jog-control ratom])
+      (when (= :procedure-selection (peek @atoms/screen-cursor))
+        [slide-stainer.procedure-selection/procedure-selection atoms/procedure-cursor
+         #(replace-current-screen atoms/screen-cursor :program-creation)
          ])
-      (when (= :program-creation (peek @screen-cursor))
+      (when (= :program-creation (peek @atoms/screen-cursor))
         [slide-stainer.program-creation/program-creation
-         procedure-cursor
-         procedure-run-status-cursor
+         atoms/procedure-cursor
+         atoms/procedure-run-status-cursor
          (fn [procedure]
            (println "Running run-fn")
            (swap! ratom (fn [v] (-> v
                                     (assoc :current-procedure procedure)
                                     )))
-           (swap! screen-cursor conj :procedure-run)
-           (println "@screen-cursor is now: " @screen-cursor)
+           (swap! atoms/screen-cursor conj :procedure-run)
+           (println "@screen-cursor is now: " @atoms/screen-cursor)
                                         ;              (swap! procedure-cursor (fn [v] (assoc v :current_procedure_step_number 1)))
            )])
-      (when (= :procedure-run (peek @screen-cursor)) [slide-stainer.procedure-run/procedure-run-status procedure-cursor procedure-run-status-cursor])
-      (when (= :settings (peek @screen-cursor)) [slide-stainer.settings/settings-control ratom #(swap! screen-cursor pop)])
+      (when (= :procedure-run (peek @atoms/screen-cursor)) [slide-stainer.procedure-run/procedure-run-status atoms/procedure-cursor atoms/procedure-run-status-cursor])
+      (when (= :settings (peek @atoms/screen-cursor)) [slide-stainer.settings/settings-control ratom #(swap! atoms/screen-cursor pop)])
       [:div {} (str @ratom)]]
      ]))
 
 (def queries-to-run
-  {:procedure-run {:query-fn (slide-stainer.procedure-run/refresh-fn procedure-cursor procedure-run-status-cursor)}
-   :settings {:query-fn (slide-stainer.settings/refresh-fn stepperX-cursor stepperZ-cursor) :anim-fn (fn [resp] (println "resp"))}})
+  {:procedure-run {:query-fn (slide-stainer.procedure-run/refresh-fn atoms/procedure-cursor atoms/procedure-run-status-cursor)}
+   :settings {:query-fn (slide-stainer.settings/refresh-fn atoms/stepperX-cursor atoms/stepperZ-cursor) :anim-fn (fn [resp] (println "resp"))}})
 
 ;; start the updater
 (defonce periodic-updater-instance
   (js/setTimeout (fn [] (slide-stainer.periodic-updater/periodic-updater
-                         screen-cursor queries-to-run))
+                         atoms/screen-cursor queries-to-run))
                  (* 5 1000)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -385,7 +368,7 @@
     ))
 
 (defn reload []
-  (reagent/render [page app-state]
+  (reagent/render [page atoms/app-state]
                   (.getElementById js/document "app")))
 
 (defn ^:export main []
