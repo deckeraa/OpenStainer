@@ -21,7 +21,9 @@
    [:div {:style {:font-size "24px" :margin "16px"}}
     [:div {} (str "X: " position-x)]
     [:div {} (str "Z: " position-z)]]
-   [:button {:style {:width "64px" :height "64px"}}
+   [:button {:style {:width "64px" :height "64px"}
+             :on-click (graphql/graphql-fn {:query (str "mutation{home{alarms{" graphql/alarm-keys "}}}")
+                                            :handler-fn (fn [resp] (println "home resp" resp))})}
     [svg/home {}
      "white" 32] "Home"]
    ])
