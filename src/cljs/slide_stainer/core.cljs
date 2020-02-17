@@ -350,7 +350,7 @@
 
 (def queries-to-run
   {:procedure-run {:query-fn (slide-stainer.procedure-run/refresh-fn atoms/procedure-cursor atoms/procedure-run-status-cursor)}
-   :settings {:query-fn (slide-stainer.settings/refresh-fn atoms/stepperX-cursor atoms/stepperZ-cursor) :anim-fn (fn [resp] (println "resp"))}})
+   :settings {:query-fn (slide-stainer.settings/refresh-fn) :anim-fn (fn [resp] (println "resp"))}})
 
 ;; start the updater
 (defonce periodic-updater-instance
