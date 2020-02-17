@@ -12,10 +12,14 @@
    [cljs.core.async.macros :refer [go go-loop]]
    [devcards.core :refer [defcard defcard-rg]]))
 
-(defn periodic-updater [screen-cursor queries-to-run]
-  (let [screen (peek @screen-cursor)]
-;    (println "screen: " screen)
-    (let [query-fn    (get-in queries-to-run [screen :query-fn])
-          response-fn (get-in queries-to-run [screen :response-fn])]
-      (when query-fn (query-fn)))
-    (js/setTimeout (partial periodic-updater screen-cursor queries-to-run) (* 5 1000))))
+(defn periodic-updater
+  ([screen-cursor queries-to-run]
+   (periodic-updater screen-cursor queries-to-run 0))
+  ([screen-cursor queries-to-run seconds]
+   (let [screen (peek @screen-cursor)]
+                                        ;    (println "screen: " screen)
+     (let [query-fn    (get-in queries-to-run [screen :query-fn])
+           anim-fn (get-in queries-to-run [screen :anim-fn])]
+       (when (and query-fn (= 0 seconds)) (query-fn))
+       (when (anim-fn) (anim-fn)))
+     (js/setTimeout (partial periodic-updater screen-cursor queries-to-run (mod (inc seconds) 5)) (* 1 1000)))))
