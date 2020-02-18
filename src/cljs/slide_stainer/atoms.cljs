@@ -12,7 +12,8 @@
                  :procedure_run_status {}
                  :screen-stack [:main]
                  :stepperX {}
-                 :stepperZ {}}))
+                 :stepperZ {}
+                 :procedure-list []}))
 
 (defonce procedure-cursor            (reagent/cursor app-state [:current-procedure]))
 (defonce procedure-run-status-cursor (reagent/cursor app-state [:procedure_run_status]))
@@ -20,3 +21,4 @@
 (defonce stepperX-cursor             (reagent/cursor app-state [:stepperX]))
 (defonce stepperZ-cursor             (reagent/cursor app-state [:stepperZ]))
 (defonce alarms-cursor               (reagent/cursor app-state [:alarms]))
+(defonce procedure-list-cursor       (reagent/cursor app-state [:procedure-list]))

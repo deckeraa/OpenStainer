@@ -328,7 +328,7 @@
       (when (= :main (peek @atoms/screen-cursor)) [pins-control-graphql])
       (when (= :jog (peek @atoms/screen-cursor)) [jog-control ratom])
       (when (= :procedure-selection (peek @atoms/screen-cursor))
-        [slide-stainer.procedure-selection/procedure-selection atoms/procedure-cursor
+        [slide-stainer.procedure-selection/procedure-selection atoms/procedure-list-cursor atoms/procedure-cursor
          #(replace-current-screen atoms/screen-cursor :program-creation)
          ])
       (when (= :program-creation (peek @atoms/screen-cursor))
