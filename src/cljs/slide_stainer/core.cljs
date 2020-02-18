@@ -314,7 +314,7 @@
       [:h1 "OpenStain"]
       [:h2 "v1.0.0"]
       (when (> (count (filter true? (vals @atoms/alarms-cursor))) 0)
-        [svg/bell {:class "bell" :on-click #(println "bell clicked")} "white" 36])
+        [svg/bell {:class "bell" :on-click #(swap! atoms/screen-cursor conj :settings)} "white" 36])
       [svg/cog {:class "cog" :on-click #(swap! atoms/screen-cursor conj :settings)} "white" 36]]
      [:div {:class "body"}
       [:div {:class "button-bar"}
