@@ -23,7 +23,7 @@
                                 :handler-fn (fn [resp]
                                               (reset! procedure-list-atom (:procedures resp)))}))))
       [:div {:class "procedure_selection"}
-       [:h3 "Procedure Selection"]
+       [:h1 {:class "nav-header"} "Procedure Selection"]
        [:ul
         (map (fn [procedure]
                ^{:key (:_id procedure)}
