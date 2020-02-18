@@ -34,8 +34,12 @@
   (fn []
     [:div {:class "positions-and-home" :style {:display :flex :align-items :center}}
      [:div {:style {:font-size "24px" :margin "16px"}}
-      [:div {} (str "X: " (goog.string/format "%.3f" position-x))]
-      [:div {} (str "Z: " (goog.string/format "%.3f" position-z))]]
+      [:div {} (if position-x
+                 (str "X: " (goog.string/format "%.3f" position-x))
+                 "Not homed")]
+      [:div {} (if position-z
+                 (str "Z: " (goog.string/format "%.3f" position-z))
+                 "Not homed")]]
      [:button {:style {:width "64px" :height "64px"}
                :on-click (graphql/graphql-fn {:query (str "mutation{home{alarms{" graphql/alarm-keys "}}}")
                                               :handler-fn (fn [resp] (println "home resp" resp))})}

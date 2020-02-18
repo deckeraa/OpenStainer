@@ -313,7 +313,8 @@
      [:div {:class "header"}
       [:h1 "OpenStain"]
       [:h2 "v1.0.0"]
-      [svg/bell {:class "bell" :on-click #(println "bell clicked")} "white" 36]
+      (when (> (count (filter true? (vals @atoms/alarms-cursor))) 0)
+        [svg/bell {:class "bell" :on-click #(println "bell clicked")} "white" 36])
       [svg/cog {:class "cog" :on-click #(swap! atoms/screen-cursor conj :settings)} "white" 36]]
      [:div {:class "body"}
       [:div {:class "button-bar"}
@@ -349,7 +350,9 @@
      ]))
 
 (def queries-to-run
-  {:procedure-run {:query-fn (slide-stainer.procedure-run/refresh-fn atoms/procedure-cursor atoms/procedure-run-status-cursor)}
+  {:always {:query-fn (graphql/graphql-fn {:query (str "{state{alarms{" graphql/alarm-keys "}}}")
+                                           :handler-fn (fn [resp] (reset! atoms/alarms-cursor (get-in resp [:state :alarms])))})}
+   :procedure-run {:query-fn (slide-stainer.procedure-run/refresh-fn atoms/procedure-cursor atoms/procedure-run-status-cursor)}
    :settings {:query-fn (slide-stainer.settings/refresh-fn)}})
 
 ;; start the updater

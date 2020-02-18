@@ -19,3 +19,4 @@
 (defonce screen-cursor               (reagent/cursor app-state [:screen-stack]))
 (defonce stepperX-cursor             (reagent/cursor app-state [:stepperX]))
 (defonce stepperZ-cursor             (reagent/cursor app-state [:stepperZ]))
+(defonce alarms-cursor               (reagent/cursor app-state [:alarms]))

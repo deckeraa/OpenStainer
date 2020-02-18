@@ -19,7 +19,9 @@
    (let [screen (peek @screen-cursor)]
                                         ;    (println "screen: " screen)
      (let [query-fn    (get-in queries-to-run [screen :query-fn])
-           anim-fn (get-in queries-to-run [screen :anim-fn])]
+           anim-fn (get-in queries-to-run [screen :anim-fn])
+           always-fn (get-in queries-to-run [:always :query-fn])]
        (when (and query-fn (= 0 seconds)) (query-fn))
-       (when (anim-fn) (anim-fn)))
+       (when anim-fn (anim-fn))
+       (when always-fn (always-fn)))
      (js/setTimeout (partial periodic-updater screen-cursor queries-to-run (mod (inc seconds) 5)) (* 1 1000)))))
