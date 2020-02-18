@@ -329,12 +329,13 @@
       (when (= :jog (peek @atoms/screen-cursor)) [jog-control ratom])
       (when (= :procedure-selection (peek @atoms/screen-cursor))
         [slide-stainer.procedure-selection/procedure-selection atoms/procedure-list-cursor atoms/procedure-cursor
-         #(replace-current-screen atoms/screen-cursor :program-creation)
+         #(swap! atoms/screen-cursor conj :program-creation)
          ])
       (when (= :program-creation (peek @atoms/screen-cursor))
         [slide-stainer.program-creation/program-creation
          atoms/procedure-cursor
          atoms/procedure-run-status-cursor
+         #(swap! atoms/screen-cursor pop)
          (fn [procedure]
            (println "Running run-fn")
            (swap! ratom (fn [v] (-> v

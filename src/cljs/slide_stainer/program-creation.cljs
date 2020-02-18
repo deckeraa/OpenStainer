@@ -4,6 +4,7 @@
             [devcards.core :refer-macros [deftest defcard-rg]]
             [cljs.test :refer-macros [is testing run-tests]]
             [clojure.edn :as edn]
+            [slide-stainer.svg :as svg]
             [slide-stainer.graphql :as graphql]
             [slide-stainer.onscreen-keyboard :as osk])
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
@@ -217,9 +218,12 @@
        ])))
 
 (defn program-creation
-  ([] (program-creation sample-program-atom (reagent/atom {}) nil))
-  ([prog-atm procedure-run-status-cursor run-fn]
+  ([] (program-creation sample-program-atom (reagent/atom {}) nil nil))
+  ([prog-atm procedure-run-status-cursor back-fn run-fn]
    [:div
+    [:div {:class "nav-header"}
+     (when back-fn [svg/chevron-left {:class "chevron-left" :on-click back-fn} "blue" 36])
+      [:h1 "Procedure Steps"]]
     [osk/osk-input osk-atm
                                   {:on-change (fn [new-val]
                                                 (println "Change handler called: " new-val)
