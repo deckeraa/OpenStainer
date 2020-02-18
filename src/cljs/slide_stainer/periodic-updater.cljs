@@ -23,5 +23,5 @@
            always-fn (get-in queries-to-run [:always :query-fn])]
        (when (and query-fn (= 0 seconds)) (query-fn))
        (when anim-fn (anim-fn))
-       (when always-fn (always-fn)))
+       (when (and always-fn (= 0 seconds)) (always-fn)))
      (js/setTimeout (partial periodic-updater screen-cursor queries-to-run (mod (inc seconds) 5)) (* 1 1000)))))
