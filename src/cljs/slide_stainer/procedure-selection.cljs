@@ -14,7 +14,7 @@
       (when (and true (not @list-query-sent-atom))
         (do
           (reset! list-query-sent-atom true)
-          ((graphql/graphql-fn {:query "{procedures{_id,name}}"
+          ((graphql/graphql-fn {:query "{procedures{_id,name,runs}}"
                                 :handler-fn (fn [resp]
                                               (reset! procedure-list-cursor (:procedures resp)))}))))
       [:div {:class "procedure_selection"}
@@ -29,7 +29,7 @@
                                                         (when selected-success-fn (selected-success-fn))
                                                         (println "procedure_by_id resp: " resp))})}
                 [:h3 (:name procedure)]
-;                [:p (str "Runs: " (or (:run procedure) 0))]
+                [:p (str "Runs: " (or (:runs procedure) 0))]
                 ])
              (sort-by :name @procedure-list-cursor))
         [:li {:class "new-procedure-button"
