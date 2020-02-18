@@ -110,3 +110,11 @@ button:hover {
 .procedure_selection .new-procedure-button {
     background-color: #af5f23;   
 }
+
+.procedure_selection h3 {
+    margin: 2px;
+}
+
+.procedure_selection p {
+    margin: 2px;
+}
