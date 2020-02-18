@@ -31,7 +31,14 @@
                 [:h3 (:name procedure)]
                 [:p (str "Runs: " (or (:runs procedure) 0))]
                 ])
-             (sort-by :name @procedure-list-cursor))
+             (sort (fn [el1 el2]
+                     ;; sort first by number of runs, then alphabetically
+                     (cond (> (:runs el1) (:runs el2)) true
+                           (< (:runs el1) (:runs el2)) false
+                           (< (clojure.string/lower-case (:name el1))
+                              (clojure.string/lower-case (:name el2))) true
+                           :default false))
+                   @procedure-list-cursor))
         [:li {:class "new-procedure-button"
               :on-click (fn [e]
                              (reset! selection-cursor graphql/empty-procedure)
