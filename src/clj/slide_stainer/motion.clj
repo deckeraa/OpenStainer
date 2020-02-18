@@ -311,7 +311,14 @@
                           (assoc-in [:procedure_run_status :current_procedure_step_number] nil)
                           (assoc-in [:procedure_run_status :current_procedure_step_start_time] nil)))))
 
+(defn increment-runs [id]
+  (let [procedure (db/get-doc id)]
+    (println "Pre-increment: " procedure)
+    (println "Incremented run: " (assoc-in procedure [:runs] (inc (or (:runs procedure) 0))))
+    (db/put-doc (assoc-in procedure [:runs] (inc (or (:runs procedure) 0))))))
+
 (defn run-program-by-id [id]
+  (increment-runs id)
   (let [procedure (db/get-doc id)]
     (println "Loaded procedure: " procedure)
     (when (not (empty? procedure))

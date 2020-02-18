@@ -28,7 +28,9 @@
                                                         (reset! selection-cursor (:procedure_by_id resp))
                                                         (when selected-success-fn (selected-success-fn))
                                                         (println "procedure_by_id resp: " resp))})}
-                (:name procedure)])
+                [:h3 (:name procedure)]
+;                [:p (str "Runs: " (or (:run procedure) 0))]
+                ])
              (sort-by :name @procedure-list-cursor))
         [:li {:class "new-procedure-button"
               :on-click (fn [e]
