@@ -29,7 +29,7 @@
                                                         (when selected-success-fn (selected-success-fn))
                                                         (println "procedure_by_id resp: " resp))})}
                 (:name procedure)])
-             @procedure-list-cursor)
+             (sort-by :name @procedure-list-cursor))
         [:li {:class "new-procedure-button"
               :on-click (fn [e]
                              (reset! selection-cursor graphql/empty-procedure)
