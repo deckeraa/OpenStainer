@@ -57,6 +57,7 @@
             :jar_contents {:type (list String) :description "List of contents of what substanc is in jar."}
             :procedure_steps {:type (list :procedure_step) :description "A list of steps in the staining procedure."}
             :repeat {:type Int :description "Number of times to repeat a given procedure for a single run."}
+            :runs {:type Int :description "Number of times this procedure has ever been run."}
               }}}
 
  :input-objects
@@ -75,6 +76,7 @@
             :jar_contents {:type (list String) :description "List of contents of what substanc is in jar."}
             :procedure_steps {:type (list :procedure_step_input_object) :description "A list of steps in the staining procedure."}
             :repeat {:type Int :description "Number of times to repeat a given procedure for a single run."}
+            :runs {:type Int :description "Number of times this procedure has ever been run."}
             }}
   }
  

@@ -6,6 +6,7 @@
             [com.walmartlabs.lacinia.util :as util]
             [com.walmartlabs.lacinia.schema :as schema]
             [com.walmartlabs.lacinia :as lacinia]
+            [com.walmartlabs.lacinia.executor :as executor]
             [slide-stainer.defs :refer :all]
             [slide-stainer.board-setup :refer :all]
             [slide-stainer.motion :refer :all]
@@ -56,8 +57,13 @@
 (defn resolve-procedure-by-id [context args value]
   (db/get-doc (:_id args)))
 
-(defn resolve-procedures [context args value] ;; TODO this doesn't yet retrieve all the requested fields
-  (mapv #(clojure.set/rename-keys % {:key :_id :value :name}) (db/get-procedures false)))
+(defn resolve-procedures [context args value]
+  (let [indexed-fields #{:procedure/name :procedure/_id}
+        queried-fields (set (executor/selections-seq context))
+        has-non-indexed-field? (not (empty? (clojure.set/difference queried-fields indexed-fields)))]
+    (if has-non-indexed-field?
+      (mapv :doc (db/get-procedures true))
+      (mapv #(clojure.set/rename-keys % {:key :_id :value :name}) (db/get-procedures false)))))
 
 (defn get-ip-address []
   (as-> (sh "ifconfig" "wlan0") $ ; why not use hostname -I instead? Less parsing would be needed.
