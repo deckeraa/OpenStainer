@@ -146,7 +146,12 @@
 
 (defn home-graphql-handler [context args value]
   (println "Homing")
+  ;; Re-homing clears estop status
   (set-stopped! false)
+  ;; these alarms are resolved by re-homing, so have them clear the alarm status
+  (set-limit-switch-hit-unexpectedly-alarm false)
+  (set-homing-failed-alarm false)
+  ;; actually do the re-homing
   (home)
   (resolve-state context args value))
 
