@@ -98,3 +98,10 @@ button {
 button:hover {
     background-color: #dd9945;
 }
+
+/* Procedure Selection */
+.procedure_selection li {
+    box-shadow: 2px 3px 5px #0000005c;
+    width: 80%;
+    padding: 10px;
+}
