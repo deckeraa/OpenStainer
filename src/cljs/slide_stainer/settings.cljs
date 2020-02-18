@@ -30,29 +30,30 @@
      [alarm-line (:limit_switch_hit_unexpectedly @alarms-cursor) "Limit switch hit unexpectedly"]
      ]))
 
-(defn positions-and-home [position-x position-z]
+(defn positions-and-home [stepperX-cursor stepperZ-cursor]
   (fn []
-    [:div {:class "positions-and-home" :style {:display :flex :align-items :center}}
-     [:div {:style {:font-size "24px" :margin "16px"}}
-      [:div {} (if position-x
-                 (str "X: " (goog.string/format "%.3f" position-x))
-                 "Not homed")]
-      [:div {} (if position-z
-                 (str "Z: " (goog.string/format "%.3f" position-z))
-                 "Not homed")]]
-     [:button {:style {:width "64px" :height "64px"}
-               :on-click (graphql/graphql-fn {:query (str "mutation{home{alarms{" graphql/alarm-keys "}}}")
-                                              :handler-fn (fn [resp] (println "home resp" resp))})}
-      [svg/home {}
-       "white" 32] "Home"]
-     ]))
+    (let [position-x (:position_inches @stepperX-cursor)
+          position-z (:position_inches @stepperZ-cursor)]
+      [:div {:class "positions-and-home" :style {:display :flex :align-items :center}}
+       [:div {:style {:font-size "24px" :margin "16px"}}
+        [:div {} (if position-x
+                   (str "X: " (goog.string/format "%.3f" position-x))
+                   "Not homed")]
+        [:div {} (if position-z
+                   (str "Z: " (goog.string/format "%.3f" position-z))
+                   "Not homed")]]
+       [:button {:style {:width "64px" :height "64px"}
+                 :on-click (graphql/graphql-fn {:query (str "mutation{home{alarms{" graphql/alarm-keys "}}}")
+                                                :handler-fn (fn [resp] (println "home resp" resp))})}
+        [svg/home {}
+         "white" 32] "Home"]
+       ])))
 
 (defn settings-control [ratom back-fn]
-  (let [alarms-cursor (reagent/cursor ratom [:alarms])]
-    (fn []
-      [:div
-       [:div {:class "nav-header"}
-        [svg/chevron-left {:class "chevron-left" :on-click back-fn} "blue" 36]
-        [:h1 "Settings"]]
-       [alarms alarms-cursor]
-       [positions-and-home (get-in @ratom [:stepperX :position_inches]) (get-in @ratom [:stepperZ :position_inches])]])))
+  (fn []
+    [:div
+     [:div {:class "nav-header"}
+      [svg/chevron-left {:class "chevron-left" :on-click back-fn} "blue" 36]
+      [:h1 "Settings"]]
+     [alarms atoms/alarms-cursor]
+     [positions-and-home atoms/stepperX-cursor atoms/stepperZ-cursor]]))
