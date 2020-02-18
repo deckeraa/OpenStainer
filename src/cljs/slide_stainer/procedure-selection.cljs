@@ -34,7 +34,9 @@
                                                         (when selected-success-fn (selected-success-fn))
                                                         (println "procedure_by_id resp: " resp))})}
                 (:name procedure)])
-             @procedure-list-atom)]
-       [:button {:on-click (fn [e]
+             @procedure-list-atom)
+        [:li {:class "new-procedure-button"
+              :on-click (fn [e]
                              (reset! selection-cursor graphql/empty-procedure)
-                             (when selected-success-fn (selected-success-fn)))} "+"]])))
+                          (when selected-success-fn (selected-success-fn)))}
+         "New Procedure"]]])))

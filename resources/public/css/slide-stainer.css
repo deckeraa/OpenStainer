@@ -104,4 +104,9 @@ button:hover {
     box-shadow: 2px 3px 5px #0000005c;
     width: 80%;
     padding: 10px;
+    margin: 3px;
+}
+
+.procedure_selection .new-procedure-button {
+    background-color: #af5f23;   
 }
