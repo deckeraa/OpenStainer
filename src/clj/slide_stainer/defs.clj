@@ -291,5 +291,7 @@
         pulses-per-revolution (:pulses_per_revolution axis-config)
         travel-distance-per-turn (:travel_distance_per_turn axis-config)
         ]
-    (/ (* pulses travel-distance-per-turn)
-       pulses-per-revolution)))
+    (if pulses
+      (/ (* pulses travel-distance-per-turn)
+         pulses-per-revolution)
+      nil)))
