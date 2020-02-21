@@ -318,14 +318,14 @@
       [svg/cog {:class "cog" :on-click #(swap! atoms/screen-cursor conj :settings)} "white" 36]]
      [:div {:class "body"}
       [:div {:class "button-bar"}
-       [:button {:on-click #(replace-current-screen atoms/screen-cursor :main)} "Main"]
+       ;; [:button {:on-click #(replace-current-screen atoms/screen-cursor :main)} "Main"]
        [:button {:on-click #(replace-current-screen atoms/screen-cursor :graphql)} "GraphQL"]
        [:button {:on-click #(replace-current-screen atoms/screen-cursor :jog)} "Jog"]
        [:button {:on-click #(replace-current-screen atoms/screen-cursor :procedure-selection)} "Procedure Selection"]
        [:button {:on-click #(replace-current-screen atoms/screen-cursor :program-creation)} "Program Creation"]
        [:button {:on-click #(replace-current-screen atoms/screen-cursor :procedure-run)} "Procedure Run Status"]]
       (when (= :graphql (peek @atoms/screen-cursor)) [graphql-control])
-      (when (= :main (peek @atoms/screen-cursor)) [pins-control-graphql])
+      ;; (when (= :main (peek @atoms/screen-cursor)) [pins-control-graphql])
       (when (= :jog (peek @atoms/screen-cursor)) [jog-control ratom])
       (when (= :procedure-selection (peek @atoms/screen-cursor))
         [slide-stainer.procedure-selection/procedure-selection atoms/procedure-list-cursor atoms/procedure-cursor

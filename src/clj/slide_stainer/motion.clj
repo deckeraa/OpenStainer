@@ -6,7 +6,8 @@
             [slide-stainer.board-setup :refer :all]
             [slide-stainer.db :as db]
             [clj-time.core :as time]
-            [java-time])
+            [java-time]
+            [clj-http.client :as client])
   (:use clojure.test))
 
 (defn set-pin [pin-tag state]
@@ -248,11 +249,13 @@
     (move-to-down-position)))
 
 (defn home []
-  (slide-stainer.defs/clear-positioning)
-  (when (not (slide-stainer.defs/is-stopped?))
-    (move-relative :stepperZ up-pos-home))
-  (when (not (slide-stainer.defs/is-stopped?))
-    (move-relative :stepperX left-homing-pos)))
+  (client/get "http://localhost:8000/home")
+  ;; (slide-stainer.defs/clear-positioning)
+  ;; (when (not (slide-stainer.defs/is-stopped?))
+  ;;   (move-relative :stepperZ up-pos-home))
+  ;; (when (not (slide-stainer.defs/is-stopped?))
+  ;;   (move-relative :stepperX left-homing-pos))
+  )
 
 (def sample-program
   {:name "H&E with Harris' Hematoxylin"

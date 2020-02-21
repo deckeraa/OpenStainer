@@ -10,7 +10,7 @@
   (reagent/atom {:alarms {}
                  :current-procedure nil
                  :procedure_run_status {}
-                 :screen-stack [:main]
+                 :screen-stack [:jog]
                  :stepperX {}
                  :stepperZ {}
                  :procedure-list []}))

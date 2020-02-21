@@ -83,14 +83,15 @@
 (defn init-pins
   ([] (init-pins state-atom))
   ([state-atom]
-   (swap! state-atom assoc :device (gpio/device 0))
-   (swap! state-atom assoc :handle (gpio/handle (:device @state-atom)
-                                                (get-output-pin-defs-for-gpio-lib (:setup @state-atom))
-                                                {::gpio/direction :output}))
-   (swap! state-atom assoc :buffer (gpio/buffer (:handle @state-atom)))
-   (println "Calling init-watcher")
-   (init-watcher pin-defs)
-   (Thread/sleep 250) ; give the watcher a little bit of time to wake up
+   (println "No longer used!")
+   ;; (swap! state-atom assoc :device (gpio/device 0))
+   ;; (swap! state-atom assoc :handle (gpio/handle (:device @state-atom)
+   ;;                                              (get-output-pin-defs-for-gpio-lib (:setup @state-atom))
+   ;;                                              {::gpio/direction :output}))
+   ;; (swap! state-atom assoc :buffer (gpio/buffer (:handle @state-atom)))
+   ;; (println "Calling init-watcher")
+   ;; (init-watcher pin-defs)
+   ;; (Thread/sleep 250) ; give the watcher a little bit of time to wake up
    ))
 
 (defn clean-up-pins
