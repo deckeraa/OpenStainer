@@ -218,20 +218,7 @@
                              :handler-fn (fn [resp]
                                            (println "Save button's response" resp)
                                            (when resp (reset! prog-atm (:save_procedure resp))))})} "Save"]
-       [:button {:on-click (fn [e]
-                             ;; ((slide-stainer.graphql/graphql-fn
-                             ;;          {:query (str "mutation{run_procedure(_id:\"" (:_id @prog-atm) "\"){contents}}")}))
-                             ((graphql/graphql-fn
-                               {:query (str "mutation{run_procedure(_id:\"" (:_id @prog-atm) "\"){procedure_run_status{" graphql/procedure-run-status-keys "}}}" );(str "{state{procedure_run_status{" graphql/procedure-run-status-keys "}}}")
-                                :handler-fn (fn [resp]
-                                              (println "Run button resp: " resp)
-                                              (reset! procedure-run-status-cursor (get-in resp [:run_procedure :procedure_run_status]))
-                                              (println "run-fn: " run-fn)
-                                              (when run-fn (run-fn @prog-atm)))
-                                }))
-                             )
-                 } "Run"]
-;       [:p save-query]
+       [run-button procedure-run-status-cursor prog-atm run-fn]
        ])))
 
 (defn program-creation
