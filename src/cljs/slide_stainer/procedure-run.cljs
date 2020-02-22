@@ -6,6 +6,7 @@
             [clojure.edn :as edn]
             [slide-stainer.graphql :as graphql]
             [slide-stainer.onscreen-keyboard :as osk]
+            [slide-stainer.program-creation]
             [cljs-time.core :as time]
             [cljs-time.format :as format])
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
@@ -63,7 +64,9 @@
                                  [:td (:jar_number step)]]))
                             (:procedure_steps @procedure-cursor)))]]
       [:p {} (str "Cycle " (:current_cycle_number @procedure-run-status-cursor) " of " (:repeat @procedure-cursor))]
-      [:button {:on-click (refresh-fn procedure-cursor procedure-run-status-cursor)} "Refresh"]])))
+      [:button {:on-click (refresh-fn procedure-cursor procedure-run-status-cursor)} "Refresh"]
+      [slide-stainer.program-creation/run-button procedure-run-status-cursor procedure-cursor nil]
+      ])))
 
 (defcard-rg procedure-run-status-card
   [procedure-run-status])

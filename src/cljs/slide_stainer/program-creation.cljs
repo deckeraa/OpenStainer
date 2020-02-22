@@ -163,6 +163,23 @@
     (remove (fn [[idx itm]] (= n idx)) $)
     (mapv (fn [[idx itm]] itm) $)))
 
+(defn run-button [procedure-run-status-cursor prog-atm run-fn]
+  (fn []
+    [:button {:on-click (fn [e]
+                          (println "run-button: " procedure-run-status-cursor)
+                          ((graphql/graphql-fn
+                            {:query (str "mutation{run_procedure(_id:\"" (:_id @prog-atm)
+                                         "\"){procedure_run_status{" graphql/procedure-run-status-keys "}}}" )
+                             :handler-fn (fn [resp]
+                                           (println "Run button resp: " resp)
+                                           (reset! procedure-run-status-cursor (get-in resp [:run_procedure :procedure_run_status]))
+                                           (println "run-fn: " run-fn)
+                                           (when run-fn (run-fn @prog-atm))
+                                           )
+                             }))
+                          )
+              } "Run"]))
+
 (defn procedure-steps [prog-atm procedure-run-status-cursor run-fn]
   (fn []
     (let [steps-cursor (reagent/cursor prog-atm [:procedure_steps])
