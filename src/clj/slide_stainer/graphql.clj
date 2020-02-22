@@ -13,7 +13,8 @@
             [slide-stainer.db :as db]
             [clj-time.core :as time]
             [clj-time.format :as format]
-            [java-time])
+            [java-time]
+            [clj-http.client :as client])
   (:import (clojure.lang IPersistentMap)))
 
 (defn resolve-alarms [context args value]
@@ -83,7 +84,10 @@
         pos (get-in @state-atom [:setup id :position-in-pulses])]
     {:id (str id)
      :position        pos
-     :position_inches (pulses-to-inches id pos) ;(get-in @state-atom [:setup id :position_inches])
+     :position_inches (if (= id :stepper-x)
+                        (:body (client/get "http://localhost:8000/pos/x"))
+                        (:body (client/get "http://localhost:8000/pos/z")))
+                                        ;(pulses-to-inches id pos) ;(get-in @state-atom [:setup id :position_inches])
      :alarms (resolve-alarms context args value)
      }))
 
