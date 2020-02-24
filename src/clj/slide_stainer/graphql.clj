@@ -190,6 +190,10 @@
           (println error-msg)
           {:error error-msg})))))
 
+(defn configure-database-graphql-handler [context args value]
+  (db/install-views! @db/db)
+  (resolve-state context args value))
+
 (defn drop-motor-lock-graphql-handler [context args value]
   (reset! motor-lock false)
   (resolve-state context args value))
@@ -215,6 +219,7 @@
    :mutation/run_procedure run-procedure-graphql-handler
    :mutation/save_procedure save-procedure-graphql-handler
    :mutation/drop_motor_lock drop-motor-lock-graphql-handler
+   :mutation/configure_database configure-database-graphql-handler
 })
 
 (defn simplify

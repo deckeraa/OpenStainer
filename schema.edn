@@ -178,4 +178,9 @@
   :drop_motor_lock
   {:type :state
   :description "Clears the motor lock. For debugging purposes only."
-  :resolve :mutation/drop_motor_lock}}}
+   :resolve :mutation/drop_motor_lock}
+  :configure_database
+  {:type :state
+   :descriptions "Sets up CouchDB."
+   :resolve :mutation/configure_database}
+   }}
