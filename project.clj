@@ -48,6 +48,10 @@
    {:dependencies []
 
     :plugins      [[lein-figwheel "0.5.15"]]
+    }
+   :uberjar
+   {:aot :all
+    :main slide-stainer.core
     }}
 
   :cljsbuild

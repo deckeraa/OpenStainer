@@ -5,6 +5,7 @@
             [ring.middleware.cors :refer [wrap-cors]]
             [ring.util.response :as response :refer [file-response content-type]]
             [ring.util.request :as request]
+            [ring.adapter.jetty :refer [run-jetty]]
             [clojure.data.json :as json]
             [clojure.walk :refer [keywordize-keys]]
             [clojure.java.io :as io]
@@ -55,3 +56,6 @@
        :access-control-allow-methods [:get :put :post :delete]
        :access-control-allow-credentials ["true"]
        :access-control-allow-headers ["X-Requested-With","Content-Type","Cache-Control"])))
+
+(defn -main [& args]
+  (run-jetty app {:port 3000}))
