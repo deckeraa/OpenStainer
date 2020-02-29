@@ -87,12 +87,18 @@
     top: 64px;
 }
 
+select {
+    font-size: 32px;
+}
+
 button {
     border: none;
     color: white;
     background-color: #af5f23;
     margin: 1px;
+    padding: 20px;
     box-shadow: 2px 3px 5px #0000005c;
+    font-size: 32px;
 }
 
 button:hover {
