@@ -91,6 +91,10 @@
      :alarms (resolve-alarms context args value)
      }))
 
+(defn resolve-settings [context args value]
+  (let [settings-doc (db/get-doc "settings")]
+    settings-doc))
+
 (defn move-by-pulses-graphql-handler
   "Example query: mutation {move_by_pulses(id:\":stepperZ\",pulses:-3200){id}}"
   [context args value]
@@ -208,6 +212,7 @@
    :query/alarms resolve-alarms
    :query/state resolve-state
    :query/axis resolve-axis
+   :query/settings resolve-settings
    :mutation/set_axis set-axis
    :mutation/move_by_pulses move-by-pulses-graphql-handler
    :mutation/move_relative move-relative-graphql-handler

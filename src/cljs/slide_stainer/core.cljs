@@ -41,8 +41,8 @@
            (if handler-fn (handler-fn resp raw-resp)))))))
 
 (defn graphql-control []
-  (let [input  (reagent/atom
-                "{state{procedure_run_status{current_procedure_id,current_procedure_name,current_procedure_step_number,current_procedure_step_start_time}}}"
+  (let [input  (reagent/atom ""
+                ;; "{state{procedure_run_status{current_procedure_id,current_procedure_name,current_procedure_step_number,current_procedure_step_start_time}}}"
 ;                "mutation{run_procedure(name:\"foo\"){contents}}"
 ;                "mutation{move_to_position(id:\":stepperZ\",position:2.2){id,position_inches}}"
                 ;"mutation {move_by_pulses(id:\":stepperX\",pulses:1000){id}}"
@@ -351,7 +351,10 @@
      ]))
 
 (def queries-to-run
-  {:always {:query-fn (graphql/graphql-fn {:query (str "{state{alarms{" graphql/alarm-keys "}}}")
+  {:init {:query-fn (graphql/graphql-fn {:query (str "{settings{developer}}")
+                                         :handler-fn (fn [resp] (println "settings resp: " resp) (reset! atoms/settings-cursor (:settings resp)))})
+          :should-run? (fn [] (empty? @atoms/settings-cursor))}
+   :always {:query-fn (graphql/graphql-fn {:query (str "{state{alarms{" graphql/alarm-keys "}}}")
                                            :handler-fn (fn [resp] (reset! atoms/alarms-cursor (get-in resp [:state :alarms])))})}
    :procedure-run {:query-fn (slide-stainer.procedure-run/refresh-fn atoms/procedure-cursor atoms/procedure-run-status-cursor)}
    :settings {:query-fn (slide-stainer.settings/refresh-fn)}})

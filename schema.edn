@@ -58,7 +58,10 @@
             :procedure_steps {:type (list :procedure_step) :description "A list of steps in the staining procedure."}
             :repeat {:type Int :description "Number of times to repeat a given procedure for a single run."}
             :runs {:type Int :description "Number of times this procedure has ever been run."}
-              }}}
+            }}
+  :settings
+  {:description "Various settings for the slide stainer device"
+   :fields {:developer {:type Boolean :description "Boolean that controls whether to show certain features such as the GraphQL control in the settings menu."}}}}
 
  :input-objects
  {
@@ -109,9 +112,10 @@
   :axis
   {:type :axis
    :args {:id {:type ID}}
-   :resolve :query/axis}}
-
- 
+   :resolve :query/axis}
+  :settings
+  {:type :settings
+   :resolve :query/settings}}
  
  :mutations
  {:set_pin
