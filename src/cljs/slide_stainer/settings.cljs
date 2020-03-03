@@ -26,6 +26,7 @@
 (defn alarms [alarms-cursor]
   (fn []
     [:div {:style {:display :flex :flex-direction :column}}
+     [:h2 "Alarms"]
      [alarm-line (:homing_failed @alarms-cursor) "Homing failed"]
      [alarm-line (:limit_switch_hit_unexpectedly @alarms-cursor) "Limit switch hit unexpectedly"]
      ]))
@@ -34,6 +35,7 @@
   (fn []
     (let [position-x (:position_inches @stepperX-cursor)
           position-z (:position_inches @stepperZ-cursor)]
+      [:h2 "Current Position"]
       [:div {:class "positions-and-home" :style {:display :flex :align-items :center}}
        [:div {:style {:font-size "24px" :margin "16px"}}
         [:div {} (if position-x
@@ -47,6 +49,20 @@
                                                 :handler-fn (fn [resp] (println "home resp" resp))})}
         [svg/home {}
          "white" 32] "Home"]
+       ])))
+
+(defn jar-jog-control [alarms-cursor]
+  (let [query-fn (fn [jar] (str "mutation{move_to_jar(jar:" jar "){position," graphql/alarms-subquery "}}"))]
+    (fn []
+      [:div
+       [:h2 "Move to jar"]
+       (map (fn [jar]
+              ^{:key jar} [:button {:on-click (graphql/graphql-fn {:query-fn (partial query-fn jar)
+                                                                   :handler-fn (fn [resp]
+                                                                                 (reset! atoms/alarms-cursor
+                                                                                         (get-in resp [:move_to_jar :alarms])))})}
+            (str "Jar #" jar)])
+            (range 1 7))
        ])))
 
 (defn graphql-control []
@@ -83,6 +99,8 @@
       [svg/chevron-left {:class "chevron-left" :on-click back-fn} "blue" 36]
       [:h1 "Settings"]]
      [alarms atoms/alarms-cursor]
+
      [positions-and-home atoms/stepperX-cursor atoms/stepperZ-cursor]
+     [jar-jog-control]
      (when (:developer @atoms/settings-cursor) [graphql-control])
      ]))

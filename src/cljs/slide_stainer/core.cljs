@@ -166,20 +166,20 @@
                             nil)
                  } "Move"]])))
 
-(defn jar-jog-control [alarms-cursor]
-  (let [query-fn (fn [jar] (str "mutation{move_to_jar(jar:" jar "){position," alarms-subquery "}}"))]
-    (fn []
-      [:div
-       (map (fn [jar]
-              ^{:key jar} [:button {:on-click (graphql-click-handler
-                                               nil
-                                               (partial query-fn jar)
-                                               (fn [resp]
-                                                 (println "jar-jog-control response handler" resp)
-                                                 (alarms-query-response-handler alarms-cursor (:move_to_jar resp))))}
-            (str "Jar #" jar)])
-            (range 1 7))
-       ])))
+;; (defn jar-jog-control [alarms-cursor]
+;;   (let [query-fn (fn [jar] (str "mutation{move_to_jar(jar:" jar "){position," alarms-subquery "}}"))]
+;;     (fn []
+;;       [:div
+;;        (map (fn [jar]
+;;               ^{:key jar} [:button {:on-click (graphql-click-handler
+;;                                                nil
+;;                                                (partial query-fn jar)
+;;                                                (fn [resp]
+;;                                                  (println "jar-jog-control response handler" resp)
+;;                                                  (alarms-query-response-handler alarms-cursor (:move_to_jar resp))))}
+;;             (str "Jar #" jar)])
+;;             (range 1 7))
+;;        ])))
 
 (defn home-button []
   (fn []
@@ -198,7 +198,7 @@
        [absolute-jog-control :stepperZ]
        [position-readout-jog-control :stepperX]
        [absolute-jog-control :stepperX]
-       [jar-jog-control alarms-cursor]
+;       [jar-jog-control alarms-cursor]
        [home-button]
        [alarms-control alarms-cursor]
        [drop-motor-lock-button]
@@ -222,7 +222,7 @@
      [:div {:class "body"}
       [:div {:class "button-bar"}
        [:button {:on-click #(replace-current-screen atoms/screen-cursor :jog)} "Jog"]
-       [:button {:on-click #(replace-current-screen atoms/screen-cursor :procedure-selection)} "Select a staining procedure"]
+       [:button {:on-click #(replace-current-screen atoms/screen-cursor :procedure-selection)} "Procedure Selection"]
        [:button {:on-click #(replace-current-screen atoms/screen-cursor :program-creation)} "Program Creation"]
        [:button {:on-click #(replace-current-screen atoms/screen-cursor :procedure-run)} "Procedure Run Status"]]
       (when (= :jog (peek @atoms/screen-cursor)) [jog-control ratom])
