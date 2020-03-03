@@ -24,14 +24,20 @@
     display: none;
 }
 
+.onscreen-keyboard-row {
+    display: flex;
+}
+
 .onscreen-keyboard button {
     /* min-width: 60px; */
     /* min-height: 60px; */
     font-size: 28px;
     padding: 10px;
+    flex: 1;
 }
 
 .onscreen-keyboard-input {
     /* min-height: 45px; */
     font-size: 24px;
 }
+

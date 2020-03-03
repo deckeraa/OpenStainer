@@ -132,7 +132,7 @@ and returns the properly shifted string."
       [:div
        [:div {:class (str "onscreen-keyboard-placeholder" (when (not (:open? @osk-atm)) " onscreen-keyboard-placedholder-hidden"))}]
        [:div {:class (str "onscreen-keyboard" " " (if (:open? @osk-atm) "onscreen-keyboard-open" "onscreen-keyboard-closed"))}
-        [:div
+        [:div {:class "onscreen-keyboard-row"}
          (button-fn ["1" "!"])
          (button-fn ["2" "@"])
          (button-fn ["3" "#"])
@@ -144,20 +144,19 @@ and returns the properly shifted string."
          (button-fn ["9" "("])
          (button-fn ["0" ")"])
          [backspace-button osk-atm]]
-        [:div
+        [:div {:class "onscreen-keyboard-row"}
          (doall (map button-fn "qwertyuiop"))]
-        [:div
+        [:div {:class "onscreen-keyboard-row"}
          (doall (map button-fn "asdfghjkl"))
          (button-fn [";" ":"])
          (button-fn ["'" "\""])]
-        [:div
+        [:div {:class "onscreen-keyboard-row"}
          (doall (map button-fn "zxcvbnm"))
          (button-fn ["," "<"])
          (button-fn ["." ">"])]
-        [:div
+        [:div {:class "onscreen-keyboard-row"}
          [shift-button osk-atm]
          (button-fn " " ["Space" "Space"])
-
          [shift-button osk-atm]
          [done-button osk-atm]
          ]]])))
