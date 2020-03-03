@@ -26,4 +26,4 @@
        (when anim-fn (anim-fn))
        (when (and always-fn (= 0 seconds)) (always-fn))
        (when (and init-fn (= 0 seconds) (init-should-it-run-fn)) (init-fn)))
-     (js/setTimeout (partial periodic-updater screen-cursor queries-to-run (mod (inc seconds) 5)) (* 1 1000)))))
+     (js/setTimeout (partial periodic-updater screen-cursor queries-to-run (mod (inc seconds) 5)) (* 5 1000)))))

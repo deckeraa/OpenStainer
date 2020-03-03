@@ -4,6 +4,7 @@
             [devcards.core :refer-macros [deftest defcard-rg]]
             [cljs.test :refer-macros [is testing run-tests]]
             [clojure.edn :as edn]
+            [slide-stainer.svg :as svg]
             [slide-stainer.graphql :as graphql]
             [slide-stainer.onscreen-keyboard :as osk]
             [slide-stainer.program-creation]
@@ -39,11 +40,13 @@
   (is (= "1:01" (format-time-in-seconds  61))))
 
 (defn procedure-run-status
-  ([] (procedure-run-status (reagent/atom sample-procedure) (reagent/atom {:current_procedure_step_number 2})))
-  ([procedure-cursor procedure-run-status-cursor]
+  ([] (procedure-run-status (reagent/atom sample-procedure) (reagent/atom {:current_procedure_step_number 2}) nil))
+  ([procedure-cursor procedure-run-status-cursor back-fn]
    (fn []
      [:div
-      [:h1 (:name @procedure-cursor)]
+      [:div {:class "nav-header"}
+       (when back-fn [svg/chevron-left {:class "chevron-left" :on-click back-fn} "blue" 36])
+       [:h1 (:name @procedure-cursor)]]
       [:table
        [:tbody [:tr [:th ""] [:th "Step #"] [:th "Substance"] [:th "Time"] [:th "Jar #"]]
         (doall (map-indexed (fn [idx step]

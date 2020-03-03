@@ -207,9 +207,10 @@
      [:div {:class "body"}
       [:div {:class "button-bar"}
        ;; [:button {:on-click #(replace-current-screen atoms/screen-cursor :jog)} "Jog"]
-       [:button {:on-click #(replace-current-screen atoms/screen-cursor :procedure-selection)} "Procedure Selection"]
-       [:button {:on-click #(replace-current-screen atoms/screen-cursor :program-creation)} "Program Creation"]
-       [:button {:on-click #(replace-current-screen atoms/screen-cursor :procedure-run)} "Procedure Run Status"]]
+       ;; [:button {:on-click #(replace-current-screen atoms/screen-cursor :procedure-selection)} "Procedure Selection"]
+       ;; [:button {:on-click #(replace-current-screen atoms/screen-cursor :program-creation)} "Program Creation"]
+       ;; [:button {:on-click #(replace-current-screen atoms/screen-cursor :procedure-run)} "Procedure Run Status"]
+       ]
       (when (= :jog (peek @atoms/screen-cursor)) [jog-control ratom])
       (when (= :procedure-selection (peek @atoms/screen-cursor))
         [slide-stainer.procedure-selection/procedure-selection atoms/procedure-list-cursor atoms/procedure-cursor
@@ -229,7 +230,11 @@
            (println "@screen-cursor is now: " @atoms/screen-cursor)
                                         ;              (swap! procedure-cursor (fn [v] (assoc v :current_procedure_step_number 1)))
            )])
-      (when (= :procedure-run (peek @atoms/screen-cursor)) [slide-stainer.procedure-run/procedure-run-status atoms/procedure-cursor atoms/procedure-run-status-cursor])
+      (when (= :procedure-run (peek @atoms/screen-cursor))
+        [slide-stainer.procedure-run/procedure-run-status atoms/procedure-cursor
+         atoms/procedure-run-status-cursor
+         #(swap! atoms/screen-cursor pop) ;; TODO make this stop the currently running staining procedure (maybe?)
+         ])
       (when (= :settings (peek @atoms/screen-cursor)) [slide-stainer.settings/settings-control ratom #(swap! atoms/screen-cursor pop)])
       [:div {} (str @ratom)]]
      ]))
