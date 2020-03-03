@@ -18,7 +18,7 @@
                                 :handler-fn (fn [resp]
                                               (reset! procedure-list-cursor (:procedures resp)))}))))
       [:div {:class "procedure_selection"}
-       [:h1 {:class "nav-header"} "Procedure Selection"]
+       [:h1 {:class "nav-header"} "Select a staining procedure:"]
        [:ul
         (map (fn [procedure]
                ^{:key (:_id procedure)}
@@ -43,4 +43,4 @@
               :on-click (fn [e]
                              (reset! selection-cursor graphql/empty-procedure)
                           (when selected-success-fn (selected-success-fn)))}
-         "New Procedure"]]])))
+         "Create new procedure"]]])))
