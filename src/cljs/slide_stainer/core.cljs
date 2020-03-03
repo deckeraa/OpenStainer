@@ -40,47 +40,6 @@
            (println "handler-fn " handler-fn)
            (if handler-fn (handler-fn resp raw-resp)))))))
 
-(defn graphql-control []
-  (let [input  (reagent/atom ""
-                ;; "{state{procedure_run_status{current_procedure_id,current_procedure_name,current_procedure_step_number,current_procedure_step_start_time}}}"
-;                "mutation{run_procedure(name:\"foo\"){contents}}"
-;                "mutation{move_to_position(id:\":stepperZ\",position:2.2){id,position_inches}}"
-                ;"mutation {move_by_pulses(id:\":stepperX\",pulses:1000){id}}"
-                ;"{pin_by_id(id:\":stepperX-ena\"){board_value,logical_value,pin_number},ip{inet4}}"
-                )
-        output-data (reagent/atom "")
-        output-status (reagent/atom "")]
-    (fn []
-      [:div
-       [:h1 "GraphQL Control"]
-       [:textarea {:type "text" :value @input
-                   :rows 8 :cols 80
-                :on-change #(on-change-handler input %)
-                }]
-       [:textarea {:type "text" :value @output-data
-                   :rows 12 :cols 40
-                   :on-change #(on-change-handler output-data %)
-                   }]
-       [:textarea {:type "text" :value @output-status
-                   :rows 4 :cols 40
-                   :on-change #(on-change-handler output-data %)
-                }]
-       [:button {:on-click (graphql-click-handler nil
-                                                  (fn [] (deref input))
-                                                  (fn [resp raw-resp]
-                                                    (reset! output-status (str raw-resp))
-                                                    (reset! output-data (str resp))))
-                 ;; (fn [e]
-                           ;;   (go (let [resp (<! (http/post "http://localhost:3000/graphql"
-                           ;;                                 {:json-params {:query @input}}
-                           ;;                                 :with-credentials? false))]
-                           ;;         (reset! output-status (str resp))
-                           ;;         (reset! output-data   (:body resp))
-                           ;;         (println "body type" (type (:body resp)))
-                           ;;         (println resp))))
-                 }
-        "Run query"]])))
-
 (defn led-button [name num]
   [:div {:style {:background-color :red
                  :color :white
@@ -318,14 +277,10 @@
       [svg/cog {:class "cog" :on-click #(swap! atoms/screen-cursor conj :settings)} "white" 36]]
      [:div {:class "body"}
       [:div {:class "button-bar"}
-       ;; [:button {:on-click #(replace-current-screen atoms/screen-cursor :main)} "Main"]
-       [:button {:on-click #(replace-current-screen atoms/screen-cursor :graphql)} "GraphQL"]
        [:button {:on-click #(replace-current-screen atoms/screen-cursor :jog)} "Jog"]
        [:button {:on-click #(replace-current-screen atoms/screen-cursor :procedure-selection)} "Procedure Selection"]
        [:button {:on-click #(replace-current-screen atoms/screen-cursor :program-creation)} "Program Creation"]
        [:button {:on-click #(replace-current-screen atoms/screen-cursor :procedure-run)} "Procedure Run Status"]]
-      (when (= :graphql (peek @atoms/screen-cursor)) [graphql-control])
-      ;; (when (= :main (peek @atoms/screen-cursor)) [pins-control-graphql])
       (when (= :jog (peek @atoms/screen-cursor)) [jog-control ratom])
       (when (= :procedure-selection (peek @atoms/screen-cursor))
         [slide-stainer.procedure-selection/procedure-selection atoms/procedure-list-cursor atoms/procedure-cursor
