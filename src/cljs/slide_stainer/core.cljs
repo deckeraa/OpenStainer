@@ -40,21 +40,6 @@
            (println "handler-fn " handler-fn)
            (if handler-fn (handler-fn resp raw-resp)))))))
 
-(defn led-button [name num]
-  [:div {:style {:background-color :red
-                 :color :white
-                 :font-size "40px"
-                 :margin "5px"
-                 :width "100px"
-                 :height "100px"}
-         :on-click (fn [e]
-                     (console.log "Click!")
-                     (go (let [resp (<! (http/post "http://localhost:3000/blink"
-                                                   {:json-params {:port num}}
-                                                   :with-credentials? false))]
-                           (println "POST Resp: " resp))))
-         } name])
-
 (def alarms-subquery "alarms{limit_switch_hit_unexpectedly,homing_failed}")
 (def alarms-query (str "{state{" alarms-subquery "}}"))
 
@@ -88,47 +73,6 @@
   (let [alarms-cursor (reagent/atom {:alarm-one true :alarm-two false})]
     (fn []
       [alarms-control alarms-cursor])))
-
-(defn pins-control-graphql []
-  (let [pins (reagent/atom [])
-        update-from-resp (fn [raw-resp]
-                           (reset! pins (:pins (:data (edn/read-string (:body raw-resp)))))
-                           )
-        update-fn (fn []
-                    (go (let [resp (<! (http/post "http://localhost:3000/graphql"
-                                                  {:json-params {:query "{pins{id,pin_number,board_value,logical_value}}"}}
-                                                  :with-credentials? false))]
-                          (println "pins-control-graphql" resp)
-;                          (println "line 2" (:data (edn/read-string (:body resp))))
-                                        ;                          (reset! pins (:pins (:data (edn/read-string (:body resp)))))
-                          (update-from-resp resp)
-                          ))
-                    )]
-    (fn []
-      (when (empty? @pins) (update-fn))
-      [:div
-       [:p (str @pins)]
-       [:table
-        [:tbody
-         [:tr [:th "ID"] [:th "Pin #"] [:th "Board Value"] [:th "Logical Value"]]
-         (map (fn [pin]
-                ^{:key pin} [:tr
-                             [:td (:id pin)]
-                             [:td (:pin_number pin)]
-                             [:td (str (:board_value pin))]
-                             (let [val (:logical_value pin)]
-                               [:td [:button {:style {:height 75 :width 75}
-                                              :on-click (fn [e]
-                                                          (go (let [resp (<! (http/post "http://localhost:3000/graphql" {:json-params {:query (str "mutation {set_pin(id:\"" (:id pin) "\",logical_value:" (not val) "){id,pin_number,board_value,logical_value}}")}} :with-credentials? false))]
-                                                                (println "mutate RESP" (str resp))
-                                                                ))
-                                                          )}
-                                     (str val)]])
-                             ])
-              @pins)]]
-       [:button {:on-click update-fn} "Refresh"]
-       [:p]
-       [:button {:on-click (graphql-click-handler "mutation {clean_up_pins{contents}}")} "Clean up pins"]])))
 
 (defn relative-jog-control []
   (let [query-fn (fn [device invert? inc-atm]
