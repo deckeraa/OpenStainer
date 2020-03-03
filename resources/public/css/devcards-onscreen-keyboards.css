@@ -9,3 +9,7 @@
 .onscreen-keyboard {
     position: relative;
 }
+
+.onscreen-keyboard-closed {
+    display: inline-block;
+}
