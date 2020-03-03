@@ -1,6 +1,8 @@
 (ns slide-stainer.onscreen-keyboard
   (:require [reagent.core :as reagent]
-            [devcards.core])
+            [devcards.core]
+            [slide-stainer.svg :as svg]
+            )
   (:require-macros
    [devcards.core :refer [defcard defcard-rg]]))
 
@@ -77,6 +79,8 @@ and returns the properly shifted string."
   ([osk-atm val display-name]
    [osk-button osk-atm val display-name nil])
   ([osk-atm val display-name special-click-handler]
+   [osk-button osk-atm val display-name special-click-handler nil])
+  ([osk-atm val display-name special-click-handler icon]
    (let [input-atm (:input-atm @osk-atm)
          el-atm (:el-atm @osk-atm)
          shift? (:shift? @osk-atm)]
@@ -95,7 +99,9 @@ and returns the properly shifted string."
                                    (change-fn @input-atm))))))
                :on-mouse-down (fn [e] ; try to avoid the event from bubbling so far as to take focus away from the input field
                                 (.preventDefault e))}
-      (shift (if display-name display-name val) shift?)])))
+      (if icon
+        [icon]
+        (shift (if display-name display-name val) shift?))])))
 
 (defn done-button [osk-atm]
   [osk-button osk-atm nil ["Done" "Done"]
@@ -112,7 +118,8 @@ and returns the properly shifted string."
    (fn [osk-atm e input-atm el-atm cursor-pos]
      (swap! input-atm (fn [v]
                         (str (subs v 0 (dec cursor-pos))
-                             (subs v cursor-pos (count v))))))])
+                             (subs v cursor-pos (count v))))))
+   (partial svg/delete {} "white" 24)])
 
 (defn shift-button [osk-atm]
   [osk-button osk-atm nil ["Shift" "Shift"]
