@@ -101,6 +101,10 @@ button {
     font-size: 32px;
 }
 
+input {
+    font-size: 28px;
+}
+
 button:hover {
     background-color: #dd9945;
 }

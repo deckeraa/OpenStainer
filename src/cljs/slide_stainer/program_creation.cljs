@@ -227,7 +227,7 @@
    [:div
     [:div {:class "nav-header"}
      (when back-fn [svg/chevron-left {:class "chevron-left" :on-click back-fn} "blue" 36])
-      [:h1 "Procedure Steps"]]
+     [:h1 "Procedure Steps"]]
     [osk/osk-input osk-atm
                                   {:on-change (fn [new-val]
                                                 (println "Change handler called: " new-val)
@@ -237,7 +237,6 @@
     [jar-contents prog-atm]
     [procedure-steps prog-atm procedure-run-status-cursor run-fn]
     [:div (str @prog-atm)]
-    [:div (str @osk-atm)]
     [slide-stainer.onscreen-keyboard/onscreen-keyboard osk-atm]]))
 
 (defcard-rg procedure-edit-card

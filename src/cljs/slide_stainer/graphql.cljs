@@ -10,7 +10,10 @@
    [devcards.core :refer [defcard defcard-rg]]))
 
 (def number-of-jars 6)
-(def empty-procedure {:type "procedure" :jar_contents (vec (repeat number-of-jars "")) :procedure_steps []})
+(def empty-procedure {:type "procedure"
+                      :jar_contents (vec (repeat number-of-jars " "))
+                      :procedure_steps []
+                      :name " "})
 
 (def procedure-keys
 ;;  "Contains a comma-delimited string of all keys in the procedure object"

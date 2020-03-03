@@ -10,7 +10,7 @@
   (select-keys args [:size]))
 
 (defn osk-input [osk-atm args]
-  (let [input-atm (reagent/atom (or (:value args) ""))
+  (let [input-atm (reagent/atom (or (:value args) " "))
         ref-atm   (clojure.core/atom nil)
         focus-fn (fn [e]
                             (swap! osk-atm (fn [osk-map]
@@ -20,7 +20,8 @@
                                                  (assoc :args args)
                                                  (assoc :open? true))))
                                         ; TODO putting the scrollIntoView in a timeout is kind of hacky -- we need to call scrollIntoView after the onscreen-keyboard-placeholder becomes visible. Hence the timeout as a poor man's way of making that happen.
-                   (js/setTimeout (fn [] (.scrollIntoView @ref-atm)) 100))
+                   (js/setTimeout (fn [] (.scrollIntoView @ref-atm)) 100)
+                   )
         blur-fn (fn []
                   (when (:on-blur args) ((:on-blur args) @input-atm))
                   (swap! osk-atm (fn [osk-map]
