@@ -17,7 +17,7 @@
     width: 100%;
     padding-top: 15px;
     margin:0px;
-    display: flex;
+    display: inline-block;
 }
 
 .onscreen-keyboard-closed {
