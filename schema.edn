@@ -157,6 +157,14 @@
    :description "Attempts to move an axis to a given jar."
    :args {:jar {:type Int}}
    :resolve :mutation/move_to_jar}
+  :move_to_up_position
+  {:type :axis
+   :description "Attemps to move the slide holder to the up position."
+   :resolve :mutation/move_to_up_position}
+  :move_to_down_position
+  {:type :axis
+   :description "Attemps to move the slide holder to the down position."
+   :resolve :mutation/move_to_down_position}
   :clean_up_pins
   {:type :state
    :description "Cleans up the pins."

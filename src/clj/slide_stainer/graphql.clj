@@ -202,6 +202,14 @@
   (reset! motor-lock false)
   (resolve-state context args value))
 
+(defn move-to-up-position-graphql-handler [context args value]
+  (move-to-up-position)
+  (resolve-axis context (assoc args :id :stepperZ) value))
+
+(defn move-to-down-position-graphql-handler [context args value]
+  (move-to-down-position)
+  (resolve-axis context (assoc args :id :stepperZ) value))
+
 (defn resolver-map []
   {:query/pin_by_id resolve-pin-by-id
    :query/ip resolve-ip
@@ -225,6 +233,8 @@
    :mutation/save_procedure save-procedure-graphql-handler
    :mutation/drop_motor_lock drop-motor-lock-graphql-handler
    :mutation/configure_database configure-database-graphql-handler
+   :mutation/move_to_up_position move-to-up-position-graphql-handler
+   :mutation/move_to_down_position move-to-down-position-graphql-handler
 })
 
 (defn simplify

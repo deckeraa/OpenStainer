@@ -65,6 +65,17 @@
             (range 1 7))
        ])))
 
+(defn up-down-control []
+  (fn []
+    [:div
+     [:h2 "Move slide holder"]
+     [:button {:on-click (graphql/graphql-fn {:query "mutation{move_to_up_position{position_inches}}"
+                                              :handler-fn (fn [] nil)})}
+      "Up"]
+     [:button {:on-click (graphql/graphql-fn {:query "mutation{move_to_down_position{position_inches}}"
+                                              :handler-fn (fn [] nil)})}
+      "Down"]]))
+
 (defn graphql-control []
   (let [input  (reagent/atom "")
         output-data (reagent/atom "")
@@ -99,8 +110,8 @@
       [svg/chevron-left {:class "chevron-left" :on-click back-fn} "blue" 36]
       [:h1 "Settings"]]
      [alarms atoms/alarms-cursor]
-
      [positions-and-home atoms/stepperX-cursor atoms/stepperZ-cursor]
      [jar-jog-control]
+     [up-down-control]
      (when (:developer @atoms/settings-cursor) [graphql-control])
      ]))
