@@ -27,6 +27,12 @@
    {:query (str "{state{procedure_run_status{" graphql/procedure-run-status-keys "}}}")
     :handler-fn (fn [resp] (reset! procedure-run-status-cursor (get-in resp [:state :procedure_run_status])))}))
 
+(defn refresh-query-fn []
+  (str "{state{procedure_run_status{" graphql/procedure-run-status-keys "}}}"))
+
+(defn refresh-handler-fn [procedure-cursor procedure-run-status-cursor resp]
+  (reset! procedure-run-status-cursor (get-in resp [:state :procedure_run_status])))
+
 (defn format-time-in-seconds [seconds]
   (let [min (Math/floor (/ seconds 60))
         sec (as-> (rem seconds 60) $

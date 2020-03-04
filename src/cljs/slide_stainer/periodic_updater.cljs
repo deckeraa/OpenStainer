@@ -27,3 +27,30 @@
        (when (and always-fn (= 0 seconds)) (always-fn))
        (when (and init-fn (= 0 seconds) (init-should-it-run-fn)) (init-fn)))
      (js/setTimeout (partial periodic-updater screen-cursor queries-to-run (mod (inc seconds) 5)) (* 5 1000)))))
+
+(defn periodic-updater-two
+  ([screen-cursor queries-to-run]
+   (periodic-updater-two screen-cursor queries-to-run 0))
+  ([screen-cursor queries-to-run seconds]
+   (let [screen (peek @screen-cursor)
+         query  (clojure.string/join
+                 ","
+                 (filter #(not (nil? %))
+                         [;; (when-let [query-fn    (get-in queries-to-run [:init :query-fn])
+                          ;;            should-run? (get-in queries-to-run [:init :should-run?])]
+                          ;;   (when (should-run?) (query-fn)))
+                          (let [query-fn    (get-in queries-to-run [:init :query-fn])
+                                should-run? (get-in queries-to-run [:init :should-run?])]
+                            (when (and query-fn should-run? (should-run?)) (query-fn)))
+                          (when-let [query-fn (get-in queries-to-run [screen :query-fn])]  (query-fn))
+                          (when-let [query-fn (get-in queries-to-run [:always :query-fn])] (query-fn))]))]
+     ((graphql/graphql-fn {:query query
+                           :handler-fn (fn [resp]
+                                         (let [f           (get-in queries-to-run [:init :handler-fn])
+                                               should-run? (get-in queries-to-run [:init :should-run?])]
+                                           (when (and f should-run? (should-run?))
+                                             (f resp)))
+                                         (when-let [f (get-in queries-to-run [:always :handler-fn])] (f resp))
+                                         (when-let [f (get-in queries-to-run [screen  :handler-fn])] (f resp))
+                                         (js/setTimeout (partial periodic-updater-two screen-cursor queries-to-run (mod (inc seconds) 5)) (* 1 1000))
+                                         )})))))

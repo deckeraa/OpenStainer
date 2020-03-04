@@ -17,6 +17,15 @@
                                      (swap! atoms/stepperX-cursor (fn [v] (merge v (:stepperX resp))))
                                      (swap! atoms/stepperZ-cursor (fn [v] (merge v (:stepperZ resp)))))}))
 
+(defn refresh-query-fn []
+  (str "{stepperX: axis(id:\"stepperX\"){position_inches}, stepperZ: axis(id:\"stepperZ\"){position_inches}}")
+  )
+
+(defn refresh-handler-fn [resp]
+  (swap! atoms/stepperX-cursor (fn [v] (merge v (:stepperX resp))))
+  (swap! atoms/stepperZ-cursor (fn [v] (merge v (:stepperZ resp))))
+  )
+
 (defn alarm-line [alarmed? label]
   (fn []
     [:div {:style {:display :flex :flex-direction :row :align-items :center}}
@@ -109,9 +118,13 @@
      [:div {:class "nav-header"}
       [svg/chevron-left {:class "chevron-left" :on-click back-fn} "blue" 36]
       [:h1 "Settings"]]
+     [:button {:on-click (fn [e] (println "foo")
+                           (slide-stainer.periodic-updater/periodic-updater-two
+                                  atoms/screen-cursor slide-stainer.core/queries-to-run-two))} "Foo"]
      [alarms atoms/alarms-cursor]
      [positions-and-home atoms/stepperX-cursor atoms/stepperZ-cursor]
      [jar-jog-control]
      [up-down-control]
-     (when (:developer @atoms/settings-cursor) [graphql-control])
+     ;(when (:developer @atoms/settings-cursor))
+     [graphql-control]
      ]))
