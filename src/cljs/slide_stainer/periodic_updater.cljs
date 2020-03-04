@@ -14,22 +14,6 @@
 
 (defn periodic-updater
   ([screen-cursor queries-to-run]
-   (periodic-updater screen-cursor queries-to-run 0))
-  ([screen-cursor queries-to-run seconds]
-   (let [screen (peek @screen-cursor)]
-     (let [query-fn    (get-in queries-to-run [screen :query-fn])
-           anim-fn (get-in queries-to-run [screen :anim-fn])
-           always-fn (get-in queries-to-run [:always :query-fn])
-           init-fn (get-in queries-to-run [:init :query-fn])
-           init-should-it-run-fn (get-in queries-to-run [:init :should-run?])]
-       (when (and query-fn (= 0 seconds)) (query-fn))
-       (when anim-fn (anim-fn))
-       (when (and always-fn (= 0 seconds)) (always-fn))
-       (when (and init-fn (= 0 seconds) (init-should-it-run-fn)) (init-fn)))
-     (js/setTimeout (partial periodic-updater screen-cursor queries-to-run (mod (inc seconds) 5)) (* 5 1000)))))
-
-(defn periodic-updater-two
-  ([screen-cursor queries-to-run]
    (periodic-updater-two screen-cursor queries-to-run 0))
   ([screen-cursor queries-to-run seconds]
    (let [screen (peek @screen-cursor)
@@ -52,5 +36,4 @@
                                              (f resp)))
                                          (when-let [f (get-in queries-to-run [:always :handler-fn])] (f resp))
                                          (when-let [f (get-in queries-to-run [screen  :handler-fn])] (f resp))
-                                         (js/setTimeout (partial periodic-updater-two screen-cursor queries-to-run (mod (inc seconds) 5)) (* 1 1000))
-                                         )})))))
+                                         (js/setTimeout (partial periodic-updater-two screen-cursor queries-to-run (mod (inc seconds) 5)) (* 1 1000)))})))))

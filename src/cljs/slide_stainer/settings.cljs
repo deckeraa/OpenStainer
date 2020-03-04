@@ -118,13 +118,9 @@
      [:div {:class "nav-header"}
       [svg/chevron-left {:class "chevron-left" :on-click back-fn} "blue" 36]
       [:h1 "Settings"]]
-     [:button {:on-click (fn [e] (println "foo")
-                           (slide-stainer.periodic-updater/periodic-updater-two
-                                  atoms/screen-cursor slide-stainer.core/queries-to-run-two))} "Foo"]
      [alarms atoms/alarms-cursor]
      [positions-and-home atoms/stepperX-cursor atoms/stepperZ-cursor]
      [jar-jog-control]
      [up-down-control]
-     ;(when (:developer @atoms/settings-cursor))
-     [graphql-control]
+     (when (:developer @atoms/settings-cursor) [graphql-control])
      ]))
