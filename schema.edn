@@ -165,10 +165,6 @@
   {:type :axis
    :description "Attemps to move the slide holder to the down position."
    :resolve :mutation/move_to_down_position}
-  :clean_up_pins
-  {:type :state
-   :description "Cleans up the pins."
-   :resolve :mutation/clean_up_pins}
   :home
   {:type :state
    :description "Home both axis."

@@ -16,7 +16,6 @@
             [clojure.core.async :as async :refer [go go-loop <! timeout thread chan mult tap put!]]
             [incanter.core :refer [pow]]
             [slide-stainer.defs :refer :all]
-            [slide-stainer.board-setup :refer :all]
             [slide-stainer.motion :refer :all]
             [slide-stainer.graphql :refer :all])
   (:use clojure.test)
@@ -44,9 +43,6 @@
 (def api-routes
   ["/" [["ip" get-ip-address-handler]
         ["graphql" graphql-handler]
-        ["cleanup" (fn [req]
-                     (clean-up-pins)
-                     (content-type (response/response "Pins cleaned up") "text/html"))]
         [true (fn [req] (content-type (response/response "<h1>Hi from Pi.</h1>") "text/html"))]]])
 
 (def app

@@ -3,7 +3,6 @@
             [incanter.core :refer [pow]]
             [clojure.math.numeric-tower :refer [abs]]
             [slide-stainer.defs :refer :all]
-            [slide-stainer.board-setup :refer :all]
             [slide-stainer.db :as db]
             [clj-time.core :as time]
             [java-time]
@@ -11,7 +10,6 @@
   (:use clojure.test))
 
 (defn set-pin [pin-tag state]
-;  (when (not (:device @state-atom)) (init-pins))
   (gpio/write (:handle @state-atom) (-> (:buffer @state-atom) (gpio/set-line pin-tag state))))
 
 (defn pulse-step-fn
@@ -102,7 +100,6 @@
   (is (= (limit-switch-hit-unexpected? nil  true 1 3000) false)))
 
 (defn move-by-pulses [id pulses]
-  (when (not (:device @state-atom)) (init-pins))
   (let [ena (normalize-pin-tag (str id "-ena"))
         pul (normalize-pin-tag (str id "-pul"))
         dir (normalize-pin-tag (str id "-dir"))

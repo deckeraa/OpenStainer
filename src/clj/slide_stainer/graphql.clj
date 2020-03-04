@@ -8,7 +8,6 @@
             [com.walmartlabs.lacinia :as lacinia]
             [com.walmartlabs.lacinia.executor :as executor]
             [slide-stainer.defs :refer :all]
-            [slide-stainer.board-setup :refer :all]
             [slide-stainer.motion :refer :all]
             [slide-stainer.db :as db]
             [clj-time.core :as time]
@@ -40,7 +39,6 @@
 
 (defn resolve-pin-by-id [context args value]
   (println "resolve-pin-by-id" args value)
-  (when (not (:device @state-atom)) (init-pins))
   (let [id (normalize-pin-tag (:id args))
         pin-info (id (:setup-index @state-atom))
         board_value (gpio/get-line (:buffer @state-atom) id)]
@@ -118,21 +116,14 @@
    (:position args))
   (resolve-axis context args value))
 
-
-
 (defn move-to-jar-graphql-handler [context args value]
   (println "move-to-jar-graphql-handler")
   (set-stopped! false)
   (move-to-jar (:jar args))
   (resolve-axis context (assoc args :id :stepperX) value))
 
-(defn clean-up-pins-graphql-handler [context args value]
-  (clean-up-pins)
-  (resolve-state context args value))
-
 (defn set_pin [context args value]
   (println "setting " (:id args) "to " (:logical_value args))
-  (when (not (:device @state-atom)) (init-pins))
   (let [id (normalize-pin-tag (:id args))
         pin-info (id (:setup-index @state-atom))
         requested-val (if (:inverted? pin-info)
@@ -226,7 +217,6 @@
    :mutation/move_relative move-relative-graphql-handler
    :mutation/move_to_position move-to-position-graphql-handler
    :mutation/move_to_jar move-to-jar-graphql-handler
-   :mutation/clean_up_pins clean-up-pins-graphql-handler
    :mutation/home home-graphql-handler
    :mutation/clear_alarms clear-alarms-graphql-handler
    :mutation/run_procedure run-procedure-graphql-handler

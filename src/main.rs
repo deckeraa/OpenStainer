@@ -251,17 +251,29 @@ fn index(pi_state: State<SharedPi>, axis: Axis, forward: bool) -> String {
     format! {"{:?}",ret}
 }
 
-#[get("/home")]
-fn home(pi_state: State<SharedPi>) -> String {
-    let pi_mutex = &mut pi_state.inner();
-    let pi = &mut *pi_mutex.lock().unwrap();
+fn home(pi: &mut Pi) -> MoveResult {
     let ret_one = move_steps(pi, Axis::Z, true, 160000, true);
     let ret_two = move_steps(pi, Axis::X, false, 320000, true);
     if ret_one == MoveResult::HitLimitSwitch && ret_two == MoveResult::HitLimitSwitch {
         move_to_up_position(pi);
         move_to_left_position(pi);
     }
-    format! {"{:?} {:?}",ret_one,ret_two}
+    ret_two
+}
+
+#[get("/home")]
+fn home_handler(pi_state: State<SharedPi>) -> String {
+    let pi_mutex = &mut pi_state.inner();
+    let pi = &mut *pi_mutex.lock().unwrap();
+    let ret = home(pi);
+    format! {"{:?}",ret}
+    // let ret_one = move_steps(pi, Axis::Z, true, 160000, true);
+    // let ret_two = move_steps(pi, Axis::X, false, 320000, true);
+    // if ret_one == MoveResult::HitLimitSwitch && ret_two == MoveResult::HitLimitSwitch {
+    //     move_to_up_position(pi);
+    //     move_to_left_position(pi);
+    // }
+    // format! {"{:?} {:?}",ret_one,ret_two}
 }
 
 #[get("/move_by_pulses/<axis>/<forward>/<pulses>")]
@@ -289,10 +301,16 @@ fn move_by_inches(pi_state: State<SharedPi>, axis: Axis, forward: bool, inches: 
 
 fn move_to_pos(pi: &mut Pi, axis: Axis, inches: Inch) -> MoveResult {
     println!("move_to_pos axis: {}  inches: {}", axis, inches);
-    let stepper = get_stepper(pi, &axis);
-    if stepper.pos.is_none() {
-        return MoveResult::FailedDueToNotHomed;
+    let is_not_homed = get_stepper(pi, &axis).pos.is_none();
+    
+    if is_not_homed {
+	let ret = home(pi);
+	if ret == MoveResult::FailedToHome {
+	    return MoveResult::FailedDueToNotHomed;
+	}
     }
+    
+    let stepper = get_stepper(pi, &axis);
     let cur_pos = stepper.pos.unwrap();
     let dest_pos = inches_to_pulses(inches, stepper);
     let forward = cur_pos < dest_pos;
@@ -425,7 +443,7 @@ fn main() {
             "/",
             routes![
                 index,
-                home,
+                home_handler,
                 pos,
                 move_by_pulses,
                 move_by_inches,

@@ -38,8 +38,7 @@
 
   :ring {:handler slide-stainer.core/app}
   
-  :clean-targets ^{:protect false} ["resources/public/js"
-                                    "target"]
+  :clean-targets ^{:protect false} ["resources/public/js"]
 
   :figwheel {:css-dirs ["resources/public/css"]}
 
