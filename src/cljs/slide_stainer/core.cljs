@@ -240,8 +240,10 @@
      ]))
 
 (def queries-to-run
-  {:init {:query-fn (fn [] (str "{settings{developer}}"))
-          :handler-fn (fn [resp] (reset! atoms/settings-cursor (:settings resp)))
+  {:init {:query-fn (fn [] (str "{settings{developer}},{procedures{_id,name,runs}}"))
+          :handler-fn (fn [resp]
+                        (reset! atoms/settings-cursor (:settings resp))
+                        (reset! atoms/procedure-list-cursor (:procedures resp)))
           :should-run? (fn [] (empty? @atoms/settings-cursor))}
    :always {:query-fn (fn [] (str "{state{alarms{" graphql/alarm-keys "}}}"))
             :handler-fn (fn [resp] (reset! atoms/alarms-cursor (get-in resp [:state :alarms])))}
