@@ -13,6 +13,7 @@ use std::fmt;
 use std::sync::Mutex;
 use std::{thread, time};
 use thread_priority::*;
+use juniper::{EmptyMutation};
 
 const LEFT_POSITION: Inch = 0.35;
 const UP_POSITION: Inch = 3.5;
@@ -39,7 +40,61 @@ struct Stepper {
     travel_distance_per_turn: Inch,
 }
 
+#[juniper::object]
+impl Stepper {
+    fn position_inches(&self) -> String {
+	match self.pos {
+            Some(v) => format!("{}", pulses_to_inches(v, self)),
+            None => "Not homed".to_string(),
+	}
+    }
+}
+
 type SharedPi = Mutex<Pi>;
+type Schema = juniper::RootNode<'static, Query, EmptyMutation<SharedPi>>;
+struct Query;
+#[juniper::object(
+    // Here we specify the context type for the object.
+    // We need to do this in every type that
+    // needs access to the context.
+    Context = SharedPi,
+)]
+impl Query {
+    fn apiVersion() -> &'static str {
+        "1.0"
+    }
+
+//     fn axis(shared_context: &SharedPi) -> FieldResult<Stepper> {
+//         //let context = shared_context.mutex.get_mut().unwrap();
+//         let context = &mut *shared_context.lock().unwrap();
+// 	l
+// //        let alarms = Alarms { homing_failed: true, limit_switch_hit_unexpectedly: false };
+// //        let alarms = Alarms { homing_failed: context.a_bool, limit_switch_hit_unexpectedly: context.a_bool };
+// //        context.a_bool = !context.a_bool;
+        
+//         Ok(alarms)
+//     }
+}
+
+#[rocket::post("/graphql", data = "<request>")]
+fn post_graphql_handler(
+    pi_state: State<SharedPi>,
+    request: juniper_rocket::GraphQLRequest,
+    schema: State<Schema>,
+) -> juniper_rocket::GraphQLResponse {
+    // let pi_mutex = &mut pi_state.inner();
+    // {
+    //     let context = &mut *context_mutex.lock().unwrap();
+    //     context.a_bool = !context.a_bool;
+    //     std::mem::drop(context);
+    // }
+    request.execute(&schema, &pi_state)
+}
+
+#[get("/graphiql")]
+fn graphiql() -> rocket::response::content::Html<String> {
+    juniper_rocket::graphiql_source("/graphql")
+}
 
 #[derive(Debug, PartialEq, Eq)]
 enum MoveResult {
@@ -439,6 +494,7 @@ fn main() {
     });
     rocket::ignite()
         .manage(shared_pi)
+	.manage(Schema::new(Query, EmptyMutation::<SharedPi>::new()))
         .mount(
             "/",
             routes![
@@ -451,7 +507,9 @@ fn main() {
                 move_to_up_position_handler,
                 move_to_down_position_handler,
                 move_to_left_position_handler,
-                move_to_jar_handler
+                move_to_jar_handler,
+		graphiql,
+		post_graphql_handler,
             ],
         )
         .launch();
