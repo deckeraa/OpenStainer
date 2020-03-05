@@ -231,25 +231,14 @@
     ))
 
 (defn move-to-up-position []
-  (client/get "http://localhost:8000/move_to_up_position")
-;  (move-to-position :stepperZ up-pos)
-  )
+  (client/get "http://localhost:8000/move_to_up_position"))
 
 (defn move-to-down-position []
-  (client/get "http://localhost:8000/move_to_down_position")
-;  (move-to-position :stepperZ down-pos)
-  )
+  (client/get "http://localhost:8000/move_to_down_position"))
 
 (defn move-to-jar [jar]
   (println "move-to-jar: " jar (type jar) jar-positions (get jar-positions (dec jar)))
-  (client/get (str "http://localhost:8000/move_to_jar/" jar))
-  ;; (when (not (slide-stainer.defs/is-stopped?))
-  ;;   (move-to-up-position))
-  ;; (when (not (slide-stainer.defs/is-stopped?))
-  ;;   (move-to-position :stepperX (get jar-positions (dec jar))))
-  ;; (when (not (slide-stainer.defs/is-stopped?))
-  ;;   (move-to-down-position))
-  )
+  (client/get (str "http://localhost:8000/move_to_jar/" jar)))
 
 (defn home []
   (client/get "http://localhost:8000/home")
