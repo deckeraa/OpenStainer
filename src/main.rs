@@ -14,6 +14,7 @@ use std::sync::Mutex;
 use std::{thread, time};
 use thread_priority::*;
 use juniper::{FieldResult, EmptyMutation};
+use std::collections::HashMap;
 
 const LEFT_POSITION: Inch = 0.35;
 const UP_POSITION: Inch = 3.5;
@@ -473,6 +474,14 @@ fn pos(pi: State<SharedPi>, axis: AxisDirection) -> String {
     }
 }
 
+#[get("/couch")]
+fn couch() -> String {
+    let resp = reqwest::blocking::get("https://httpbin.org/ip").unwrap()
+    // let resp = reqwest::blocking::get("http://localhost:5984/slide_stainer/_design/procedures/_view/procedures").unwrap()
+         .json::<HashMap<String, String>>().unwrap();
+    format!("{:#?}", resp)
+}
+
 fn main() {
     let shared_pi = Mutex::new(Pi {
         estop: gpio::sysfs::SysFsGpioInput::open(25).unwrap(),
@@ -499,6 +508,7 @@ fn main() {
             travel_distance_per_turn: 0.063,
         },
     });
+    
     rocket::ignite()
         .manage(shared_pi)
 	.manage(Schema::new(Query, EmptyMutation::<SharedPi>::new()))
@@ -517,6 +527,7 @@ fn main() {
                 move_to_jar_handler,
 		graphiql,
 		post_graphql_handler,
+		couch,
             ],
         )
         .launch();

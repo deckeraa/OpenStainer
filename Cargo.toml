@@ -12,3 +12,4 @@ thread-priority = "0.1.1"
 gpio = "0.4.1"
 juniper = "0.14.2"
 juniper_rocket = "0.5.2"
+reqwest = { version = "0.10.4", features = ["blocking", "json"] }
