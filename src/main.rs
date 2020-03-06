@@ -13,7 +13,7 @@ use std::fmt;
 use std::sync::Mutex;
 use std::{thread, time};
 use thread_priority::*;
-use juniper::{EmptyMutation};
+use juniper::{FieldResult, EmptyMutation};
 
 const LEFT_POSITION: Inch = 0.35;
 const UP_POSITION: Inch = 3.5;
@@ -40,14 +40,21 @@ struct Stepper {
     travel_distance_per_turn: Inch,
 }
 
-#[juniper::object]
-impl Stepper {
-    fn position_inches(&self) -> String {
-	match self.pos {
-            Some(v) => format!("{}", pulses_to_inches(v, self)),
-            None => "Not homed".to_string(),
-	}
-    }
+// #[juniper::object]
+// impl Stepper {
+//     fn position_inches(&self) -> String {
+// 	match self.pos {
+//             Some(v) => format!("{}", pulses_to_inches(v, self)),
+//             None => "Not homed".to_string(),
+// 	}
+//     }
+// }
+
+
+#[derive(juniper::GraphQLObject)]
+#[graphql(description="A axis of motion on the device.")]
+struct Axis {
+    position_inches: String,
 }
 
 type SharedPi = Mutex<Pi>;
@@ -64,16 +71,16 @@ impl Query {
         "1.0"
     }
 
-//     fn axis(shared_context: &SharedPi) -> FieldResult<Stepper> {
-//         //let context = shared_context.mutex.get_mut().unwrap();
-//         let context = &mut *shared_context.lock().unwrap();
-// 	l
-// //        let alarms = Alarms { homing_failed: true, limit_switch_hit_unexpectedly: false };
-// //        let alarms = Alarms { homing_failed: context.a_bool, limit_switch_hit_unexpectedly: context.a_bool };
-// //        context.a_bool = !context.a_bool;
+    fn axis(shared_context: &SharedPi) -> FieldResult<Axis> {
+        let context = &mut *shared_context.lock().unwrap();
+	let position_inches = match context.stepper_x.pos {
+             Some(v) => format!("{}", pulses_to_inches(v, &context.stepper_x)),
+             None => "Not homed".to_string(),
+ 	};
+	let axis = Axis {position_inches: position_inches};
         
-//         Ok(alarms)
-//     }
+        Ok(axis)
+    }
 }
 
 #[rocket::post("/graphql", data = "<request>")]
@@ -105,36 +112,36 @@ enum MoveResult {
     FailedToHome,
 }
 
-enum Axis {
+enum AxisDirection {
     X,
     Z,
 }
 
-impl<'r> FromParam<'r> for Axis {
+impl<'r> FromParam<'r> for AxisDirection {
     type Error = &'r RawStr;
 
     fn from_param(param: &'r RawStr) -> Result<Self, Self::Error> {
         match param.as_str() {
-            "x" => Ok(Axis::X),
-            "z" => Ok(Axis::Z),
+            "x" => Ok(AxisDirection::X),
+            "z" => Ok(AxisDirection::Z),
             _ => Err(param),
         }
     }
 }
 
-impl fmt::Display for Axis {
+impl fmt::Display for AxisDirection {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Axis::X => write!(f, "x"),
-            Axis::Z => write!(f, "z"),
+            AxisDirection::X => write!(f, "x"),
+            AxisDirection::Z => write!(f, "z"),
         }
     }
 }
 
-fn get_stepper<'a>(pi: &'a mut Pi, axis: &Axis) -> &'a mut Stepper {
+fn get_stepper<'a>(pi: &'a mut Pi, axis: &AxisDirection) -> &'a mut Stepper {
     match axis {
-        Axis::X => &mut pi.stepper_x,
-        Axis::Z => &mut pi.stepper_z,
+        AxisDirection::X => &mut pi.stepper_x,
+        AxisDirection::Z => &mut pi.stepper_z,
     }
 }
 
@@ -168,10 +175,10 @@ fn generate_wait_times(
     times
 }
 
-fn move_steps(pi: &mut Pi, axis: Axis, forward: bool, pulses: u64, is_homing: bool) -> MoveResult {
+fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, is_homing: bool) -> MoveResult {
     let stepper = match axis {
-        Axis::X => &mut pi.stepper_x,
-        Axis::Z => &mut pi.stepper_z,
+        AxisDirection::X => &mut pi.stepper_x,
+        AxisDirection::Z => &mut pi.stepper_z,
     };
 
     let pos: Option<u64> = stepper.pos;
@@ -298,7 +305,7 @@ fn move_steps(pi: &mut Pi, axis: Axis, forward: bool, pulses: u64, is_homing: bo
 }
 
 #[get("/move/<axis>/<forward>")]
-fn index(pi_state: State<SharedPi>, axis: Axis, forward: bool) -> String {
+fn index(pi_state: State<SharedPi>, axis: AxisDirection, forward: bool) -> String {
     // Grab the lock on the shared pins structure
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
@@ -307,8 +314,8 @@ fn index(pi_state: State<SharedPi>, axis: Axis, forward: bool) -> String {
 }
 
 fn home(pi: &mut Pi) -> MoveResult {
-    let ret_one = move_steps(pi, Axis::Z, true, 160000, true);
-    let ret_two = move_steps(pi, Axis::X, false, 320000, true);
+    let ret_one = move_steps(pi, AxisDirection::Z, true, 160000, true);
+    let ret_two = move_steps(pi, AxisDirection::X, false, 320000, true);
     if ret_one == MoveResult::HitLimitSwitch && ret_two == MoveResult::HitLimitSwitch {
         move_to_up_position(pi);
         move_to_left_position(pi);
@@ -322,8 +329,8 @@ fn home_handler(pi_state: State<SharedPi>) -> String {
     let pi = &mut *pi_mutex.lock().unwrap();
     let ret = home(pi);
     format! {"{:?}",ret}
-    // let ret_one = move_steps(pi, Axis::Z, true, 160000, true);
-    // let ret_two = move_steps(pi, Axis::X, false, 320000, true);
+    // let ret_one = move_steps(pi, AxisDirection::Z, true, 160000, true);
+    // let ret_two = move_steps(pi, AxisDirection::X, false, 320000, true);
     // if ret_one == MoveResult::HitLimitSwitch && ret_two == MoveResult::HitLimitSwitch {
     //     move_to_up_position(pi);
     //     move_to_left_position(pi);
@@ -334,7 +341,7 @@ fn home_handler(pi_state: State<SharedPi>) -> String {
 #[get("/move_by_pulses/<axis>/<forward>/<pulses>")]
 fn move_by_pulses(
     pi_state: State<SharedPi>,
-    axis: Axis,
+    axis: AxisDirection,
     forward: bool,
     pulses: PulseCount,
 ) -> String {
@@ -345,7 +352,7 @@ fn move_by_pulses(
 }
 
 #[get("/move_by_inches/<axis>/<forward>/<inches>")]
-fn move_by_inches(pi_state: State<SharedPi>, axis: Axis, forward: bool, inches: Inch) -> String {
+fn move_by_inches(pi_state: State<SharedPi>, axis: AxisDirection, forward: bool, inches: Inch) -> String {
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
     let stepper = get_stepper(pi, &axis);
@@ -354,7 +361,7 @@ fn move_by_inches(pi_state: State<SharedPi>, axis: Axis, forward: bool, inches: 
     format! {"{:?}",ret}
 }
 
-fn move_to_pos(pi: &mut Pi, axis: Axis, inches: Inch) -> MoveResult {
+fn move_to_pos(pi: &mut Pi, axis: AxisDirection, inches: Inch) -> MoveResult {
     println!("move_to_pos axis: {}  inches: {}", axis, inches);
     let is_not_homed = get_stepper(pi, &axis).pos.is_none();
     
@@ -378,7 +385,7 @@ fn move_to_pos(pi: &mut Pi, axis: Axis, inches: Inch) -> MoveResult {
 }
 
 #[get("/move_to_pos/<axis>/<inches>")]
-fn move_to_pos_handler(pi_state: State<SharedPi>, axis: Axis, inches: Inch) -> String {
+fn move_to_pos_handler(pi_state: State<SharedPi>, axis: AxisDirection, inches: Inch) -> String {
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
     let ret = move_to_pos(pi, axis, inches);
@@ -386,7 +393,7 @@ fn move_to_pos_handler(pi_state: State<SharedPi>, axis: Axis, inches: Inch) -> S
 }
 
 fn move_to_up_position(pi: &mut Pi) -> MoveResult {
-    move_to_pos(pi, Axis::Z, UP_POSITION)
+    move_to_pos(pi, AxisDirection::Z, UP_POSITION)
 }
 
 #[get("/move_to_up_position")]
@@ -398,7 +405,7 @@ fn move_to_up_position_handler(pi_state: State<SharedPi>) -> String {
 }
 
 fn move_to_down_position(pi: &mut Pi) -> MoveResult {
-    move_to_pos(pi, Axis::Z, 0.0)
+    move_to_pos(pi, AxisDirection::Z, 0.0)
 }
 
 #[get("/move_to_down_position")]
@@ -410,7 +417,7 @@ fn move_to_down_position_handler(pi_state: State<SharedPi>) -> String {
 }
 
 fn move_to_left_position(pi: &mut Pi) -> MoveResult {
-    move_to_pos(pi, Axis::X, LEFT_POSITION)
+    move_to_pos(pi, AxisDirection::X, LEFT_POSITION)
 }
 
 #[get("/move_to_left_position")]
@@ -431,7 +438,7 @@ fn move_to_jar(pi: &mut Pi, jar_number: u16) -> MoveResult {
     }
     let ret = move_to_pos(
         pi,
-        Axis::X,
+        AxisDirection::X,
         LEFT_POSITION + JAR_SPACING * (jar_number - 1) as f64,
     );
     if ret == MoveResult::HitLimitSwitch
@@ -454,11 +461,11 @@ fn move_to_jar_handler(pi_state: State<SharedPi>, jar_number: u16) -> String {
 }
 
 #[get("/pos/<axis>")]
-fn pos(pi: State<SharedPi>, axis: Axis) -> String {
+fn pos(pi: State<SharedPi>, axis: AxisDirection) -> String {
     let pi = &mut *pi.inner().lock().unwrap();
     let stepper = match axis {
-        Axis::X => &mut pi.stepper_x,
-        Axis::Z => &mut pi.stepper_z,
+        AxisDirection::X => &mut pi.stepper_x,
+        AxisDirection::Z => &mut pi.stepper_z,
     };
     match stepper.pos {
         Some(v) => format!("{}", pulses_to_inches(v, stepper)),
