@@ -200,7 +200,7 @@ fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, is_h
     }
 
     // Enable and set the direction
-    stepper.ena.set_high().expect("Couldn't turn on ena");
+    stepper.ena.set_low().expect("Couldn't turn on ena"); // logic is reversed to due transistor
     thread::sleep(time::Duration::from_millis(1));
     stepper.dir.set_value(forward).expect("Couldn't set dir");
     thread::sleep(time::Duration::from_millis(1));
@@ -252,7 +252,7 @@ fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, is_h
 
     // disable the stepper
     thread::sleep(time::Duration::from_millis(1));
-    stepper.ena.set_low().expect("Couldn't turn off ena");
+    stepper.ena.set_high().expect("Couldn't turn off ena"); // logic is reversed to due transistor
     thread::sleep(time::Duration::from_millis(1));
 
     // Drop the thread priority back down since we're done with signal generation.
@@ -487,8 +487,8 @@ fn main() {
         estop: gpio::sysfs::SysFsGpioInput::open(25).unwrap(),
         stepper_x: Stepper {
             ena: gpio::sysfs::SysFsGpioOutput::open(2).unwrap(),
-            dir: gpio::sysfs::SysFsGpioOutput::open(3).unwrap(),
-            pul: gpio::sysfs::SysFsGpioOutput::open(4).unwrap(),
+            dir: gpio::sysfs::SysFsGpioOutput::open(4).unwrap(),
+            pul: gpio::sysfs::SysFsGpioOutput::open(17).unwrap(),
             limit_switch_low: Some(gpio::sysfs::SysFsGpioInput::open(14).unwrap()),
             limit_switch_high: None,
             pos: None,
@@ -497,7 +497,7 @@ fn main() {
             travel_distance_per_turn: 0.063,
         },
         stepper_z: Stepper {
-            ena: gpio::sysfs::SysFsGpioOutput::open(17).unwrap(),
+            ena: gpio::sysfs::SysFsGpioOutput::open(3).unwrap(),
             dir: gpio::sysfs::SysFsGpioOutput::open(27).unwrap(),
             pul: gpio::sysfs::SysFsGpioOutput::open(22).unwrap(),
             limit_switch_low: None,
@@ -508,7 +508,17 @@ fn main() {
             travel_distance_per_turn: 0.063,
         },
     });
-    
+
+
+    {
+	// initialize enable pins (this is needed since the logic is reversed since it's behind
+	// a transistor. The reason it is behind a transistor is because the pins are automatically
+	// set to pulled-up inputs on Pi boot.
+	let pi = &mut *shared_pi.lock().unwrap();
+	pi.stepper_x.ena.set_high(); // high is low since it's behind a transistor
+	pi.stepper_z.ena.set_high(); // high is low since it's behind a transistor
+    }
+
     rocket::ignite()
         .manage(shared_pi)
 	.manage(Schema::new(Query, EmptyMutation::<SharedPi>::new()))
