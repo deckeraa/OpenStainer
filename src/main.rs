@@ -14,7 +14,7 @@ use std::sync::Mutex;
 use std::{thread, time};
 use thread_priority::*;
 use juniper::{FieldResult, EmptyMutation};
-use std::collections::HashMap;
+use serde::*;
 
 const LEFT_POSITION: Inch = 0.35;
 const UP_POSITION: Inch = 3.5;
@@ -50,6 +50,55 @@ struct Stepper {
 // 	}
 //     }
 // }
+
+#[derive(juniper::GraphQLObject, Debug, Serialize, Deserialize)]
+#[graphql(description="A single step in a staining procedure.")]
+struct ProcedureStep {
+    #[graphql(description="The substance contained in the jar.")]
+    substance: String,
+    #[graphql(description="The time (in seconds) to immerse the slide in the staining jar.")]
+    time_in_seconds: i32,
+    #[graphql(description="The one-indexed jar number in which the slide is to be immersed.")]
+    jar_number: i32,
+}
+
+#[derive(juniper::GraphQLObject, Debug, Serialize, Deserialize)]
+#[graphql(description="A staining procedure")]
+struct Procedure {
+    #[graphql(description="The CouchDB _id of the procedure.")]
+    #[serde(rename="_id")]
+    id: String,
+    
+    #[graphql(description="The CouchDB _rev of the procedure.")]
+    #[serde(rename="_rev")]
+    rev: String,
+    
+    #[graphql(description="The CouchDB type of the procedure. Will always be :procedure.")]
+    #[serde(rename="type")]
+    type_: String,
+    
+    #[graphql(description="Name of the procedure.")]
+    name: String,
+    
+    #[graphql(description="List of contents of what substanc is in jar")]
+    jar_contents: Vec<String>,
+
+    #[graphql(description="A list of steps in the staining procedure.")]
+    procedure_steps: Vec<ProcedureStep>,
+    
+    #[graphql(description="Number of times to repeat a given procedure for a single run.")]
+    repeat: i32,
+ 
+    #[graphql(description="Number of times this procedure has ever been run.")]
+    runs: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct ViewResult<T> {
+    total_rows: i64,
+    offset: i64,
+    rows: Vec<T>,
+}
 
 
 #[derive(juniper::GraphQLObject)]
@@ -476,10 +525,16 @@ fn pos(pi: State<SharedPi>, axis: AxisDirection) -> String {
 
 #[get("/couch")]
 fn couch() -> String {
-    let resp = reqwest::blocking::get("https://httpbin.org/ip").unwrap()
-    // let resp = reqwest::blocking::get("http://localhost:5984/slide_stainer/_design/procedures/_view/procedures").unwrap()
-         .json::<HashMap<String, String>>().unwrap();
-    format!("{:#?}", resp)
+    //let resp = reqwest::blocking::get("https://httpbin.org/ip").unwrap()
+    let resp = reqwest::blocking::get("http://localhost:5984/slide_stainer/_design/procedures/_view/procedures");
+    match resp {
+	Ok(r) => return format!("{:?}", r.json::<ViewResult<Procedure>>().unwrap()),
+	Err(_e) => return "Couldn't query view".to_string(),
+    }
+				
+				
+//         .json::<HashMap<String, String>>().unwrap();
+//    format!("{:#?}", resp)
 }
 
 fn main() {
@@ -515,8 +570,8 @@ fn main() {
 	// a transistor. The reason it is behind a transistor is because the pins are automatically
 	// set to pulled-up inputs on Pi boot.
 	let pi = &mut *shared_pi.lock().unwrap();
-	pi.stepper_x.ena.set_high(); // high is low since it's behind a transistor
-	pi.stepper_z.ena.set_high(); // high is low since it's behind a transistor
+	pi.stepper_x.ena.set_high().expect("Couldn't set enable pin"); // high is low since it's behind a transistor
+	pi.stepper_z.ena.set_high().expect("Couldn't set enable pin"); // high is low since it's behind a transistor
     }
 
     rocket::ignite()
