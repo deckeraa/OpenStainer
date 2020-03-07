@@ -14,6 +14,7 @@ use std::sync::Mutex;
 use std::{thread, time};
 use thread_priority::*;
 use juniper::{FieldResult, EmptyMutation};
+use juniper::graphql_value;
 use serde::*;
 
 const LEFT_POSITION: Inch = 0.35;
@@ -149,6 +150,21 @@ impl Query {
 	    return Ok(v);
 	}
 	return Ok(vec![]); // TODO probably something better to do than return an empty array
+    }
+
+    fn procedure_by_id(id: String) -> FieldResult<Procedure> {
+	let url : &str = &format!("http://localhost:5984/slide_stainer/{}",id).to_string();
+	let resp = reqwest::blocking::get(url);
+	if resp.is_ok() {
+	    let parse_result = resp.unwrap().json::<Procedure>();
+	    if parse_result.is_err() {
+		return Err(juniper::FieldError::new("Couldn't parse response from CouchDB",graphql_value!({ "internal_error": "Couldn't parse response from CouchDB"})));
+	    }
+	    let proc = parse_result.unwrap();
+	    return Ok(proc);
+	}
+	return Err(juniper::FieldError::new("No procedure with that ID found.",
+					    graphql_value!({ "internal_error": "No procedure with that ID found."})))
     }
 }
 
