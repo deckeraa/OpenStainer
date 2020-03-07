@@ -145,15 +145,10 @@ impl Query {
 	let resp = reqwest::blocking::get("http://localhost:5984/slide_stainer/_design/procedures/_view/procedures?include_docs=true");
 	if resp.is_ok() {
 	    let view_result = resp.unwrap().json::<ViewResult<Procedure>>().unwrap();
-	    //let _v : Vec<Procedure> = view_result.rows.into_iter().map(|row| row.doc );
-	    //	    return vec![view_result.rows[0].doc];
-	    let proc  = &view_result.rows[0].doc;
-	    println!("{:?}",proc);
-	    return Ok(vec![proc.clone()])
-	    //let s : String = serde_json::to_string(&json).unwrap();
-
+	    let v : Vec<Procedure> = view_result.rows.into_iter().map(|row| row.doc ).collect();
+	    return Ok(v);
 	}
-	return Ok(vec![]);
+	return Ok(vec![]); // TODO probably something better to do than return an empty array
     }
 }
 
