@@ -51,7 +51,7 @@ struct Stepper {
 //     }
 // }
 
-#[derive(juniper::GraphQLObject, Debug, Serialize, Deserialize)]
+#[derive(juniper::GraphQLObject, Debug, Serialize, Deserialize, Clone)]
 #[graphql(description="A single step in a staining procedure.")]
 struct ProcedureStep {
     #[graphql(description="The substance contained in the jar.")]
@@ -62,7 +62,7 @@ struct ProcedureStep {
     jar_number: i32,
 }
 
-#[derive(juniper::GraphQLObject, Debug, Serialize, Deserialize)]
+#[derive(juniper::GraphQLObject, Debug, Serialize, Deserialize, Clone)]
 #[graphql(description="A staining procedure")]
 struct Procedure {
     #[graphql(description="The CouchDB _id of the procedure.")]
@@ -90,8 +90,9 @@ struct Procedure {
     #[serde(skip_serializing_if = "Option::is_none")]
     repeat: Option<i32>,
 
-    // #[graphql(description="Number of times this procedure has ever been run.")]
-    // runs: i32,
+    #[graphql(description="Number of times this procedure has ever been run.")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    runs: Option<i32>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -138,6 +139,21 @@ impl Query {
 	let axis = Axis {position_inches: position_inches};
         
         Ok(axis)
+    }
+
+    fn procedures() -> FieldResult<Vec<Procedure>> {
+	let resp = reqwest::blocking::get("http://localhost:5984/slide_stainer/_design/procedures/_view/procedures?include_docs=true");
+	if resp.is_ok() {
+	    let view_result = resp.unwrap().json::<ViewResult<Procedure>>().unwrap();
+	    //let _v : Vec<Procedure> = view_result.rows.into_iter().map(|row| row.doc );
+	    //	    return vec![view_result.rows[0].doc];
+	    let proc  = &view_result.rows[0].doc;
+	    println!("{:?}",proc);
+	    return Ok(vec![proc.clone()])
+	    //let s : String = serde_json::to_string(&json).unwrap();
+
+	}
+	return Ok(vec![]);
     }
 }
 
