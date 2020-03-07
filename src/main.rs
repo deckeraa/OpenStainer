@@ -86,18 +86,25 @@ struct Procedure {
     #[graphql(description="A list of steps in the staining procedure.")]
     procedure_steps: Vec<ProcedureStep>,
     
-    #[graphql(description="Number of times to repeat a given procedure for a single run.")]
-    repeat: i32,
+    // #[graphql(description="Number of times to repeat a given procedure for a single run.")]
+    // repeat: i32,
  
-    #[graphql(description="Number of times this procedure has ever been run.")]
-    runs: i32,
+    // #[graphql(description="Number of times this procedure has ever been run.")]
+    // runs: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct SingleViewResultWithIncludeDocs<T> {
+    id: String,
+    key: String,
+    doc: T,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct ViewResult<T> {
     total_rows: i64,
     offset: i64,
-    rows: Vec<T>,
+    rows: Vec<SingleViewResultWithIncludeDocs<T>>,
 }
 
 
@@ -526,7 +533,7 @@ fn pos(pi: State<SharedPi>, axis: AxisDirection) -> String {
 #[get("/couch")]
 fn couch() -> String {
     //let resp = reqwest::blocking::get("https://httpbin.org/ip").unwrap()
-    let resp = reqwest::blocking::get("http://localhost:5984/slide_stainer/_design/procedures/_view/procedures");
+    let resp = reqwest::blocking::get("http://localhost:5984/slide_stainer/_design/procedures/_view/procedures?include_docs=true");
     match resp {
 	Ok(r) => return format!("{:?}", r.json::<ViewResult<Procedure>>().unwrap()),
 	Err(_e) => return "Couldn't query view".to_string(),
