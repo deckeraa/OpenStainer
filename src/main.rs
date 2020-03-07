@@ -86,9 +86,10 @@ struct Procedure {
     #[graphql(description="A list of steps in the staining procedure.")]
     procedure_steps: Vec<ProcedureStep>,
     
-    // #[graphql(description="Number of times to repeat a given procedure for a single run.")]
-    // repeat: i32,
- 
+    #[graphql(description="Number of times to repeat a given procedure for a single run.")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    repeat: Option<i32>,
+
     // #[graphql(description="Number of times this procedure has ever been run.")]
     // runs: i32,
 }
@@ -534,10 +535,17 @@ fn pos(pi: State<SharedPi>, axis: AxisDirection) -> String {
 fn couch() -> String {
     //let resp = reqwest::blocking::get("https://httpbin.org/ip").unwrap()
     let resp = reqwest::blocking::get("http://localhost:5984/slide_stainer/_design/procedures/_view/procedures?include_docs=true");
-    match resp {
-	Ok(r) => return format!("{:?}", r.json::<ViewResult<Procedure>>().unwrap()),
-	Err(_e) => return "Couldn't query view".to_string(),
+    if resp.is_ok() {
+	let json = resp.unwrap().json::<ViewResult<Procedure>>().unwrap();
+	let s : String = serde_json::to_string(&json).unwrap();
+	return s;
     }
+    return "Couldn't query the view".to_string();
+    
+    // match resp {
+    // 	Ok(r) => return format!("{:?}", r.json::<ViewResult<Procedure>>().unwrap()),
+    // 	Err(_e) => return "Couldn't query view".to_string(),
+    // }
 				
 				
 //         .json::<HashMap<String, String>>().unwrap();
