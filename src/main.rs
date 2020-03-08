@@ -16,6 +16,7 @@ use thread_priority::*;
 use juniper::{FieldResult};
 use juniper::graphql_value;
 use serde::*;
+use rocket_contrib::serve::StaticFiles;
 
 const LEFT_POSITION: Inch = 0.35;
 const UP_POSITION: Inch = 3.5;
@@ -706,7 +707,7 @@ fn main() {
 		graphiql,
 		post_graphql_handler,
 		couch,
-            ],
-        )
+            ],)
+	.mount("/",StaticFiles::from("./resources/public/"))
         .launch();
 }
