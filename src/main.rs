@@ -13,7 +13,7 @@ use std::fmt;
 use std::sync::Mutex;
 use std::{thread, time};
 use thread_priority::*;
-use juniper::{FieldResult, EmptyMutation};
+use juniper::{FieldResult};
 use juniper::graphql_value;
 use serde::*;
 
@@ -63,6 +63,17 @@ struct ProcedureStep {
     jar_number: i32,
 }
 
+#[derive(juniper::GraphQLInputObject, Debug, Serialize, Deserialize, Clone)]
+#[graphql(description="A single step in a staining procedure.")]
+struct ProcedureStepInputObject {
+    #[graphql(description="The substance contained in the jar.")]
+    substance: String,
+    #[graphql(description="The time (in seconds) to immerse the slide in the staining jar.")]
+    time_in_seconds: i32,
+    #[graphql(description="The one-indexed jar number in which the slide is to be immersed.")]
+    jar_number: i32,
+}
+
 #[derive(juniper::GraphQLObject, Debug, Serialize, Deserialize, Clone)]
 #[graphql(description="A staining procedure")]
 struct Procedure {
@@ -96,6 +107,39 @@ struct Procedure {
     runs: Option<i32>,
 }
 
+#[derive(juniper::GraphQLInputObject, Debug, Serialize, Deserialize, Clone)]
+#[graphql(description="A staining procedure")]
+struct ProcedureInputObject {
+    #[graphql(description="The CouchDB _id of the procedure.")]
+    #[serde(rename="_id")]
+    id: String,
+    
+    #[graphql(description="The CouchDB _rev of the procedure.")]
+    #[serde(rename="_rev")]
+    rev: String,
+    
+    #[graphql(description="The CouchDB type of the procedure. Will always be :procedure.")]
+    #[serde(rename="type")]
+    type_: String,
+    
+    #[graphql(description="Name of the procedure.")]
+    name: String,
+    
+    #[graphql(description="List of contents of what substanc is in jar")]
+    jar_contents: Vec<String>,
+
+    #[graphql(description="A list of steps in the staining procedure.")]
+    procedure_steps: Vec<ProcedureStepInputObject>,
+    
+    #[graphql(description="Number of times to repeat a given procedure for a single run.")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    repeat: Option<i32>,
+
+    #[graphql(description="Number of times this procedure has ever been run.")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    runs: Option<i32>,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 struct SingleViewResultWithIncludeDocs<T> {
     id: String,
@@ -118,14 +162,11 @@ struct Axis {
 }
 
 type SharedPi = Mutex<Pi>;
-type Schema = juniper::RootNode<'static, Query, EmptyMutation<SharedPi>>;
+//type Schema = juniper::RootNode<'static, Query, EmptyMutation<SharedPi>>;
+type Schema = juniper::RootNode<'static, Query, Mutation>;
+
 struct Query;
-#[juniper::object(
-    // Here we specify the context type for the object.
-    // We need to do this in every type that
-    // needs access to the context.
-    Context = SharedPi,
-)]
+#[juniper::object(Context = SharedPi)]
 impl Query {
     fn apiVersion() -> &'static str {
         "1.0"
@@ -165,6 +206,36 @@ impl Query {
 	}
 	return Err(juniper::FieldError::new("No procedure with that ID found.",
 					    graphql_value!({ "internal_error": "No procedure with that ID found."})))
+    }
+}
+
+struct Mutation;
+#[juniper::object(Context = SharedPi)]
+impl Mutation {
+    fn save_procedure(proc: ProcedureInputObject) -> FieldResult<Procedure> {
+	let client = reqwest::blocking::Client::new();
+	let body = serde_json::to_string(&proc);
+	if body.is_err() {
+	    return Err(juniper::FieldError::new("Unable to parse the input object.",
+						graphql_value!({ "internal_error": "Unable to parse the input object."})));
+	}
+	let body = body.unwrap();
+	let resp = client.post("http://localhost:5984/slide_stainer/")
+	    .body(body)
+	    .send();
+	if resp.is_err() {
+	    return Err(juniper::FieldError::new("Unable to connect with CouchDB.",
+						graphql_value!({ "internal_error": "Unable to connect with CouchDB."})));
+	}
+	let parse_result = resp.unwrap().json::<Procedure>();
+	if parse_result.is_err() {
+	    return Err(juniper::FieldError::new("Couldn't parse response from CouchDB",graphql_value!({ "internal_error": "Couldn't parse response from CouchDB"})));
+	}
+	let proc = parse_result.unwrap();
+	return Ok(proc);
+
+	// return Err(juniper::FieldError::new("No procedure with that ID found.",
+	// 				    graphql_value!({ "internal_error": "No procedure with that ID found."})))
     }
 }
 
@@ -618,7 +689,7 @@ fn main() {
 
     rocket::ignite()
         .manage(shared_pi)
-	.manage(Schema::new(Query, EmptyMutation::<SharedPi>::new()))
+	.manage(Schema::new(Query, Mutation))
         .mount(
             "/",
             routes![
