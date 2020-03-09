@@ -29,7 +29,7 @@
   ([query query-fn handler-fn variable-fn]
    (fn [e]
 ;     (println "graphql-click-handler variable-fn: " (variable-fn))
-     (go (let [raw-resp (<! (http/post "http://localhost:3000/graphql"
+     (go (let [raw-resp (<! (http/post "http://localhost:8000/graphql"
                                        {:json-params {:query (or (if query-fn (query-fn) nil)
                                                                  query)
                                                       :variables (if variable-fn (variable-fn) nil)}}
@@ -245,8 +245,8 @@
                         (reset! atoms/settings-cursor (:settings resp))
                         (reset! atoms/procedure-list-cursor (:procedures resp)))
           :should-run? (fn [] (empty? @atoms/settings-cursor))}
-   :always {:query-fn (fn [] (str "{state{alarms{" graphql/alarm-keys "}}}"))
-            :handler-fn (fn [resp] (reset! atoms/alarms-cursor (get-in resp [:state :alarms])))}
+   ;; :always {:query-fn (fn [] (str "{state{alarms{" graphql/alarm-keys "}}}"))
+   ;;          :handler-fn (fn [resp] (reset! atoms/alarms-cursor (get-in resp [:state :alarms])))}
    :procedure-run {:query-fn slide-stainer.procedure-run/refresh-query-fn
                    :handler-fn (partial slide-stainer.procedure-run/refresh-handler-fn atoms/procedure-cursor atoms/procedure-run-status-cursor)}
    :settings {:query-fn slide-stainer.settings/refresh-query-fn :handler-fn slide-stainer.settings/refresh-handler-fn}})

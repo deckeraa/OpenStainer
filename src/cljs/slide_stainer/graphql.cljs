@@ -29,13 +29,14 @@
 
 (defn graphql-fn [{query :query query-fn :query-fn handler-fn :handler-fn variable-fn :variable-fn :as args}]
   (fn []
-    (go (let [raw-resp (<! (http/post "http://localhost:3000/graphql"
+    (println (or (if query-fn (query-fn) nil) query))
+    (go (let [raw-resp (<! (http/post "http://localhost:8000/graphql"
                                       {:json-params {:query (or (if query-fn (query-fn) nil)
                                                                 query)
                                                      :variables (if variable-fn (variable-fn) nil)}}
                                        :with-credentials? false))
                resp (:data (edn/read-string (:body raw-resp)))]
            ;; (println "resp: " resp)
-           ;; (println "raw-resp: " raw-resp)
+           (println "raw-resp: " raw-resp)
            ;; (println "handler-fn " handler-fn)
            (if handler-fn (handler-fn resp raw-resp))))))

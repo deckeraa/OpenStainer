@@ -4,7 +4,7 @@
 extern crate rocket;
 
 use gpio::{GpioIn, GpioOut};
-use rocket::http::RawStr;
+use rocket::http::{RawStr, Method};
 use rocket::request::FromParam;
 use rocket::State;
 use std::convert::TryFrom;
@@ -17,6 +17,7 @@ use juniper::{FieldResult};
 use juniper::graphql_value;
 use serde::*;
 use rocket_contrib::serve::StaticFiles;
+use rocket_cors::{AllowedHeaders, AllowedOrigins};
 
 const LEFT_POSITION: Inch = 0.35;
 const UP_POSITION: Inch = 3.5;
@@ -78,8 +79,8 @@ struct ProcedureStepInputObject {
 #[derive(juniper::GraphQLObject, Debug, Serialize, Deserialize, Clone)]
 #[graphql(description="A staining procedure")]
 struct Procedure {
-    #[graphql(description="The CouchDB _id of the procedure.")]
     #[serde(rename="_id")]
+    #[graphql(name="_id", description="The _id of the procedure.")]
     id: String,
     
     #[graphql(description="The CouchDB _rev of the procedure.")]
@@ -113,6 +114,7 @@ struct Procedure {
 struct ProcedureInputObject {
     #[graphql(description="The CouchDB _id of the procedure.")]
     #[serde(rename="_id")]
+    #[graphql(name="_id")]
     id: String,
     
     #[graphql(description="The CouchDB _rev of the procedure.")]
@@ -162,6 +164,11 @@ struct Axis {
     position_inches: String,
 }
 
+#[derive(juniper::GraphQLObject)]
+struct Settings {
+    developer: bool,
+}
+
 type SharedPi = Mutex<Pi>;
 //type Schema = juniper::RootNode<'static, Query, EmptyMutation<SharedPi>>;
 type Schema = juniper::RootNode<'static, Query, Mutation>;
@@ -171,6 +178,11 @@ struct Query;
 impl Query {
     fn apiVersion() -> &'static str {
         "1.0"
+    }
+
+    fn settings() -> FieldResult<Settings> {
+	let settings = Settings { developer: true };
+	Ok(settings)
     }
 
     fn axis(shared_context: &SharedPi) -> FieldResult<Axis> {
@@ -238,6 +250,16 @@ impl Mutation {
 	// return Err(juniper::FieldError::new("No procedure with that ID found.",
 	// 				    graphql_value!({ "internal_error": "No procedure with that ID found."})))
     }
+
+    // fn home(pi_state: State<SharedPi>) -> FieldResult<> {
+    // 	{
+    // 	    let pi_mutex = &mut pi_state.inner();
+    // 	    let pi = &mut *pi_mutex.lock().unwrap();
+    // 	    let ret = home(pi);
+    // 	    std::mem::drop(pi);
+    // 	}
+    // 	Query::axis(pi_state)
+    // }
 }
 
 #[rocket::post("/graphql", data = "<request>")]
@@ -252,6 +274,7 @@ fn post_graphql_handler(
     //     context.a_bool = !context.a_bool;
     //     std::mem::drop(context);
     // }
+    println!("GraphQLRequest {:?}",request.operation_names());
     request.execute(&schema, &pi_state)
 }
 
@@ -480,7 +503,7 @@ fn home(pi: &mut Pi) -> MoveResult {
     ret_two
 }
 
-#[get("/home")]
+#[post("/home")]
 fn home_handler(pi_state: State<SharedPi>) -> String {
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
@@ -688,6 +711,19 @@ fn main() {
 	pi.stepper_z.ena.set_high().expect("Couldn't set enable pin"); // high is low since it's behind a transistor
     }
 
+    // set up CORS
+    let allowed_origins = AllowedOrigins::all();
+
+    // You can also deserialize this
+    let cors = rocket_cors::CorsOptions {
+        allowed_origins,
+        allowed_methods: vec![Method::Get, Method::Put, Method::Post, Method::Delete].into_iter().map(From::from).collect(),
+        allowed_headers: AllowedHeaders::some(&["Authorization", "Accept","X-Requested-With","Content-Type","Cache-Control"]),
+        allow_credentials: true,
+        ..Default::default()
+    }
+    .to_cors().unwrap();
+
     rocket::ignite()
         .manage(shared_pi)
 	.manage(Schema::new(Query, Mutation))
@@ -709,5 +745,6 @@ fn main() {
 		couch,
             ],)
 	.mount("/",StaticFiles::from("./resources/public/"))
+	.attach(cors)
         .launch();
 }
