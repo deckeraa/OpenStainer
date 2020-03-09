@@ -23,11 +23,11 @@
         (map (fn [procedure]
                ^{:key (:_id procedure)}
                [:li {:on-click
-                     (graphql/graphql-fn {:query (str "{procedure_by_id(_id:\"" (:_id procedure) "\"){" graphql/procedure-keys "}}")
+                     (graphql/graphql-fn {:query (str "{procedureById(id:\"" (:_id procedure) "\"){" graphql/procedure-keys "}}")
                                           :handler-fn (fn [resp]
-                                                        (reset! selection-cursor (:procedure_by_id resp))
+                                                        (reset! selection-cursor (:procedureById resp))
                                                         (when selected-success-fn (selected-success-fn))
-                                                        (println "procedure_by_id resp: " resp))})}
+                                                        (println "procedureById resp: " resp))})}
                 [:h3 (:name procedure)]
                 [:p (str "Runs: " (or (:runs procedure) 0))]
                 ])

@@ -83,7 +83,7 @@ struct Procedure {
     #[graphql(name="_id", description="The _id of the procedure.")]
     id: String,
     
-    #[graphql(description="The CouchDB _rev of the procedure.")]
+    #[graphql(name="_rev", description="The CouchDB _rev of the procedure.")]
     #[serde(rename="_rev")]
     rev: String,
     
@@ -117,7 +117,7 @@ struct ProcedureInputObject {
     #[graphql(name="_id")]
     id: String,
     
-    #[graphql(description="The CouchDB _rev of the procedure.")]
+    #[graphql(name="_rev", description="The CouchDB _rev of the procedure.")]
     #[serde(rename="_rev")]
     rev: String,
     

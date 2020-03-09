@@ -63,15 +63,15 @@
                                  [:td (if current-step? "->" "")]
                                  [:td (inc idx)]
                                  [:td (:substance step)]
-                                 [:td (format-time-in-seconds (:time_in_seconds step))
+                                 [:td (format-time-in-seconds (:timeInSeconds step))
 ;;                                   (if (and current-step?)
 ;;       ;                                  (:current_procedure_step_start_time @procedure-run-status-cursor)
 ;;                                    ;     (str current-start-time)
 ;; ;                                        (str (time/in-seconds (time/interval current-start-time (time/now))))
                                   ;;                                         (format-time-in-seconds (:time_in_seconds step)))
                                   ]
-                                 [:td (:jar_number step)]]))
-                            (:procedure_steps @procedure-cursor)))]]
+                                 [:td (:jarNumber step)]]))
+                            (:procedureSteps @procedure-cursor)))]]
       [:p {} (str "Cycle " (:current_cycle_number @procedure-run-status-cursor) " of " (:repeat @procedure-cursor))]
       [:button {:on-click (refresh-fn procedure-cursor procedure-run-status-cursor)} "Refresh"]
       [slide-stainer.program-creation/run-button procedure-run-status-cursor procedure-cursor nil]
