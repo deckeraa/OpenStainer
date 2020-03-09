@@ -158,13 +158,13 @@ struct ViewResult<T> {
 }
 
 
-#[derive(juniper::GraphQLObject)]
+#[derive(juniper::GraphQLObject, Debug)]
 #[graphql(description="A axis of motion on the device.")]
 struct Axis {
     position_inches: String,
 }
 
-#[derive(juniper::GraphQLObject)]
+#[derive(juniper::GraphQLObject, Debug)]
 struct Settings {
     developer: bool,
 }
@@ -182,6 +182,7 @@ impl Query {
 
     fn settings() -> FieldResult<Settings> {
 	let settings = Settings { developer: true };
+	println!("Returning settings: {:?}",settings);
 	Ok(settings)
     }
 
@@ -192,6 +193,7 @@ impl Query {
              None => "Not homed".to_string(),
  	};
 	let axis = Axis {position_inches: position_inches};
+	println!("Returning axis: {:?}",axis);
         
         Ok(axis)
     }
@@ -201,6 +203,7 @@ impl Query {
 	if resp.is_ok() {
 	    let view_result = resp.unwrap().json::<ViewResult<Procedure>>().unwrap();
 	    let v : Vec<Procedure> = view_result.rows.into_iter().map(|row| row.doc ).collect();
+	    println!("Returning procedures: {:?}",v);
 	    return Ok(v);
 	}
 	return Ok(vec![]); // TODO probably something better to do than return an empty array

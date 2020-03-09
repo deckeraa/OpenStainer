@@ -34,9 +34,8 @@
                                       {:json-params {:query (or (if query-fn (query-fn) nil)
                                                                 query)
                                                      :variables (if variable-fn (variable-fn) nil)}}
-                                       :with-credentials? false))
-               resp (:data (edn/read-string (:body raw-resp)))]
-           ;; (println "resp: " resp)
-           (println "raw-resp: " raw-resp)
-           ;; (println "handler-fn " handler-fn)
-           (if handler-fn (handler-fn resp raw-resp))))))
+                                       :with-credentials? false))]
+          (println "raw-resp: " raw-resp)
+          (let [resp (:data (:body raw-resp))]
+            ;; (println "resp: " resp)
+            (if handler-fn (handler-fn resp raw-resp)))))))
