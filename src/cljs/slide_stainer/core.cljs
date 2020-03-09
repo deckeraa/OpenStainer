@@ -240,7 +240,7 @@
      ]))
 
 (def queries-to-run
-  {:init {:query-fn (fn [] (str "{settings{developer}},{procedures{_id,name,runs}}"))
+  {:init {:query-fn (fn [] (str "{settings{developer},procedures{_id,name,runs}}"))
           :handler-fn (fn [resp]
                         (reset! atoms/settings-cursor (:settings resp))
                         (reset! atoms/procedure-list-cursor (:procedures resp)))
