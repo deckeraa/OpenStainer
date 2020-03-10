@@ -317,6 +317,15 @@ fn graphiql() -> rocket::response::content::Html<String> {
     juniper_rocket::graphiql_source("/graphql")
 }
 
+#[rocket::post("/delete_procedure/<id>")]
+fn delete_procedure(id: String) -> String {
+    let client = reqwest::blocking::Client::new();
+    let url : &str = &format!("http://localhost:5984/slide_stainer/{}",id).to_string();
+    let resp = client.delete(url);
+    println!("delete_procedure resp: {:?}",resp);
+    "true".to_string()
+}
+
 #[derive(Debug, PartialEq, Eq)]
 enum MoveResult {
     MovedFullDistance,
@@ -777,6 +786,7 @@ fn main() {
 		graphiql,
 		post_graphql_handler,
 		couch,
+		delete_procedure,
             ],)
 	.mount("/",StaticFiles::from("./resources/public/"))
 	.attach(cors)

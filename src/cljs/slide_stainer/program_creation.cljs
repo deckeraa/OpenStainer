@@ -219,6 +219,8 @@
                                            (println "Save button's response" resp)
                                            (when resp (reset! prog-atm (:saveProcedure resp))))})} "Save"]
        [run-button procedure-run-status-cursor prog-atm run-fn]
+       [:button {:on-click (fn [e] (go (let [resp (<! (http/post (str "http://localhost:8000/delete_procedure/" (:_id @prog-atm))))]
+                                         (println "Deleted resp: " resp))))} "Delete"]
        ])))
 
 (defn program-creation
