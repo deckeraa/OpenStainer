@@ -72,7 +72,7 @@
                                   ]
                                  [:td (:jarNumber step)]]))
                             (:procedureSteps @procedure-cursor)))]]
-      [:p {} (str "Cycle " (:currentCycleNumber @procedure-run-status-cursor) " of " (:repeat @procedure-cursor))]
+      [:p {} (str "Cycle " (:currentCycleNumber @procedure-run-status-cursor) " of " (or (:repeat @procedure-cursor) 1))]
       [:button {:on-click (refresh-fn procedure-cursor procedure-run-status-cursor)} "Refresh"]
       [slide-stainer.program-creation/run-button procedure-run-status-cursor procedure-cursor nil]
       ])))
