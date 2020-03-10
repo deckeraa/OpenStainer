@@ -14,7 +14,7 @@
 (def sample-program
   {:name "H&E with Harris' Hematoxylin"
    :type :procedure
-   :jar_contents ["Hematoxylin" "Tap water" "70% ethanol/1% HCI" "Tap water" "Eosin"]
+   :jarContents ["Hematoxylin" "Tap water" "70% ethanol/1% HCI" "Tap water" "Eosin"]
    :procedure_steps
    [{:substance "Hematoxylin" :time_in_seconds (* 25 60) :jarNumber 1}
     {:substance "Tap water" :time_in_seconds 150 :jarNumber 2}]})
@@ -42,7 +42,7 @@
   "Don't forget that jarNumber is 1-indexed."
   (swap! prog-atm (fn [prog]
                     (as-> prog $
-                      (assoc-in $ [:jar_contents (dec jarNumber)] new-substance)
+                      (assoc-in $ [:jarContents (dec jarNumber)] new-substance)
                       (assoc-in $ [:procedureSteps] (mapv (fn [step]
                                                              (if (= jarNumber (:jarNumber step))
                                                                (assoc step :substance new-substance)
@@ -185,7 +185,7 @@
     (let [steps-cursor (reagent/cursor prog-atm [:procedureSteps])
           repeat-cursor (reagent/cursor prog-atm [:repeat])
           substance-options (:jarContents @prog-atm)
-          save-query (str "mutation{save_procedure(procedure:"
+          save-query (str "mutation{saveProcedure(procedure:"
                      (-> @prog-atm
                          (jsonify)
                          (remove-quotes-from-keys))
@@ -217,7 +217,7 @@
                             {:query save-query
                              :handler-fn (fn [resp]
                                            (println "Save button's response" resp)
-                                           (when resp (reset! prog-atm (:save_procedure resp))))})} "Save"]
+                                           (when resp (reset! prog-atm (:saveProcedure resp))))})} "Save"]
        [run-button procedure-run-status-cursor prog-atm run-fn]
        ])))
 

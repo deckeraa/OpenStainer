@@ -36,4 +36,5 @@
                                          (when-let [f (get-in queries-to-run [:always :handler-fn])] (f resp))
                                          (when-let [f (get-in queries-to-run [screen  :handler-fn])] (f resp))
                                          (println "Setting timeout for next periodic-updater.")
-                                         (js/setTimeout (partial periodic-updater screen-cursor queries-to-run (mod (inc seconds) 5)) (* 5 1000)))})))))
+;                                         (js/setTimeout (partial periodic-updater screen-cursor queries-to-run (mod (inc seconds) 5)) (* 5 1000))
+                                         )})))))

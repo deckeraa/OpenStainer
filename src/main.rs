@@ -87,7 +87,7 @@ struct Procedure {
     #[serde(rename="_rev")]
     rev: String,
     
-    #[graphql(description="The CouchDB type of the procedure. Will always be :procedure.")]
+    #[graphql(name="type", description="The CouchDB type of the procedure. Will always be :procedure.")]
     #[serde(rename="type")]
     type_: String,
     
@@ -112,16 +112,15 @@ struct Procedure {
 #[derive(juniper::GraphQLInputObject, Debug, Serialize, Deserialize, Clone)]
 #[graphql(description="A staining procedure")]
 struct ProcedureInputObject {
-    #[graphql(description="The CouchDB _id of the procedure.")]
-    #[serde(rename="_id")]
-    #[graphql(name="_id")]
-    id: String,
+    #[graphql(name="_id", description="The CouchDB _id of the procedure.")]
+    #[serde(rename="_id", skip_serializing_if = "Option::is_none")]
+    id: Option<String>,
     
     #[graphql(name="_rev", description="The CouchDB _rev of the procedure.")]
-    #[serde(rename="_rev")]
-    rev: String,
+    #[serde(rename="_rev", skip_serializing_if = "Option::is_none")]
+    rev: Option<String>,
     
-    #[graphql(description="The CouchDB type of the procedure. Will always be :procedure.")]
+    #[graphql(name="type", description="The CouchDB type of the procedure. Will always be :procedure.")]
     #[serde(rename="type")]
     type_: String,
     
@@ -155,6 +154,13 @@ struct ViewResult<T> {
     total_rows: i64,
     offset: i64,
     rows: Vec<SingleViewResultWithIncludeDocs<T>>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct CouchDBPOSTResponse {
+    ok: bool,
+    id: String,
+    rev: String,
 }
 
 
@@ -215,7 +221,7 @@ impl Query {
 	if resp.is_ok() {
 	    let parse_result = resp.unwrap().json::<Procedure>();
 	    if parse_result.is_err() {
-		return Err(juniper::FieldError::new("Couldn't parse response from CouchDB",graphql_value!({ "internal_error": "Couldn't parse response from CouchDB"})));
+		return Err(juniper::FieldError::new(format!("Couldn't parse response from CouchDB: {:?}",parse_result.err()),graphql_value!({ "internal_error": "Couldn't parse response from CouchDB"})));
 	    }
 	    let proc = parse_result.unwrap();
 	    return Ok(proc);
@@ -228,27 +234,52 @@ impl Query {
 struct Mutation;
 #[juniper::object(Context = SharedPi)]
 impl Mutation {
-    fn save_procedure(proc: ProcedureInputObject) -> FieldResult<Procedure> {
+    fn save_procedure(procedure: ProcedureInputObject) -> FieldResult<Procedure> {
 	let client = reqwest::blocking::Client::new();
-	let body = serde_json::to_string(&proc);
+	let body = serde_json::to_string(&procedure);
 	if body.is_err() {
 	    return Err(juniper::FieldError::new("Unable to parse the input object.",
 						graphql_value!({ "internal_error": "Unable to parse the input object."})));
 	}
 	let body = body.unwrap();
+	println!("save_procedure body: {:?}",body);
 	let resp = client.post("http://localhost:5984/slide_stainer/")
-	    .body(body)
+	//.body(body) // .body(body)
+	    .json(&procedure)
 	    .send();
 	if resp.is_err() {
 	    return Err(juniper::FieldError::new("Unable to connect with CouchDB.",
 						graphql_value!({ "internal_error": "Unable to connect with CouchDB."})));
 	}
-	let parse_result = resp.unwrap().json::<Procedure>();
+	//let resp = resp.unwrap();
+	println!("save_procedure resp: {:?}",resp);
+	let unwrapped = resp.unwrap();
+//	println!("save_procedure resp.text(): {:?}",unwrapped.text());
+	let parse_result = unwrapped.json::<CouchDBPOSTResponse>();//resp.unwrap().json::<Procedure>();
+	//let parse_result = Err("hard-coded");
 	if parse_result.is_err() {
-	    return Err(juniper::FieldError::new("Couldn't parse response from CouchDB",graphql_value!({ "internal_error": "Couldn't parse response from CouchDB"})));
+//	    return Err(juniper::FieldError::new("Couldn't parse response from CouchDB",graphql_value!({ "internal_error": "Couldn't parse response from CouchDB"})));
+	    return Err(juniper::FieldError::new(format!("Couldn't parse response from CouchDB: {:?}",parse_result.err()),graphql_value!({ "internal_error": "Couldn't parse response from CouchDB"})));
 	}
-	let proc = parse_result.unwrap();
-	return Ok(proc);
+	//let query : Query;
+	//return Query::procedure_by_id(parse_result.unwrap().id);
+	//let proc = parse_result.unwrap();
+	//return Ok(proc);
+	//println!("{}",Query::apiVersion());
+
+	// TODO: figure out why the #[juniper::object(Context = SharedPi)] macro isn't letting me call Query::procedure_by_id
+	let url : &str = &format!("http://localhost:5984/slide_stainer/{}",parse_result.unwrap().id).to_string();
+	let resp = reqwest::blocking::get(url);
+	if resp.is_ok() {
+	    let parse_result = resp.unwrap().json::<Procedure>();
+	    if parse_result.is_err() {
+		return Err(juniper::FieldError::new(format!("Couldn't parse response from CouchDB: {:?}",parse_result.err()),graphql_value!({ "internal_error": "Couldn't parse response from CouchDB"})));
+	    }
+	    let proc = parse_result.unwrap();
+	    return Ok(proc);
+	}
+	return Err(juniper::FieldError::new("No procedure with that ID found.",
+					    graphql_value!({ "internal_error": "No procedure with that ID found."})))
 
 	// return Err(juniper::FieldError::new("No procedure with that ID found.",
 	// 				    graphql_value!({ "internal_error": "No procedure with that ID found."})))

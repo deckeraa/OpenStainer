@@ -11,8 +11,8 @@
 
 (def number-of-jars 6)
 (def empty-procedure {:type "procedure"
-                      :jar_contents (vec (repeat number-of-jars " "))
-                      :procedure_steps []
+                      :jarContents (vec (repeat number-of-jars " "))
+                      :procedureSteps []
                       :name " "})
 
 (def procedure-keys
