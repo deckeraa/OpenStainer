@@ -30,6 +30,8 @@ struct Pi {
     stepper_x: Stepper,
     stepper_z: Stepper,
     estop: gpio::sysfs::SysFsGpioInput,
+    current_procedure: Option<Procedure>,
+    run_status: Option<ProcedureRunStatus>,
 }
 
 struct Stepper {
@@ -43,6 +45,12 @@ struct Stepper {
     pulses_per_revolution: u64,
     travel_distance_per_turn: Inch,
 }
+
+// #[derive(juniper::GraphQLObject, Debug, Serialize, Deserialize, Clone)]
+// struct State {
+//     
+//     current_procedure_run_status: Option<ProcedureRunStatus>,
+// }
 
 // #[juniper::object]
 // impl Stepper {
@@ -142,6 +150,25 @@ struct ProcedureInputObject {
     runs: Option<i32>,
 }
 
+#[derive(juniper::GraphQLObject, Debug, Serialize, Deserialize, Clone)]
+struct ProcedureRunStatus {
+    // TODO make sure I come back and decide if these can be nil and make sure the description is updated.
+    // #[graphql(description="CouchDB ID of the currently running procedure. Nil if no procedure is running.")]
+    // current_procedure_id : String,
+    
+    // #[graphql(description="Name of the currently running procedure. Nil if no procedure is running.")]
+    // current_procedure_name : String,
+    
+    #[graphql(description="One-indexed number of the current procedure step in the currently running procedure. Nil if no procedure is running.")]
+    current_procedure_step_number : i32,
+    
+    #[graphql(description="Start time of the current procedure step in the currently running procedure. Nil if no procedure is running or if the slide holder is currently en route to a staining jar.")]
+    current_procedure_seconds_remaining: String,
+    
+    #[graphql(description="The cycle number, one-indexed, of how many times the procedure has been repeated in a single run.")]
+    current_cycle_number: i32,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 struct SingleViewResultWithIncludeDocs<T> {
     id: String,
@@ -178,6 +205,21 @@ struct Settings {
 type SharedPi = Mutex<Pi>;
 //type Schema = juniper::RootNode<'static, Query, EmptyMutation<SharedPi>>;
 type Schema = juniper::RootNode<'static, Query, Mutation>;
+
+fn procedure_by_id(id: String) -> FieldResult<Procedure> {
+	let url : &str = &format!("http://localhost:5984/slide_stainer/{}",id).to_string();
+	let resp = reqwest::blocking::get(url);
+	if resp.is_ok() {
+	    let parse_result = resp.unwrap().json::<Procedure>();
+	    if parse_result.is_err() {
+		return Err(juniper::FieldError::new(format!("Couldn't parse response from CouchDB: {:?}",parse_result.err()),graphql_value!({ "internal_error": "Couldn't parse response from CouchDB"})));
+	    }
+	    let proc = parse_result.unwrap();
+	    return Ok(proc);
+	}
+	return Err(juniper::FieldError::new("No procedure with that ID found.",
+					    graphql_value!({ "internal_error": "No procedure with that ID found."})))
+    }
 
 struct Query;
 #[juniper::object(Context = SharedPi)]
@@ -216,18 +258,33 @@ impl Query {
     }
 
     fn procedure_by_id(id: String) -> FieldResult<Procedure> {
-	let url : &str = &format!("http://localhost:5984/slide_stainer/{}",id).to_string();
-	let resp = reqwest::blocking::get(url);
-	if resp.is_ok() {
-	    let parse_result = resp.unwrap().json::<Procedure>();
-	    if parse_result.is_err() {
-		return Err(juniper::FieldError::new(format!("Couldn't parse response from CouchDB: {:?}",parse_result.err()),graphql_value!({ "internal_error": "Couldn't parse response from CouchDB"})));
-	    }
-	    let proc = parse_result.unwrap();
-	    return Ok(proc);
-	}
-	return Err(juniper::FieldError::new("No procedure with that ID found.",
-					    graphql_value!({ "internal_error": "No procedure with that ID found."})))
+	procedure_by_id(id)
+	// let url : &str = &format!("http://localhost:5984/slide_stainer/{}",id).to_string();
+	// let resp = reqwest::blocking::get(url);
+	// if resp.is_ok() {
+	//     let parse_result = resp.unwrap().json::<Procedure>();
+	//     if parse_result.is_err() {
+	// 	return Err(juniper::FieldError::new(format!("Couldn't parse response from CouchDB: {:?}",parse_result.err()),graphql_value!({ "internal_error": "Couldn't parse response from CouchDB"})));
+	//     }
+	//     let proc = parse_result.unwrap();
+	//     return Ok(proc);
+	// }
+	// return Err(juniper::FieldError::new("No procedure with that ID found.",
+	// 				    graphql_value!({ "internal_error": "No procedure with that ID found."})))
+    }
+
+    fn current_procedure(shared_pi: &SharedPi) -> FieldResult<Option<Procedure>> {
+	let pi = &mut *shared_pi.lock().unwrap();
+	Ok(pi.current_procedure.clone())
+	// match pi.current_procedure {
+        //      Some(v) => Ok(v),
+        //      None => Err(juniper::FieldError::new(format!("No current procedure"),graphql_value!({ "internal_error": "Couldn't parse response from CouchDB"})));
+ 	// }
+    }
+
+    fn run_status(shared_pi: &SharedPi) -> FieldResult<Option<ProcedureRunStatus>> {
+	let pi = &mut *shared_pi.lock().unwrap();
+	Ok(pi.run_status.clone())
     }
 }
 
@@ -561,6 +618,20 @@ fn home_handler(pi_state: State<SharedPi>) -> String {
     // format! {"{:?} {:?}",ret_one,ret_two}
 }
 
+#[post("/run_procedure/<id>")]
+fn run_procedure(pi_state: State<SharedPi>, id: String) -> String {
+    let pi_mutex = &mut pi_state.inner();
+    {
+	let pi = &mut *pi_mutex.lock().unwrap();
+	let proc : FieldResult<Procedure> = procedure_by_id(id);
+	if proc.is_ok() {
+	    pi.current_procedure = Some(proc.unwrap().clone());
+	}
+	std::mem::drop(pi);
+    }
+    format! {"run_procedure return value TODO"}
+}
+
 #[get("/move_by_pulses/<axis>/<forward>/<pulses>")]
 fn move_by_pulses(
     pi_state: State<SharedPi>,
@@ -742,6 +813,8 @@ fn main() {
             pulses_per_revolution: 800,
             travel_distance_per_turn: 0.063,
         },
+	current_procedure: None,
+	run_status: None,
     });
 
 
@@ -787,6 +860,7 @@ fn main() {
 		post_graphql_handler,
 		couch,
 		delete_procedure,
+		run_procedure,
             ],)
 	.mount("/",StaticFiles::from("./resources/public/"))
 	.attach(cors)
