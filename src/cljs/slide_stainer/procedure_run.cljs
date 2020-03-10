@@ -46,7 +46,7 @@
   (is (= "1:01" (format-time-in-seconds  61))))
 
 (defn procedure-run-status
-  ([] (procedure-run-status (reagent/atom sample-procedure) (reagent/atom {:current_procedure_step_number 2}) nil))
+  ([] (procedure-run-status (reagent/atom sample-procedure) (reagent/atom {:currentProcedureStepNumber 2}) nil))
   ([procedure-cursor procedure-run-status-cursor back-fn]
    (fn []
      [:div
@@ -56,7 +56,7 @@
       [:table
        [:tbody [:tr [:th ""] [:th "Step #"] [:th "Substance"] [:th "Time"] [:th "Jar #"]]
         (doall (map-indexed (fn [idx step]
-                              (let [current-step? (= (inc idx) (:current_procedure_step_number @procedure-run-status-cursor))
+                              (let [current-step? (= (inc idx) (:currentProcedureStepNumber @procedure-run-status-cursor))
                                     current-start-time (format/parse (:current_procedure_step_start_time @procedure-run-status-cursor))]
                                 ^{:key idx}
                                 [:tr
@@ -72,7 +72,7 @@
                                   ]
                                  [:td (:jarNumber step)]]))
                             (:procedureSteps @procedure-cursor)))]]
-      [:p {} (str "Cycle " (:current_cycle_number @procedure-run-status-cursor) " of " (:repeat @procedure-cursor))]
+      [:p {} (str "Cycle " (:currentCycleNumber @procedure-run-status-cursor) " of " (:repeat @procedure-cursor))]
       [:button {:on-click (refresh-fn procedure-cursor procedure-run-status-cursor)} "Refresh"]
       [slide-stainer.program-creation/run-button procedure-run-status-cursor procedure-cursor nil]
       ])))

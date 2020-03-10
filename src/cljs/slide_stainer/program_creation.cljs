@@ -171,10 +171,12 @@
                                 (println "run_procedure resp: " resp)))
                           ((graphql/graphql-fn
                             {:query (str "{runStatus{" graphql/run-status-keys "}}")
-                             :hander-fn (fn [resp]
-                                          (println "Run button resp: " resp)
-                                          (when run-fn (run-fn @prog-atm))
-                                          )}))
+                             :handler-fn (fn [resp]
+                                           (println "Run button resp: " resp  (get-in resp [:runStatus]))
+                                           (reset! procedure-run-status-cursor (get-in resp [:runStatus]))
+                                           (println "run-fn: " run-fn)
+                                           (when run-fn (run-fn @prog-atm))
+                                           )}))
                           ;; ((graphql/graphql-fn
                           ;;   {:query (str "mutation{run_procedure(_id:\"" (:_id @prog-atm)
                           ;;                "\"){procedure_run_status{" graphql/procedure-run-status-keys "}}}" )
