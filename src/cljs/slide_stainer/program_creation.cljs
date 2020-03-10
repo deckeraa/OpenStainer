@@ -167,16 +167,18 @@
   (fn []
     [:button {:on-click (fn [e]
                           (println "run-button: " procedure-run-status-cursor)
-                          ((graphql/graphql-fn
-                            {:query (str "mutation{run_procedure(_id:\"" (:_id @prog-atm)
-                                         "\"){procedure_run_status{" graphql/procedure-run-status-keys "}}}" )
-                             :handler-fn (fn [resp]
-                                           (println "Run button resp: " resp)
-                                           (reset! procedure-run-status-cursor (get-in resp [:run_procedure :procedure_run_status]))
-                                           (println "run-fn: " run-fn)
-                                           (when run-fn (run-fn @prog-atm))
-                                           )
-                             }))
+                          (go (let [resp (<! (http/post (str "http://localhost:8000/run_procedure/" (:_id @prog-atm))))]
+                                (println "run_procedure resp: " resp)))
+                          ;; ((graphql/graphql-fn
+                          ;;   {:query (str "mutation{run_procedure(_id:\"" (:_id @prog-atm)
+                          ;;                "\"){procedure_run_status{" graphql/procedure-run-status-keys "}}}" )
+                          ;;    :handler-fn (fn [resp]
+                          ;;                  (println "Run button resp: " resp)
+                          ;;                  (reset! procedure-run-status-cursor (get-in resp [:run_procedure :procedure_run_status]))
+                          ;;                  (println "run-fn: " run-fn)
+                          ;;                  (when run-fn (run-fn @prog-atm))
+                          ;;                  )
+                          ;;    }))
                           )
               } "Run"]))
 

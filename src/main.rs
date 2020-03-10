@@ -18,6 +18,7 @@ use juniper::graphql_value;
 use serde::*;
 use rocket_contrib::serve::StaticFiles;
 use rocket_cors::{AllowedHeaders, AllowedOrigins};
+use std::time::{Instant};
 
 const LEFT_POSITION: Inch = 0.35;
 const UP_POSITION: Inch = 3.5;
@@ -161,9 +162,12 @@ struct ProcedureRunStatus {
     
     #[graphql(description="One-indexed number of the current procedure step in the currently running procedure. Nil if no procedure is running.")]
     current_procedure_step_number : i32,
+
+    //#[serde(skip)]
+    //current_procedure_step_start_instant: Instant,
     
     #[graphql(description="Start time of the current procedure step in the currently running procedure. Nil if no procedure is running or if the slide holder is currently en route to a staining jar.")]
-    current_procedure_seconds_remaining: String,
+    current_procedure_step_seconds_remaining: String,
     
     #[graphql(description="The cycle number, one-indexed, of how many times the procedure has been repeated in a single run.")]
     current_cycle_number: i32,
@@ -592,14 +596,64 @@ fn home_handler(pi_state: State<SharedPi>) -> String {
 #[post("/run_procedure/<id>")]
 fn run_procedure(pi_state: State<SharedPi>, id: String) -> String {
     let pi_mutex = &mut pi_state.inner();
+
+    // Intial setup
+
+    // load the procedure
+    let proc : FieldResult<Procedure> = procedure_by_id(id);
+    if proc.is_err() { return format! {"Couldn't find procedure with that ID."}; }
+    let proc = proc.unwrap();
+
     {
 	let pi = &mut *pi_mutex.lock().unwrap();
-	let proc : FieldResult<Procedure> = procedure_by_id(id);
-	if proc.is_ok() {
-	    pi.current_procedure = Some(proc.unwrap().clone());
-	}
-	std::mem::drop(pi);
+	pi.current_procedure = Some(proc.clone());
+	// initialize the run status
+	// TODO
+	// std::mem::drop(pi);
     }
+
+    let num_repeats = match proc.repeat {
+	Some(v) => v,
+	None => 1
+    };
+    // loop over repeats
+    for _x in 0..num_repeats {
+	println!("Repeat #: {}",num_repeats);
+	// loop over steps
+	println!("proc.procedure_steps: {:?}", proc.procedure_steps);
+	for step in proc.procedure_steps.iter() {
+	    println!("Trying to grab the lock.");
+	    // grab the lock
+	    {
+		let pi = &mut *pi_mutex.lock().unwrap();
+		println!("Step: {:?}",step);
+		let ret = move_to_jar( pi, step.jar_number );
+		if ret == MoveResult::HitEStop {
+		    return format! {"Stopped due to e-stop being hit."}
+		}
+		// std::mem::drop(pi);
+	    }
+	    //pi.run_status.current_procedure_step_start_instant = Instant::now();
+	    let start_instant = Instant::now();
+
+
+	    // sleep until it's time to move again
+	    while start_instant.elapsed().as_secs() < step.time_in_seconds.try_into().unwrap() {
+		thread::sleep(time::Duration::from_millis(200));
+	    }
+	}
+    }
+
+    // End of procedure, so move to the up position
+    {
+	let pi = &mut *pi_mutex.lock().unwrap();
+	let ret = move_to_up_position( pi );
+	if ret == MoveResult::HitEStop {
+	    return format! {"Stopped due to e-stop being hit."}
+	}
+	// std::mem::drop(pi);
+    }
+    
     format! {"run_procedure return value TODO"}
 }
 
@@ -693,7 +747,7 @@ fn move_to_left_position_handler(pi_state: State<SharedPi>) -> String {
     format! {"{:?}",ret}
 }
 
-fn move_to_jar(pi: &mut Pi, jar_number: u16) -> MoveResult {
+fn move_to_jar(pi: &mut Pi, jar_number: i32) -> MoveResult {
     let ret: MoveResult = move_to_up_position(pi);
     if ret == MoveResult::HitLimitSwitch
         || ret == MoveResult::HitEStop
@@ -717,7 +771,7 @@ fn move_to_jar(pi: &mut Pi, jar_number: u16) -> MoveResult {
 }
 
 #[get("/move_to_jar/<jar_number>")]
-fn move_to_jar_handler(pi_state: State<SharedPi>, jar_number: u16) -> String {
+fn move_to_jar_handler(pi_state: State<SharedPi>, jar_number: i32) -> String {
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
     println!("0.1: {}", jar_number);
