@@ -166,8 +166,8 @@ struct ProcedureRunStatus {
     //#[serde(skip)]
     //current_procedure_step_start_instant: Instant,
     
-    #[graphql(description="Start time of the current procedure step in the currently running procedure. Nil if no procedure is running or if the slide holder is currently en route to a staining jar.")]
-    current_procedure_step_seconds_remaining: String,
+    // #[graphql(description="Start time of the current procedure step in the currently running procedure. Nil if no procedure is running or if the slide holder is currently en route to a staining jar.")]
+    // current_procedure_step_seconds_remaining: String,
     
     #[graphql(description="The cycle number, one-indexed, of how many times the procedure has been repeated in a single run.")]
     current_cycle_number: i32,
@@ -279,6 +279,7 @@ impl Query {
 
     fn run_status(shared_pi: &SharedPi) -> FieldResult<Option<ProcedureRunStatus>> {
 	let pi = &mut *shared_pi.lock().unwrap();
+	println!("run_status: {:?}", pi.run_status);
 	Ok(pi.run_status.clone())
     }
 }
@@ -608,8 +609,10 @@ fn run_procedure(pi_state: State<SharedPi>, id: String) -> String {
 	let pi = &mut *pi_mutex.lock().unwrap();
 	pi.current_procedure = Some(proc.clone());
 	// initialize the run status
-	// TODO
-	// std::mem::drop(pi);
+	pi.run_status = Some(ProcedureRunStatus {
+	    current_procedure_step_number : 0,
+	    current_cycle_number: 0,
+	});
     }
 
     let num_repeats = match proc.repeat {
@@ -617,21 +620,24 @@ fn run_procedure(pi_state: State<SharedPi>, id: String) -> String {
 	None => 1
     };
     // loop over repeats
-    for _x in 0..num_repeats {
+    for repeat_num in 0..num_repeats {
 	println!("Repeat #: {}",num_repeats);
 	// loop over steps
 	println!("proc.procedure_steps: {:?}", proc.procedure_steps);
-	for step in proc.procedure_steps.iter() {
+	for (index,step) in proc.procedure_steps.iter().enumerate() {
 	    println!("Trying to grab the lock.");
 	    // grab the lock
 	    {
 		let pi = &mut *pi_mutex.lock().unwrap();
+		let run_status = pi.run_status.as_mut().unwrap();
+		run_status.current_cycle_number = repeat_num + 1;
+		run_status.current_procedure_step_number = (index + 1).try_into().unwrap();
+		//pi.run_status.current_procedure_step_number = pi.run_status.current_procedure_step_number
 		println!("Step: {:?}",step);
 		let ret = move_to_jar( pi, step.jar_number );
 		if ret == MoveResult::HitEStop {
 		    return format! {"Stopped due to e-stop being hit."}
 		}
-		// std::mem::drop(pi);
 	    }
 	    //pi.run_status.current_procedure_step_start_instant = Instant::now();
 	    let start_instant = Instant::now();
@@ -651,7 +657,7 @@ fn run_procedure(pi_state: State<SharedPi>, id: String) -> String {
 	if ret == MoveResult::HitEStop {
 	    return format! {"Stopped due to e-stop being hit."}
 	}
-	// std::mem::drop(pi);
+	pi.run_status = None;
     }
     
     format! {"run_procedure return value TODO"}

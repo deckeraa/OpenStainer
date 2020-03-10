@@ -24,6 +24,9 @@
   ;;  "Contains a comma-delimited string of all keys in the procedure_run_status object"
   "current_procedure_id,current_procedure_name,current_procedure_step_number,current_procedure_step_start_time,current_cycle_number")
 
+(def run-status-keys
+  "currentProcedureStepNumber,currentCycleNumber")
+
 (def alarm-keys "limit_switch_hit_unexpectedly,homing_failed")
 (def alarms-subquery (str "alarms{" alarm-keys "}"))
 

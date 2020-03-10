@@ -169,6 +169,12 @@
                           (println "run-button: " procedure-run-status-cursor)
                           (go (let [resp (<! (http/post (str "http://localhost:8000/run_procedure/" (:_id @prog-atm))))]
                                 (println "run_procedure resp: " resp)))
+                          ((graphql/graphql-fn
+                            {:query (str "{runStatus{" graphql/run-status-keys "}}")
+                             :hander-fn (fn [resp]
+                                          (println "Run button resp: " resp)
+                                          (when run-fn (run-fn @prog-atm))
+                                          )}))
                           ;; ((graphql/graphql-fn
                           ;;   {:query (str "mutation{run_procedure(_id:\"" (:_id @prog-atm)
                           ;;                "\"){procedure_run_status{" graphql/procedure-run-status-keys "}}}" )
