@@ -206,6 +206,9 @@ type SharedPi = Mutex<Pi>;
 //type Schema = juniper::RootNode<'static, Query, EmptyMutation<SharedPi>>;
 type Schema = juniper::RootNode<'static, Query, Mutation>;
 
+
+// This code lives outside of Query since the #[juniper::object(Context = SharedPi)] is preventing me from
+// referencing Query::procedure_by_id elsewhere in code.
 fn procedure_by_id(id: String) -> FieldResult<Procedure> {
 	let url : &str = &format!("http://localhost:5984/slide_stainer/{}",id).to_string();
 	let resp = reqwest::blocking::get(url);
@@ -259,18 +262,6 @@ impl Query {
 
     fn procedure_by_id(id: String) -> FieldResult<Procedure> {
 	procedure_by_id(id)
-	// let url : &str = &format!("http://localhost:5984/slide_stainer/{}",id).to_string();
-	// let resp = reqwest::blocking::get(url);
-	// if resp.is_ok() {
-	//     let parse_result = resp.unwrap().json::<Procedure>();
-	//     if parse_result.is_err() {
-	// 	return Err(juniper::FieldError::new(format!("Couldn't parse response from CouchDB: {:?}",parse_result.err()),graphql_value!({ "internal_error": "Couldn't parse response from CouchDB"})));
-	//     }
-	//     let proc = parse_result.unwrap();
-	//     return Ok(proc);
-	// }
-	// return Err(juniper::FieldError::new("No procedure with that ID found.",
-	// 				    graphql_value!({ "internal_error": "No procedure with that ID found."})))
     }
 
     fn current_procedure(shared_pi: &SharedPi) -> FieldResult<Option<Procedure>> {
@@ -318,28 +309,8 @@ impl Mutation {
 //	    return Err(juniper::FieldError::new("Couldn't parse response from CouchDB",graphql_value!({ "internal_error": "Couldn't parse response from CouchDB"})));
 	    return Err(juniper::FieldError::new(format!("Couldn't parse response from CouchDB: {:?}",parse_result.err()),graphql_value!({ "internal_error": "Couldn't parse response from CouchDB"})));
 	}
-	//let query : Query;
-	//return Query::procedure_by_id(parse_result.unwrap().id);
-	//let proc = parse_result.unwrap();
-	//return Ok(proc);
-	//println!("{}",Query::apiVersion());
 
-	// TODO: figure out why the #[juniper::object(Context = SharedPi)] macro isn't letting me call Query::procedure_by_id
-	let url : &str = &format!("http://localhost:5984/slide_stainer/{}",parse_result.unwrap().id).to_string();
-	let resp = reqwest::blocking::get(url);
-	if resp.is_ok() {
-	    let parse_result = resp.unwrap().json::<Procedure>();
-	    if parse_result.is_err() {
-		return Err(juniper::FieldError::new(format!("Couldn't parse response from CouchDB: {:?}",parse_result.err()),graphql_value!({ "internal_error": "Couldn't parse response from CouchDB"})));
-	    }
-	    let proc = parse_result.unwrap();
-	    return Ok(proc);
-	}
-	return Err(juniper::FieldError::new("No procedure with that ID found.",
-					    graphql_value!({ "internal_error": "No procedure with that ID found."})))
-
-	// return Err(juniper::FieldError::new("No procedure with that ID found.",
-	// 				    graphql_value!({ "internal_error": "No procedure with that ID found."})))
+	procedure_by_id(parse_result.unwrap().id)
     }
 
     // fn home(pi_state: State<SharedPi>) -> FieldResult<> {
