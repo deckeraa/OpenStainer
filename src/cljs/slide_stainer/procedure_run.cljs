@@ -73,7 +73,11 @@
                                  [:td (:jarNumber step)]]))
                             (:procedureSteps @procedure-cursor)))]]
       [:p {} (str "Cycle " (:currentCycleNumber @procedure-run-status-cursor) " of " (or (:repeat @procedure-cursor) 1))]
-      [:button {:on-click (refresh-fn procedure-cursor procedure-run-status-cursor)} "Refresh"]
+      ;; [:button {:on-click (refresh-fn procedure-cursor procedure-run-status-cursor)} "Refresh"]
+      [:button {:on-click (fn [e] (go (let [resp (<! (http/post "http://localhost:8000/pause_procedure"))]
+                                        (println "pause_procedure " resp))))} "Pause"]
+      [:button {:on-click (fn [e] (go (let [resp (<! (http/post "http://localhost:8000/resume_procedure"))]
+                                        (println "resume_procedure " resp))))} "Resume"]
       [slide-stainer.program-creation/run-button procedure-run-status-cursor procedure-cursor nil]
       ])))
 

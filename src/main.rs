@@ -19,6 +19,8 @@ use serde::*;
 use rocket_contrib::serve::StaticFiles;
 use rocket_cors::{AllowedHeaders, AllowedOrigins};
 use std::time::{Instant};
+use std::sync::atomic::Ordering;
+use atomic_enum::*;
 
 const LEFT_POSITION: Inch = 0.35;
 const UP_POSITION: Inch = 3.5;
@@ -62,6 +64,40 @@ struct Stepper {
 // 	}
 //     }
 // }
+
+#[atomic_enum]
+#[derive(PartialEq)]
+enum ProcedureExecutionStateEnum {
+    NotStarted,
+    Paused,
+    Stopped,
+    Running,
+    Completed,
+}
+
+struct ProcedureExecutionState {
+    atm: AtomicProcedureExecutionStateEnum,
+}
+
+#[rocket::post("/pause_procedure")]
+fn pause_procedure(pes: State<ProcedureExecutionState>) -> String {
+    let pes = pes.inner();
+    pes.atm.store(ProcedureExecutionStateEnum::Paused, Ordering::Relaxed);
+    format! {"/pause {:?}", pes.atm.load(Ordering::Relaxed)}
+}
+
+#[rocket::post("/resume_procedure")]
+fn resume_procedure(pes: State<ProcedureExecutionState>) -> String {
+    let pes = pes.inner();
+    pes.atm.store(ProcedureExecutionStateEnum::Running, Ordering::Relaxed);
+    format! {"/pause {:?}", pes.atm.load(Ordering::Relaxed)}
+}
+
+#[rocket::get("/read_procedure_status")]
+fn read_procedure_status(pes: State<ProcedureExecutionState>) -> String {
+    let pes = pes.inner();
+    format! {"/read {:?}", pes.atm.load(Ordering::Relaxed)}
+}
 
 #[derive(juniper::GraphQLObject, Debug, Serialize, Deserialize, Clone)]
 #[graphql(description="A single step in a staining procedure.")]
@@ -431,7 +467,7 @@ fn generate_wait_times(
     times
 }
 
-fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, is_homing: bool) -> MoveResult {
+fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, is_homing: bool, skip_stop_checking: bool) -> MoveResult {
     let stepper = match axis {
         AxisDirection::X => &mut pi.stepper_x,
         AxisDirection::Z => &mut pi.stepper_z,
@@ -493,7 +529,7 @@ fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, is_h
         }
 
         // check estop
-        if bool::from(pi.estop.read_value().unwrap()) {
+        if !skip_stop_checking && bool::from(pi.estop.read_value().unwrap()) {
             hit_e_stop = true;
             break;
         }
@@ -565,15 +601,15 @@ fn index(pi_state: State<SharedPi>, axis: AxisDirection, forward: bool) -> Strin
     // Grab the lock on the shared pins structure
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
-    let ret = move_steps(pi, axis, forward, 16000, false);
+    let ret = move_steps(pi, axis, forward, 16000, false, false);
     format! {"{:?}",ret}
 }
 
 fn home(pi: &mut Pi) -> MoveResult {
-    let ret_one = move_steps(pi, AxisDirection::Z, true, 160000, true);
-    let ret_two = move_steps(pi, AxisDirection::X, false, 320000, true);
+    let ret_one = move_steps(pi, AxisDirection::Z, true, 160000, true, false);
+    let ret_two = move_steps(pi, AxisDirection::X, false, 320000, true, false);
     if ret_one == MoveResult::HitLimitSwitch && ret_two == MoveResult::HitLimitSwitch {
-        move_to_up_position(pi);
+        move_to_up_position(pi,false);
         move_to_left_position(pi);
     }
     ret_two
@@ -595,10 +631,9 @@ fn home_handler(pi_state: State<SharedPi>) -> String {
 }
 
 #[post("/run_procedure/<id>")]
-fn run_procedure(pi_state: State<SharedPi>, id: String) -> String {
+fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>, id: String) -> String {
     let pi_mutex = &mut pi_state.inner();
-
-    // Intial setup
+    let pes = pes.inner();
 
     // load the procedure
     let proc : FieldResult<Procedure> = procedure_by_id(id);
@@ -634,6 +669,15 @@ fn run_procedure(pi_state: State<SharedPi>, id: String) -> String {
 		run_status.current_procedure_step_number = (index + 1).try_into().unwrap();
 		//pi.run_status.current_procedure_step_number = pi.run_status.current_procedure_step_number
 		println!("Step: {:?}",step);
+		// check to see if we're paused
+		if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Paused {
+		    let _ret = move_to_up_position( pi, true );
+		    let mut state = pes.atm.load(Ordering::Relaxed);
+		    while state == ProcedureExecutionStateEnum::Paused {
+			thread::sleep(time::Duration::from_millis(200));
+			state = pes.atm.load(Ordering::Relaxed);
+		    }
+		}
 		let ret = move_to_jar( pi, step.jar_number );
 		if ret == MoveResult::HitEStop {
 		    return format! {"Stopped due to e-stop being hit."}
@@ -653,7 +697,7 @@ fn run_procedure(pi_state: State<SharedPi>, id: String) -> String {
     // End of procedure, so move to the up position
     {
 	let pi = &mut *pi_mutex.lock().unwrap();
-	let ret = move_to_up_position( pi );
+	let ret = move_to_up_position( pi, false );
 	if ret == MoveResult::HitEStop {
 	    return format! {"Stopped due to e-stop being hit."}
 	}
@@ -672,7 +716,7 @@ fn move_by_pulses(
 ) -> String {
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
-    let ret = move_steps(pi, axis, forward, pulses, false);
+    let ret = move_steps(pi, axis, forward, pulses, false, false);
     format! {"{:?}",ret}
 }
 
@@ -682,11 +726,11 @@ fn move_by_inches(pi_state: State<SharedPi>, axis: AxisDirection, forward: bool,
     let pi = &mut *pi_mutex.lock().unwrap();
     let stepper = get_stepper(pi, &axis);
     let pulses = inches_to_pulses(inches, stepper);
-    let ret = move_steps(pi, axis, forward, pulses, false);
+    let ret = move_steps(pi, axis, forward, pulses, false, false);
     format! {"{:?}",ret}
 }
 
-fn move_to_pos(pi: &mut Pi, axis: AxisDirection, inches: Inch) -> MoveResult {
+fn move_to_pos(pi: &mut Pi, axis: AxisDirection, inches: Inch, skip_stop_checking: bool) -> MoveResult {
     println!("move_to_pos axis: {}  inches: {}", axis, inches);
     let is_not_homed = get_stepper(pi, &axis).pos.is_none();
     
@@ -706,31 +750,31 @@ fn move_to_pos(pi: &mut Pi, axis: AxisDirection, inches: Inch) -> MoveResult {
     } else {
         cur_pos - dest_pos
     };
-    move_steps(pi, axis, forward, pulses, false)
+    move_steps(pi, axis, forward, pulses, false, skip_stop_checking)
 }
 
 #[get("/move_to_pos/<axis>/<inches>")]
 fn move_to_pos_handler(pi_state: State<SharedPi>, axis: AxisDirection, inches: Inch) -> String {
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
-    let ret = move_to_pos(pi, axis, inches);
+    let ret = move_to_pos(pi, axis, inches, false);
     format! {"{:?}",ret}
 }
 
-fn move_to_up_position(pi: &mut Pi) -> MoveResult {
-    move_to_pos(pi, AxisDirection::Z, UP_POSITION)
+fn move_to_up_position(pi: &mut Pi, skip_stop_checking: bool) -> MoveResult {
+    move_to_pos(pi, AxisDirection::Z, UP_POSITION, skip_stop_checking)
 }
 
 #[get("/move_to_up_position")]
 fn move_to_up_position_handler(pi_state: State<SharedPi>) -> String {
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
-    let ret = move_to_up_position(pi);
+    let ret = move_to_up_position(pi, false);
     format! {"{:?}",ret}
 }
 
 fn move_to_down_position(pi: &mut Pi) -> MoveResult {
-    move_to_pos(pi, AxisDirection::Z, 0.0)
+    move_to_pos(pi, AxisDirection::Z, 0.0, false)
 }
 
 #[get("/move_to_down_position")]
@@ -742,7 +786,7 @@ fn move_to_down_position_handler(pi_state: State<SharedPi>) -> String {
 }
 
 fn move_to_left_position(pi: &mut Pi) -> MoveResult {
-    move_to_pos(pi, AxisDirection::X, LEFT_POSITION)
+    move_to_pos(pi, AxisDirection::X, LEFT_POSITION, false)
 }
 
 #[get("/move_to_left_position")]
@@ -754,7 +798,7 @@ fn move_to_left_position_handler(pi_state: State<SharedPi>) -> String {
 }
 
 fn move_to_jar(pi: &mut Pi, jar_number: i32) -> MoveResult {
-    let ret: MoveResult = move_to_up_position(pi);
+    let ret: MoveResult = move_to_up_position(pi,false);
     if ret == MoveResult::HitLimitSwitch
         || ret == MoveResult::HitEStop
         || ret == MoveResult::FailedDueToNotHomed
@@ -765,6 +809,7 @@ fn move_to_jar(pi: &mut Pi, jar_number: i32) -> MoveResult {
         pi,
         AxisDirection::X,
         LEFT_POSITION + JAR_SPACING * (jar_number - 1) as f64,
+	false
     );
     if ret == MoveResult::HitLimitSwitch
         || ret == MoveResult::HitEStop
@@ -848,6 +893,8 @@ fn main() {
 	run_status: None,
     });
 
+    let atm : AtomicProcedureExecutionStateEnum = AtomicProcedureExecutionStateEnum::new(ProcedureExecutionStateEnum::Running);
+    let pes : ProcedureExecutionState = ProcedureExecutionState { atm: atm, };
 
     {
 	// initialize enable pins (this is needed since the logic is reversed since it's behind
@@ -857,7 +904,7 @@ fn main() {
 	pi.stepper_x.ena.set_high().expect("Couldn't set enable pin"); // high is low since it's behind a transistor
 	pi.stepper_z.ena.set_high().expect("Couldn't set enable pin"); // high is low since it's behind a transistor
     }
-
+    
     // set up CORS
     let allowed_origins = AllowedOrigins::all();
 
@@ -874,6 +921,7 @@ fn main() {
     rocket::ignite()
         .manage(shared_pi)
 	.manage(Schema::new(Query, Mutation))
+	.manage(pes)
         .mount(
             "/",
             routes![
@@ -892,6 +940,9 @@ fn main() {
 		couch,
 		delete_procedure,
 		run_procedure,
+		pause_procedure,
+		resume_procedure,
+		read_procedure_status,
             ],)
 	.mount("/",StaticFiles::from("./resources/public/"))
 	.attach(cors)
