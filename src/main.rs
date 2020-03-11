@@ -603,30 +603,31 @@ fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, is_h
     MoveResult::MovedFullDistance
 }
 
-#[get("/move/<axis>/<forward>")]
-fn index(pi_state: State<SharedPi>, axis: AxisDirection, forward: bool) -> String {
-    // Grab the lock on the shared pins structure
-    let pi_mutex = &mut pi_state.inner();
-    let pi = &mut *pi_mutex.lock().unwrap();
-    let ret = move_steps(pi, axis, forward, 16000, false, None);
-    format! {"{:?}",ret}
-}
+// #[get("/move/<axis>/<forward>")]
+// fn index(pi_state: State<SharedPi>, axis: AxisDirection, forward: bool) -> String {
+//     // Grab the lock on the shared pins structure
+//     let pi_mutex = &mut pi_state.inner();
+//     let pi = &mut *pi_mutex.lock().unwrap();
+//     let ret = move_steps(pi, axis, forward, 16000, false, None);
+//     format! {"{:?}",ret}
+// }
 
-fn home(pi: &mut Pi) -> MoveResult {
+fn home(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
     let ret_one = move_steps(pi, AxisDirection::Z, true, 160000, true, None);
     let ret_two = move_steps(pi, AxisDirection::X, false, 320000, true, None);
     if ret_one == MoveResult::HitLimitSwitch && ret_two == MoveResult::HitLimitSwitch {
-        move_to_up_position(pi,None);
-        move_to_left_position(pi);
+        move_to_up_position(pi, opt_pes);
+        move_to_left_position(pi, opt_pes);
     }
     ret_two
 }
 
 #[post("/home")]
-fn home_handler(pi_state: State<SharedPi>) -> String {
+fn home_handler(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>) -> String {
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
-    let ret = home(pi);
+    let pes = pes.inner();
+    let ret = home(pi, Some(pes));
     format! {"{:?}",ret}
     // let ret_one = move_steps(pi, AxisDirection::Z, true, 160000, true);
     // let ret_two = move_steps(pi, AxisDirection::X, false, 320000, true);
@@ -732,23 +733,26 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 #[get("/move_by_pulses/<axis>/<forward>/<pulses>")]
 fn move_by_pulses(
     pi_state: State<SharedPi>,
+    pes: State<ProcedureExecutionState>,
     axis: AxisDirection,
     forward: bool,
     pulses: PulseCount,
 ) -> String {
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
-    let ret = move_steps(pi, axis, forward, pulses, false, None);
+    let pes = pes.inner();
+    let ret = move_steps(pi, axis, forward, pulses, false, Some(pes));
     format! {"{:?}",ret}
 }
 
 #[get("/move_by_inches/<axis>/<forward>/<inches>")]
-fn move_by_inches(pi_state: State<SharedPi>, axis: AxisDirection, forward: bool, inches: Inch) -> String {
+fn move_by_inches(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>, axis: AxisDirection, forward: bool, inches: Inch) -> String {
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
     let stepper = get_stepper(pi, &axis);
     let pulses = inches_to_pulses(inches, stepper);
-    let ret = move_steps(pi, axis, forward, pulses, false, None);
+    let pes = pes.inner();
+    let ret = move_steps(pi, axis, forward, pulses, false, Some(pes));
     format! {"{:?}",ret}
 }
 
@@ -757,7 +761,7 @@ fn move_to_pos(pi: &mut Pi, axis: AxisDirection, inches: Inch, opt_pes: Option<&
     let is_not_homed = get_stepper(pi, &axis).pos.is_none();
     
     if is_not_homed {
-	let ret = home(pi);
+	let ret = home(pi, opt_pes);
 	if ret == MoveResult::FailedToHome {
 	    return MoveResult::FailedDueToNotHomed;
 	}
@@ -776,10 +780,11 @@ fn move_to_pos(pi: &mut Pi, axis: AxisDirection, inches: Inch, opt_pes: Option<&
 }
 
 #[get("/move_to_pos/<axis>/<inches>")]
-fn move_to_pos_handler(pi_state: State<SharedPi>, axis: AxisDirection, inches: Inch) -> String {
+fn move_to_pos_handler(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>, axis: AxisDirection, inches: Inch) -> String {
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
-    let ret = move_to_pos(pi, axis, inches, None);
+    let pes = pes.inner();
+    let ret = move_to_pos(pi, axis, inches, Some(pes));
     format! {"{:?}",ret}
 }
 
@@ -788,10 +793,11 @@ fn move_to_up_position(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -
 }
 
 #[get("/move_to_up_position")]
-fn move_to_up_position_handler(pi_state: State<SharedPi>) -> String {
+fn move_to_up_position_handler(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>) -> String {
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
-    let ret = move_to_up_position(pi, None);
+    let pes = pes.inner();
+    let ret = move_to_up_position(pi, Some(pes));
     format! {"{:?}",ret}
 }
 
@@ -800,22 +806,24 @@ fn move_to_down_position(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>)
 }
 
 #[get("/move_to_down_position")]
-fn move_to_down_position_handler(pi_state: State<SharedPi>) -> String {
+fn move_to_down_position_handler(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>) -> String {
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
-    let ret = move_to_down_position(pi, None);
+    let pes = pes.inner();
+    let ret = move_to_down_position(pi, Some(pes));
     format! {"{:?}",ret}
 }
 
-fn move_to_left_position(pi: &mut Pi) -> MoveResult {
-    move_to_pos(pi, AxisDirection::X, LEFT_POSITION, None)
+fn move_to_left_position(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
+    move_to_pos(pi, AxisDirection::X, LEFT_POSITION, opt_pes)
 }
 
 #[get("/move_to_left_position")]
-fn move_to_left_position_handler(pi_state: State<SharedPi>) -> String {
+fn move_to_left_position_handler(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>) -> String {
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
-    let ret = move_to_left_position(pi);
+    let pes = pes.inner();
+    let ret = move_to_left_position(pi, Some(pes));
     format! {"{:?}",ret}
 }
 
@@ -841,7 +849,7 @@ fn move_to_jar(pi: &mut Pi, jar_number: i32, opt_pes: Option<&ProcedureExecution
             pi,
             AxisDirection::X,
             LEFT_POSITION + JAR_SPACING * (jar_number - 1) as f64,
-	    None
+	    opt_pes
 	);
 	if ret == MoveResult::HitLimitSwitch
             || ret == MoveResult::HitEStop
@@ -959,7 +967,7 @@ fn main() {
         .mount(
             "/",
             routes![
-                index,
+//                index,
                 home_handler,
                 pos,
                 move_by_pulses,
