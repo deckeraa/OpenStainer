@@ -819,25 +819,36 @@ fn move_to_left_position_handler(pi_state: State<SharedPi>) -> String {
     format! {"{:?}",ret}
 }
 
-fn move_to_jar(pi: &mut Pi, jar_number: i32, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
-    let ret: MoveResult = move_to_up_position(pi, opt_pes);
-    if ret == MoveResult::HitLimitSwitch
-        || ret == MoveResult::HitEStop
-        || ret == MoveResult::FailedDueToNotHomed
-    {
-        return ret;
+fn known_to_be_at_jar_position(pi: &mut Pi, jar_number: i32) -> bool {
+    if pi.stepper_x.pos.is_none() {
+	return false;
     }
-    let ret = move_to_pos(
-        pi,
-        AxisDirection::X,
-        LEFT_POSITION + JAR_SPACING * (jar_number - 1) as f64,
-	None
-    );
-    if ret == MoveResult::HitLimitSwitch
-        || ret == MoveResult::HitEStop
-        || ret == MoveResult::FailedDueToNotHomed
-    {
-        return ret;
+    let current_inches : Inch = pulses_to_inches(pi.stepper_x.pos.unwrap(), &pi.stepper_x);
+    let target_inches  : Inch = LEFT_POSITION + JAR_SPACING * (jar_number - 1) as f64;
+    (target_inches - current_inches).abs() < 0.1
+}
+
+fn move_to_jar(pi: &mut Pi, jar_number: i32, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
+    if !known_to_be_at_jar_position(pi, jar_number) {
+	let ret: MoveResult = move_to_up_position(pi, opt_pes);
+	if ret == MoveResult::HitLimitSwitch
+            || ret == MoveResult::HitEStop
+            || ret == MoveResult::FailedDueToNotHomed
+	{
+            return ret;
+	}
+	let ret = move_to_pos(
+            pi,
+            AxisDirection::X,
+            LEFT_POSITION + JAR_SPACING * (jar_number - 1) as f64,
+	    None
+	);
+	if ret == MoveResult::HitLimitSwitch
+            || ret == MoveResult::HitEStop
+            || ret == MoveResult::FailedDueToNotHomed
+	{
+            return ret;
+	}
     }
     let ret = move_to_down_position(pi, opt_pes);
     ret
