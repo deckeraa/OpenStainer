@@ -467,7 +467,7 @@ fn generate_wait_times(
     times
 }
 
-fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, is_homing: bool, skip_stop_checking: bool) -> MoveResult {
+fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, is_homing: bool, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
     let stepper = match axis {
         AxisDirection::X => &mut pi.stepper_x,
         AxisDirection::Z => &mut pi.stepper_z,
@@ -529,10 +529,17 @@ fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, is_h
         }
 
         // check estop
-        if !skip_stop_checking && bool::from(pi.estop.read_value().unwrap()) {
+        if opt_pes.is_none() && bool::from(pi.estop.read_value().unwrap()) {
             hit_e_stop = true;
             break;
         }
+	if opt_pes.is_some() {
+	    let state = opt_pes.unwrap().atm.load(Ordering::Relaxed); // == ProcedureExecutionStateEnum::Paused;
+	    if state == ProcedureExecutionStateEnum::Paused || state == ProcedureExecutionStateEnum::Stopped {
+		hit_e_stop = true;
+		break;
+	    }
+	}
 
         // generate the pulse
         stepper.pul.set_high().expect("Couldn't set pul");
@@ -601,15 +608,15 @@ fn index(pi_state: State<SharedPi>, axis: AxisDirection, forward: bool) -> Strin
     // Grab the lock on the shared pins structure
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
-    let ret = move_steps(pi, axis, forward, 16000, false, false);
+    let ret = move_steps(pi, axis, forward, 16000, false, None);
     format! {"{:?}",ret}
 }
 
 fn home(pi: &mut Pi) -> MoveResult {
-    let ret_one = move_steps(pi, AxisDirection::Z, true, 160000, true, false);
-    let ret_two = move_steps(pi, AxisDirection::X, false, 320000, true, false);
+    let ret_one = move_steps(pi, AxisDirection::Z, true, 160000, true, None);
+    let ret_two = move_steps(pi, AxisDirection::X, false, 320000, true, None);
     if ret_one == MoveResult::HitLimitSwitch && ret_two == MoveResult::HitLimitSwitch {
-        move_to_up_position(pi,false);
+        move_to_up_position(pi,None);
         move_to_left_position(pi);
     }
     ret_two
@@ -671,24 +678,25 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 		println!("Step: {:?}",step);
 		// check to see if we're paused
 		if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Paused {
-		    let _ret = move_to_up_position( pi, true );
+		    let _ret = move_to_up_position( pi, None );
 		    let mut state = pes.atm.load(Ordering::Relaxed);
 		    while state == ProcedureExecutionStateEnum::Paused {
 			thread::sleep(time::Duration::from_millis(200));
 			state = pes.atm.load(Ordering::Relaxed);
 		    }
 		}
-		let ret = move_to_jar( pi, step.jar_number );
+		let ret = move_to_jar( pi, step.jar_number, Some(&pes) );
 		if ret == MoveResult::HitEStop {
 		    return format! {"Stopped due to e-stop being hit."}
 		}
 	    }
 	    //pi.run_status.current_procedure_step_start_instant = Instant::now();
 	    let start_instant = Instant::now();
+	    let seconds_remaining = step.time_in_seconds.try_into().unwrap();
 
 
 	    // sleep until it's time to move again
-	    while start_instant.elapsed().as_secs() < step.time_in_seconds.try_into().unwrap() {
+	    while start_instant.elapsed().as_secs() < seconds_remaining {
 		thread::sleep(time::Duration::from_millis(200));
 	    }
 	}
@@ -697,7 +705,7 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
     // End of procedure, so move to the up position
     {
 	let pi = &mut *pi_mutex.lock().unwrap();
-	let ret = move_to_up_position( pi, false );
+	let ret = move_to_up_position( pi, None );
 	if ret == MoveResult::HitEStop {
 	    return format! {"Stopped due to e-stop being hit."}
 	}
@@ -716,7 +724,7 @@ fn move_by_pulses(
 ) -> String {
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
-    let ret = move_steps(pi, axis, forward, pulses, false, false);
+    let ret = move_steps(pi, axis, forward, pulses, false, None);
     format! {"{:?}",ret}
 }
 
@@ -726,11 +734,11 @@ fn move_by_inches(pi_state: State<SharedPi>, axis: AxisDirection, forward: bool,
     let pi = &mut *pi_mutex.lock().unwrap();
     let stepper = get_stepper(pi, &axis);
     let pulses = inches_to_pulses(inches, stepper);
-    let ret = move_steps(pi, axis, forward, pulses, false, false);
+    let ret = move_steps(pi, axis, forward, pulses, false, None);
     format! {"{:?}",ret}
 }
 
-fn move_to_pos(pi: &mut Pi, axis: AxisDirection, inches: Inch, skip_stop_checking: bool) -> MoveResult {
+fn move_to_pos(pi: &mut Pi, axis: AxisDirection, inches: Inch, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
     println!("move_to_pos axis: {}  inches: {}", axis, inches);
     let is_not_homed = get_stepper(pi, &axis).pos.is_none();
     
@@ -750,43 +758,43 @@ fn move_to_pos(pi: &mut Pi, axis: AxisDirection, inches: Inch, skip_stop_checkin
     } else {
         cur_pos - dest_pos
     };
-    move_steps(pi, axis, forward, pulses, false, skip_stop_checking)
+    move_steps(pi, axis, forward, pulses, false, opt_pes)
 }
 
 #[get("/move_to_pos/<axis>/<inches>")]
 fn move_to_pos_handler(pi_state: State<SharedPi>, axis: AxisDirection, inches: Inch) -> String {
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
-    let ret = move_to_pos(pi, axis, inches, false);
+    let ret = move_to_pos(pi, axis, inches, None);
     format! {"{:?}",ret}
 }
 
-fn move_to_up_position(pi: &mut Pi, skip_stop_checking: bool) -> MoveResult {
-    move_to_pos(pi, AxisDirection::Z, UP_POSITION, skip_stop_checking)
+fn move_to_up_position(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
+    move_to_pos(pi, AxisDirection::Z, UP_POSITION, opt_pes)
 }
 
 #[get("/move_to_up_position")]
 fn move_to_up_position_handler(pi_state: State<SharedPi>) -> String {
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
-    let ret = move_to_up_position(pi, false);
+    let ret = move_to_up_position(pi, None);
     format! {"{:?}",ret}
 }
 
-fn move_to_down_position(pi: &mut Pi) -> MoveResult {
-    move_to_pos(pi, AxisDirection::Z, 0.0, false)
+fn move_to_down_position(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
+    move_to_pos(pi, AxisDirection::Z, 0.0, opt_pes)
 }
 
 #[get("/move_to_down_position")]
 fn move_to_down_position_handler(pi_state: State<SharedPi>) -> String {
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
-    let ret = move_to_down_position(pi);
+    let ret = move_to_down_position(pi, None);
     format! {"{:?}",ret}
 }
 
 fn move_to_left_position(pi: &mut Pi) -> MoveResult {
-    move_to_pos(pi, AxisDirection::X, LEFT_POSITION, false)
+    move_to_pos(pi, AxisDirection::X, LEFT_POSITION, None)
 }
 
 #[get("/move_to_left_position")]
@@ -797,8 +805,8 @@ fn move_to_left_position_handler(pi_state: State<SharedPi>) -> String {
     format! {"{:?}",ret}
 }
 
-fn move_to_jar(pi: &mut Pi, jar_number: i32) -> MoveResult {
-    let ret: MoveResult = move_to_up_position(pi,false);
+fn move_to_jar(pi: &mut Pi, jar_number: i32, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
+    let ret: MoveResult = move_to_up_position(pi, opt_pes);
     if ret == MoveResult::HitLimitSwitch
         || ret == MoveResult::HitEStop
         || ret == MoveResult::FailedDueToNotHomed
@@ -809,7 +817,7 @@ fn move_to_jar(pi: &mut Pi, jar_number: i32) -> MoveResult {
         pi,
         AxisDirection::X,
         LEFT_POSITION + JAR_SPACING * (jar_number - 1) as f64,
-	false
+	None
     );
     if ret == MoveResult::HitLimitSwitch
         || ret == MoveResult::HitEStop
@@ -817,16 +825,17 @@ fn move_to_jar(pi: &mut Pi, jar_number: i32) -> MoveResult {
     {
         return ret;
     }
-    let ret = move_to_down_position(pi);
+    let ret = move_to_down_position(pi, opt_pes);
     ret
 }
 
 #[get("/move_to_jar/<jar_number>")]
-fn move_to_jar_handler(pi_state: State<SharedPi>, jar_number: i32) -> String {
+fn move_to_jar_handler(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>, jar_number: i32) -> String {
     let pi_mutex = &mut pi_state.inner();
+    let pes = pes.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
     println!("0.1: {}", jar_number);
-    let ret = move_to_jar(pi, jar_number);
+    let ret = move_to_jar(pi, jar_number, Some(pes));
     format! {"{:?}",ret}
 }
 
