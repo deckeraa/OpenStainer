@@ -25,7 +25,7 @@
                             (when (and query-fn should-run? (should-run?)) (query-fn)))
                           (when-let [query-fn (get-in queries-to-run [screen :query-fn])]  (query-fn))
                           (when-let [query-fn (get-in queries-to-run [:always :query-fn])] (query-fn))]))]
-     (println "Running query in periodic-updater: " query)
+     (println "Running query in periodic-updater: " query " screen: " screen)
      (if (empty? query)
        (js/setTimeout (partial periodic-updater screen-cursor queries-to-run (mod (inc seconds) 5)) (* 5 1000))
        ((graphql/graphql-fn {:query query
