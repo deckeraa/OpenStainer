@@ -641,6 +641,7 @@ fn home_handler(pi_state: State<SharedPi>) -> String {
 fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>, id: String) -> String {
     let pi_mutex = &mut pi_state.inner();
     let pes = pes.inner();
+    pes.atm.store(ProcedureExecutionStateEnum::Running, Ordering::Relaxed);
 
     // load the procedure
     let proc : FieldResult<Procedure> = procedure_by_id(id);
@@ -685,9 +686,22 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 			state = pes.atm.load(Ordering::Relaxed);
 		    }
 		}
-		let ret = move_to_jar( pi, step.jar_number, Some(&pes) );
-		if ret == MoveResult::HitEStop {
-		    return format! {"Stopped due to e-stop being hit."}
+		// move to the first jar
+		let mut got_to_jar = false;
+		while !got_to_jar {
+		    if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Running {
+			let ret = move_to_jar( pi, step.jar_number, Some(&pes) );
+			if ret == MoveResult::MovedFullDistance {
+			    got_to_jar = true;
+			}
+			else if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Paused {
+			}
+			else if ret == MoveResult::HitEStop {
+			    return format! {"Stopped due to e-stop being hit."}
+			    //let _ret = move_to_up_position( pi, None );
+			}
+		    }
+		    thread::sleep(time::Duration::from_millis(200));
 		}
 	    }
 	    //pi.run_status.current_procedure_step_start_instant = Instant::now();
