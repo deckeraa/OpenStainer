@@ -239,7 +239,6 @@ struct CouchDBPOSTResponse {
     rev: String,
 }
 
-
 #[derive(juniper::GraphQLObject, Debug)]
 #[graphql(description="A axis of motion on the device.")]
 struct Axis {
@@ -286,10 +285,12 @@ impl Query {
 	Ok(settings)
     }
 
-    fn axis(shared_context: &SharedPi) -> FieldResult<Axis> {
-        let context = &mut *shared_context.lock().unwrap();
-	let position_inches = match context.stepper_x.pos {
-             Some(v) => format!("{}", pulses_to_inches(v, &context.stepper_x)),
+    fn axis(context: &SharedPi, id: AxisDirection) -> FieldResult<Axis> {
+	println!("axis id: {:?}",id);
+        let pi = &mut *context.lock().unwrap();
+	let stepper = get_stepper( pi, &id );
+	let position_inches = match stepper.pos {
+             Some(v) => format!("{}", pulses_to_inches(v, &stepper)),
              None => "Not homed".to_string(),
  	};
 	let axis = Axis {position_inches: position_inches};
@@ -419,6 +420,7 @@ enum MoveResult {
     FailedToHome,
 }
 
+#[derive(juniper::GraphQLEnum, Debug)]
 enum AxisDirection {
     X,
     Z,

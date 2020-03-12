@@ -11,14 +11,14 @@
    [cljs.core.async.macros :refer [go go-loop]]
    [devcards.core :refer [defcard defcard-rg]]))
 
-(defn refresh-fn []
-  (graphql/graphql-fn {:query (str "{stepperX: axis(id:\"stepperX\"){position_inches}, stepperZ: axis(id:\"stepperZ\"){position_inches}}")
-                       :handler-fn (fn [resp]
-                                     (swap! atoms/stepperX-cursor (fn [v] (merge v (:stepperX resp))))
-                                     (swap! atoms/stepperZ-cursor (fn [v] (merge v (:stepperZ resp)))))}))
+;; (defn refresh-fn []
+;;   (graphql/graphql-fn {:query (str "{stepperX: axis(id:\"stepperX\"){position_inches}, stepperZ: axis(id:\"stepperZ\"){position_inches}}")
+;;                        :handler-fn (fn [resp]
+;;                                      (swap! atoms/stepperX-cursor (fn [v] (merge v (:stepperX resp))))
+;;                                      (swap! atoms/stepperZ-cursor (fn [v] (merge v (:stepperZ resp)))))}))
 
 (defn refresh-query-fn []
-  (str "{stepperX: axis(id:\"stepperX\"){position_inches}, stepperZ: axis(id:\"stepperZ\"){position_inches}}")
+  (str "{stepperX: axis(id:X){positionInches}, stepperZ: axis(id:Z){positionInches}}")
   )
 
 (defn refresh-handler-fn [resp]
@@ -42,8 +42,8 @@
 
 (defn positions-and-home [stepperX-cursor stepperZ-cursor]
   (fn []
-    (let [position-x (:position_inches @stepperX-cursor)
-          position-z (:position_inches @stepperZ-cursor)]
+    (let [position-x (:positionInches @stepperX-cursor)
+          position-z (:positionInches @stepperZ-cursor)]
       [:h2 "Current Position"]
       [:div {:class "positions-and-home" :style {:display :flex :align-items :center}}
        [:div {:style {:font-size "24px" :margin "16px"}}
