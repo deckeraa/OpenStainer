@@ -32,13 +32,13 @@
      [svg/bell {:style {:margin "5px"}} (if alarmed? "red" "green") 32]
      label]))
 
-(defn alarms [alarms-cursor]
-  (fn []
-    [:div {:style {:display :flex :flex-direction :column}}
-     [:h2 "Alarms"]
-     [alarm-line (:homing_failed @alarms-cursor) "Homing failed"]
-     [alarm-line (:limit_switch_hit_unexpectedly @alarms-cursor) "Limit switch hit unexpectedly"]
-     ]))
+;; (defn alarms [alarms-cursor]
+;;   (fn []
+;;     [:div {:style {:display :flex :flex-direction :column}}
+;;      [:h2 "Alarms"]
+;;      [alarm-line (:homing_failed @alarms-cursor) "Homing failed"]
+;;      [alarm-line (:limit_switch_hit_unexpectedly @alarms-cursor) "Limit switch hit unexpectedly"]
+;;      ]))
 
 (defn positions-and-home [stepperX-cursor stepperZ-cursor]
   (fn []
@@ -87,42 +87,14 @@
                                               :handler-fn (fn [] nil)})}
       "Down"]]))
 
-(defn graphql-control []
-  (let [input  (reagent/atom "")
-        output-data (reagent/atom "")
-        output-status (reagent/atom "")
-        on-change-handler (fn [atm evt]
-                            (reset! atm (-> evt .-target .-value)))]
-    (fn []
-      [:div
-       [:h1 "GraphQL Control"]
-       [:textarea {:type "text" :value @input
-                   :rows 8 :cols 80
-                :on-change #(on-change-handler input %)
-                }]
-       [:textarea {:type "text" :value @output-data
-                   :rows 12 :cols 40
-                   :on-change #(on-change-handler output-data %)
-                   }]
-       [:textarea {:type "text" :value @output-status
-                   :rows 4 :cols 40
-                   :on-change #(on-change-handler output-data %)
-                }]
-       [:button {:on-click (graphql/graphql-fn {:query-fn (fn [] (deref input))
-                                                :handler-fn (fn [resp raw-resp]
-                                                              (reset! output-status (str raw-resp))
-                                                              (reset! output-data (str resp)))})}
-        "Run query"]])))
-
 (defn settings-control [ratom back-fn]
   (fn []
     [:div
      [:div {:class "nav-header"}
       [svg/chevron-left {:class "chevron-left" :on-click back-fn} "blue" 36]
       [:h1 "Settings"]]
-     [alarms atoms/alarms-cursor]
+ ;    [alarms atoms/alarms-cursor]
      [positions-and-home atoms/stepperX-cursor atoms/stepperZ-cursor]
      [jar-jog-control]
      [up-down-control]
-     (when (:developer @atoms/settings-cursor) [graphql-control])
      ]))
