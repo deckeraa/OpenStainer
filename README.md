@@ -18,10 +18,10 @@ The binary must be run with sudoer priveleges since it sets thread priority to r
 cargo build && sudo ./target/debug/rmrm
 ```
 
-Next, start up the Clojure backend:
-```
-lein ring server-headless
-```
+// Next, start up the Clojure backend:
+// ```
+// lein ring server-headless
+// ```
 
 Finally, start up the Clojurescript front-end
 
@@ -32,6 +32,17 @@ lein figwheel dev devcards
 Figwheel will automatically push cljs changes to the browser.
 
 Wait a bit, then browse to [http://localhost:3449](http://localhost:3449).
+
+## Auto-start
+In /etc/rc.local, place the following:
+```
+su -l pi /home/pi/code/slide-stainer/run.sh &
+```
+
+In /etc/xdg/lxsession/LXDE-pi/autostart, place the following:
+```
+chromium-browser http://localhost:8000/index.html &
+```
 
 ## Production Build
 

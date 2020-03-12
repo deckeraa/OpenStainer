@@ -2,11 +2,13 @@
 
 # CouchDB should already be running (started in /etc/rc.local).
 
+cd /home/pi/code/slide-stainer
+
 # Start Real-time Motion Rust Micro-service
 sudo ./target/debug/rmrm &
 
 # Start the Clojure web & GraphQL server
-java -jar ./target/slide-stainer-0.1.0-SNAPSHOT-standalone.jar &
+# java -jar ./target/slide-stainer-0.1.0-SNAPSHOT-standalone.jar &
 
 # Turn off power saving and the screen saver
 # xset -dpms
@@ -16,4 +18,4 @@ java -jar ./target/slide-stainer-0.1.0-SNAPSHOT-standalone.jar &
 unclutter &
 
 # Open up the web app in Chromium
-chromium-browser ./resources/public/index.html &
+# chromium-browser http://localhost:8000/index.html &
