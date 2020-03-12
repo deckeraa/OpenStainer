@@ -748,7 +748,7 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
     format! {"run_procedure return value TODO"}
 }
 
-#[get("/move_by_pulses/<axis>/<forward>/<pulses>")]
+#[post("/move_by_pulses/<axis>/<forward>/<pulses>")]
 fn move_by_pulses(
     pi_state: State<SharedPi>,
     pes: State<ProcedureExecutionState>,
@@ -763,7 +763,7 @@ fn move_by_pulses(
     format! {"{:?}",ret}
 }
 
-#[get("/move_by_inches/<axis>/<forward>/<inches>")]
+#[post("/move_by_inches/<axis>/<forward>/<inches>")]
 fn move_by_inches(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>, axis: AxisDirection, forward: bool, inches: Inch) -> String {
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
@@ -797,7 +797,7 @@ fn move_to_pos(pi: &mut Pi, axis: AxisDirection, inches: Inch, opt_pes: Option<&
     move_steps(pi, axis, forward, pulses, false, opt_pes)
 }
 
-#[get("/move_to_pos/<axis>/<inches>")]
+#[post("/move_to_pos/<axis>/<inches>")]
 fn move_to_pos_handler(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>, axis: AxisDirection, inches: Inch) -> String {
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
@@ -810,7 +810,7 @@ fn move_to_up_position(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -
     move_to_pos(pi, AxisDirection::Z, UP_POSITION, opt_pes)
 }
 
-#[get("/move_to_up_position")]
+#[post("/move_to_up_position")]
 fn move_to_up_position_handler(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>) -> String {
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
@@ -823,7 +823,7 @@ fn move_to_down_position(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>)
     move_to_pos(pi, AxisDirection::Z, 0.0, opt_pes)
 }
 
-#[get("/move_to_down_position")]
+#[post("/move_to_down_position")]
 fn move_to_down_position_handler(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>) -> String {
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
@@ -836,7 +836,7 @@ fn move_to_left_position(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>)
     move_to_pos(pi, AxisDirection::X, LEFT_POSITION, opt_pes)
 }
 
-#[get("/move_to_left_position")]
+#[post("/move_to_left_position")]
 fn move_to_left_position_handler(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>) -> String {
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
@@ -880,7 +880,7 @@ fn move_to_jar(pi: &mut Pi, jar_number: i32, opt_pes: Option<&ProcedureExecution
     ret
 }
 
-#[get("/move_to_jar/<jar_number>")]
+#[post("/move_to_jar/<jar_number>")]
 fn move_to_jar_handler(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>, jar_number: i32) -> String {
     let pi_mutex = &mut pi_state.inner();
     let pes = pes.inner();

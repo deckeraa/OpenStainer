@@ -47,10 +47,10 @@
       [:h2 "Current Position"]
       [:div {:class "positions-and-home" :style {:display :flex :align-items :center}}
        [:div {:style {:font-size "24px" :margin "16px"}}
-        [:div {} (if position-x
+        [:div {} (if (and position-x (not (= "Not homed" position-x))) 
                    (str "X: " (goog.string/format "%.3f" position-x))
                    "Not homed")]
-        [:div {} (if position-z
+        [:div {} (if (and position-z (not (= "Not homed" position-z))) 
                    (str "Z: " (goog.string/format "%.3f" position-z))
                    "Not homed")]]
        [:button {:on-click #(http/post "http://localhost:8000/home")}
@@ -59,29 +59,21 @@
        ])))
 
 (defn jar-jog-control [alarms-cursor]
-  (let [query-fn (fn [jar] (str "mutation{move_to_jar(jar:" jar "){position," graphql/alarms-subquery "}}"))]
-    (fn []
-      [:div
-       [:h2 "Move to jar"]
-       (map (fn [jar]
-              ^{:key jar} [:button {:on-click (graphql/graphql-fn {:query-fn (partial query-fn jar)
-                                                                   :handler-fn (fn [resp]
-                                                                                 (reset! atoms/alarms-cursor
-                                                                                         (get-in resp [:move_to_jar :alarms])))})}
-            (str "Jar #" jar)])
-            (range 1 7))
-       ])))
+  (fn []
+    [:div
+     [:h2 "Move to jar"]
+     (map (fn [jar]
+            ^{:key jar} [:button {:on-click #(http/post (str "http://localhost:8000/move_to_jar/" jar))}
+                         (str "Jar #" jar)])
+          (range 1 7))
+     ]))
 
 (defn up-down-control []
   (fn []
     [:div
      [:h2 "Move slide holder"]
-     [:button {:on-click (graphql/graphql-fn {:query "mutation{move_to_up_position{position_inches}}"
-                                              :handler-fn (fn [] nil)})}
-      "Up"]
-     [:button {:on-click (graphql/graphql-fn {:query "mutation{move_to_down_position{position_inches}}"
-                                              :handler-fn (fn [] nil)})}
-      "Down"]]))
+     [:button {:on-click #(http/post "http://localhost:8000/move_to_up_position")} "Up"]
+     [:button {:on-click #(http/post "http://localhost:8000/move_to_down_position")} "Down"]]))
 
 (defn settings-control [ratom back-fn]
   (fn []
