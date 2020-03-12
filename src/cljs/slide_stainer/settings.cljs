@@ -53,13 +53,9 @@
         [:div {} (if position-z
                    (str "Z: " (goog.string/format "%.3f" position-z))
                    "Not homed")]]
-       [:button {:style {:width "64px" :height "64px"}
-                 :on-click #(http/post "http://localhost:8000/home")
-                 ;; :on-click (graphql/graphql-fn {:query (str "mutation{home{alarms{" graphql/alarm-keys "}}}")
-                 ;;                                :handler-fn (fn [resp] (println "home resp" resp))})
-                 }
-        [svg/home {}
-         "white" 32] "Home"]
+       [:button {:on-click #(http/post "http://localhost:8000/home")}
+        [svg/home {} "white" 32]
+        "Home"]
        ])))
 
 (defn jar-jog-control [alarms-cursor]
