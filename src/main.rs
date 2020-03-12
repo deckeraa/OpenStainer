@@ -66,7 +66,7 @@ struct Stepper {
 // }
 
 #[atomic_enum]
-#[derive(PartialEq)]
+#[derive(PartialEq,juniper::GraphQLEnum, Serialize, Deserialize)]
 enum ProcedureExecutionStateEnum {
     NotStarted,
     Paused,
@@ -207,7 +207,16 @@ struct ProcedureRunStatus {
     
     #[graphql(description="The cycle number, one-indexed, of how many times the procedure has been repeated in a single run.")]
     current_cycle_number: i32,
+
+    run_state: ProcedureExecutionStateEnum,
 }
+
+// impl ProcedureRunStatus {
+//     fn run_state() -> ProcedureExecutionStateEnum {
+// 	ProcedureExecutionStateEnum::Paused
+//     }
+	
+// }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct SingleViewResultWithIncludeDocs<T> {
@@ -316,7 +325,13 @@ impl Query {
     fn run_status(shared_pi: &SharedPi) -> FieldResult<Option<ProcedureRunStatus>> {
 	let pi = &mut *shared_pi.lock().unwrap();
 	println!("run_status: {:?}", pi.run_status);
-	Ok(pi.run_status.clone())
+	let run_status_opt = pi.run_status.clone();
+	if run_status_opt.is_none() {
+	    return Ok(None);
+	}
+	let run_status = run_status_opt.unwrap();
+	//run_status.run_state = ProcedureExecutionStateEnum::Paused;
+	Ok(Some(run_status))
     }
 }
 
@@ -656,6 +671,7 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 	pi.run_status = Some(ProcedureRunStatus {
 	    current_procedure_step_number : 0,
 	    current_cycle_number: 0,
+	    run_state: ProcedureExecutionStateEnum::Running,
 	});
     }
 
