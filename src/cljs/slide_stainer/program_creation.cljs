@@ -152,9 +152,10 @@
        ])))
 
 (defn up-down-field [label atm]
-  [:div
-   [:div {:style {:display "inline-block"}} (str label @atm)]
+  [:div {:class "up-down-field"}
+   [:div {:style {:display "inline-block"}} label]
    [:button {:on-click (fn [e] (swap! atm (fn [x] (dec (or x 0)))))} "-"]
+   [:div {:style {:display "inline-block"}} (str @atm)]
    [:button {:on-click (fn [e] (swap! atm (fn [x] (inc (or x 0)))))} "+"]])
 
 (defn drop-nth [coll n]
@@ -177,16 +178,6 @@
                                            (println "run-fn: " run-fn)
                                            (when run-fn (run-fn @prog-atm))
                                            )}))
-                          ;; ((graphql/graphql-fn
-                          ;;   {:query (str "mutation{run_procedure(_id:\"" (:_id @prog-atm)
-                          ;;                "\"){procedure_run_status{" graphql/procedure-run-status-keys "}}}" )
-                          ;;    :handler-fn (fn [resp]
-                          ;;                  (println "Run button resp: " resp)
-                          ;;                  (reset! procedure-run-status-cursor (get-in resp [:run_procedure :procedure_run_status]))
-                          ;;                  (println "run-fn: " run-fn)
-                          ;;                  (when run-fn (run-fn @prog-atm))
-                          ;;                  )
-                          ;;    }))
                           )
               } "Run"]))
 

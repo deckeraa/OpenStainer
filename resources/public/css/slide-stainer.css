@@ -132,3 +132,12 @@ button:active {
 .procedure_selection p {
     margin: 2px;
 }
+
+.up-down-field {
+    font-size: 32px;
+}
+
+.up-down-field button {
+    padding: 12px;
+    font-size: 26px;
+}

@@ -13,7 +13,8 @@
 (def empty-procedure {:type "procedure"
                       :jarContents (vec (repeat number-of-jars " "))
                       :procedureSteps []
-                      :name " "})
+                      :name " "
+                      :repeat 1})
 
 (def procedure-keys
 ;;  "Contains a comma-delimited string of all keys in the procedure object"
