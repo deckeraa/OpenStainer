@@ -40,6 +40,10 @@
     left: 124px;
 }
 
+.h1 {
+    font-size: 22px;
+}
+
 .header img {
     color: white;
     width: 24px;
@@ -96,7 +100,7 @@ button {
     color: white;
     background-color: #af5f23;
     margin: 1px;
-    padding: 20px;
+    padding: 15px;
     box-shadow: 2px 3px 5px #0000005c;
     font-size: 32px;
 }
@@ -140,4 +144,12 @@ button:active {
 .up-down-field button {
     padding: 12px;
     font-size: 26px;
+}
+
+/* Procedure Creation */
+.procedure_steps_table td,
+.procedure_steps_table div,
+.procedure_steps_table input,
+.procedure_steps_table select{
+    min-height: 68px;
 }

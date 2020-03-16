@@ -55,7 +55,7 @@
 
 (defn jar-contents [prog-atm]
   [:div
-   [:h3 "Jar Contents"]
+   [:h2 "Jar Contents"]
    [:table [:tbody [:tr [:th "Jar #"] [:th "Substance"]]
             (map-indexed (fn [idx substance]
                            ^{:key idx}
@@ -193,8 +193,8 @@
                      "){" graphql/procedure-keys "}}")]
       [:div
        
-       [:h3 "Procedure Steps"]
-       [:table
+       [:h2 "Procedure Steps"]
+       [:table {:class "procedure_steps_table"}
         [:tbody [:tr [:th "Step #"] [:th "Substance"] [:th "Time"] [:th "Jar #"]]
          (map-indexed (fn [idx step]
                         (let [step-cursor (reagent/cursor steps-cursor [idx])]
@@ -211,7 +211,7 @@
                                                                      (println (drop-nth steps idx))
                                                                      (drop-nth steps idx))))} "x"]]]))
                       @steps-cursor)]]
-       [:button {:on-click (fn [e] (swap! steps-cursor conj {}))} "+"]
+       [:button {:on-click (fn [e] (swap! steps-cursor conj {}))} "+ Add step"]
        [up-down-field "Repeat: " repeat-cursor]
        
        [:button {:on-click (slide-stainer.graphql/graphql-fn
