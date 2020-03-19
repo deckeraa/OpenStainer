@@ -194,25 +194,27 @@
       [:div
        
        [:h2 "Procedure Steps"]
-       [:table {:class "procedure_steps_table"}
-        [:tbody [:tr [:th "Step #"] [:th "Substance"] [:th "Time"] [:th "Jar #"]]
-         (map-indexed (fn [idx step]
-                        (let [step-cursor (reagent/cursor steps-cursor [idx])]
-                          ^{:key idx}
-                          [:tr
-                           [:td (inc idx)]
-                           [:td [substance-selector substance-options step-cursor]]
-                           [:td [time-display step-cursor]]
-                           [:td [jar-selector substance-options step-cursor]]
-                           [:td [:button {:on-click (fn [e] (swap! steps-cursor
-                                                                   (fn [steps]
-                                                                     (println steps)
-                                                                     (println idx)
-                                                                     (println (drop-nth steps idx))
-                                                                     (drop-nth steps idx))))} "x"]]]))
-                      @steps-cursor)]]
-       [:button {:on-click (fn [e] (swap! steps-cursor conj {}))} "+ Add step"]
-       [up-down-field "Repeat: " repeat-cursor]
+       [:div {:class "procedure_steps_table_region"}
+        [:table {:class "procedure_steps_table"}
+         [:tbody [:tr [:th "Step #"] [:th "Substance"] [:th "Time"] [:th "Jar #"]]
+          (map-indexed (fn [idx step]
+                         (let [step-cursor (reagent/cursor steps-cursor [idx])]
+                           ^{:key idx}
+                           [:tr
+                            [:td (inc idx)]
+                            [:td [substance-selector substance-options step-cursor]]
+                            [:td [time-display step-cursor]]
+                            [:td [jar-selector substance-options step-cursor]]
+                            [:td [:button {:on-click (fn [e] (swap! steps-cursor
+                                                                    (fn [steps]
+                                                                      (println steps)
+                                                                      (println idx)
+                                                                      (println (drop-nth steps idx))
+                                                                      (drop-nth steps idx))))} "x"]]]))
+                       @steps-cursor)]]
+        [:button {:on-click (fn [e] (swap! steps-cursor conj {}))} "+ Add step"]]
+       [:div {:class "repeat-control-div"}
+        [up-down-field "Repeat: " repeat-cursor]]
        
        [:button {:on-click (slide-stainer.graphql/graphql-fn
                             {:query save-query
@@ -230,13 +232,15 @@
    [:div
     [:div {:class "nav-header"}
      (when back-fn [svg/chevron-left {:class "chevron-left" :on-click back-fn} "blue" 36])
-     [:h1 "Procedure Steps"]]
-    [osk/osk-input osk-atm
-                                  {:on-change (fn [new-val]
-                                                (println "Change handler called: " new-val)
-                                                (swap! prog-atm (fn [x] (assoc x :name new-val))))
-                                   :value (:name @prog-atm)
-                                   :size 40}]
+     [:h1 "Procedure Definition"]]
+    [:div
+     [:label "Procedure Name"]
+     [osk/osk-input osk-atm
+      {:on-change (fn [new-val]
+                    (println "Change handler called: " new-val)
+                    (swap! prog-atm (fn [x] (assoc x :name new-val))))
+       :value (:name @prog-atm)
+       :size 40}]]
     [jar-contents prog-atm]
     [procedure-steps prog-atm procedure-run-status-cursor run-fn]
     [:div (str @prog-atm)]

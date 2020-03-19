@@ -153,3 +153,11 @@ button:active {
 .procedure_steps_table select{
     min-height: 68px;
 }
+
+.procedure_steps_table_region {
+    margin-bottom: 30px;
+}
+
+.repeat-control-div {
+    margin: 30px;
+}
