@@ -150,8 +150,22 @@ button:active {
 .procedure_steps_table td,
 .procedure_steps_table div,
 .procedure_steps_table input,
-.procedure_steps_table select{
-    min-height: 68px;
+.procedure_steps_table select,
+.procedure_steps_table button{
+    min-height: 40px;
+    font-size: 18px;
+    padding-left: 2px;
+    padding-right: 2px;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.procedure_steps_table div {
+    min-height: 0px;
+}
+
+.procedure_steps_table button{
+    padding: 10px;
 }
 
 .procedure_steps_table_region {
