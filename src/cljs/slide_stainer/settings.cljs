@@ -75,6 +75,12 @@
      [:button {:on-click #(http/post "http://localhost:8000/move_to_up_position")} "Up"]
      [:button {:on-click #(http/post "http://localhost:8000/move_to_down_position")} "Down"]]))
 
+(defn kiosk-control []
+  (fn []
+    [:div
+     [:h2 "Kiosk mode"]
+     [:button {:on-click #(http/post "http://localhost:8000/exit_kiosk_mode")} "Restart in non-kiosk mode"]]))
+
 (defn settings-control [ratom back-fn]
   (fn []
     [:div
@@ -85,4 +91,5 @@
      [positions-and-home atoms/stepperX-cursor atoms/stepperZ-cursor]
      [jar-jog-control]
      [up-down-control]
+     [kiosk-control]
      ]))

@@ -41,7 +41,7 @@ su -l pi /home/pi/code/slide-stainer/run.sh &
 
 In /etc/xdg/lxsession/LXDE-pi/autostart, place the following:
 ```
-chromium-browser http://localhost:8000/index.html &
+chromium-browser http://localhost:8000/index.html --kiosk
 ```
 
 ## Production Build

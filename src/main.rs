@@ -21,6 +21,7 @@ use rocket_cors::{AllowedHeaders, AllowedOrigins};
 use std::time::{Instant};
 use std::sync::atomic::Ordering;
 use atomic_enum::*;
+use std::process::Command;
 
 const LEFT_POSITION: Inch = 0.35;
 const UP_POSITION: Inch = 3.5;
@@ -905,7 +906,6 @@ fn pos(pi: State<SharedPi>, axis: AxisDirection) -> String {
 
 #[get("/couch")]
 fn couch() -> String {
-    //let resp = reqwest::blocking::get("https://httpbin.org/ip").unwrap()
     let resp = reqwest::blocking::get("http://localhost:5984/slide_stainer/_design/procedures/_view/procedures?include_docs=true");
     if resp.is_ok() {
 	let json = resp.unwrap().json::<ViewResult<Procedure>>().unwrap();
@@ -913,16 +913,19 @@ fn couch() -> String {
 	return s;
     }
     return "Couldn't query the view".to_string();
-    
-    // match resp {
-    // 	Ok(r) => return format!("{:?}", r.json::<ViewResult<Procedure>>().unwrap()),
-    // 	Err(_e) => return "Couldn't query view".to_string(),
-    // }
-				
-				
-//         .json::<HashMap<String, String>>().unwrap();
-//    format!("{:#?}", resp)
 }
+
+#[post("/exit_kiosk_mode")]
+fn exit_kiosk_mode() -> String {
+    let mut command = Command::new("./exit_kiosk_mode.sh");
+    let result = match command.status() {
+	Ok(r) => r.to_string(),
+	Err(e) => e.to_string(),
+    };
+    format!("{:?} {}",command, result)
+}
+
+
 
 fn main() {
     let shared_pi = Mutex::new(Pi {
@@ -1003,6 +1006,7 @@ fn main() {
 		pause_procedure,
 		resume_procedure,
 		read_procedure_status,
+		exit_kiosk_mode,
             ],)
 	.mount("/",StaticFiles::from("./resources/public/"))
 	.attach(cors)
