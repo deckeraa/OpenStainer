@@ -6,7 +6,8 @@
             [clojure.edn :as edn]
             [slide-stainer.svg :as svg]
             [slide-stainer.graphql :as graphql]
-            [slide-stainer.onscreen-keyboard :as osk])
+            [slide-stainer.onscreen-keyboard :as osk]
+            [slide-stainer.atoms :as atoms])
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
 
 (def number-of-jars 6)
@@ -243,7 +244,8 @@
        :size 40}]]
     [jar-contents prog-atm]
     [procedure-steps prog-atm procedure-run-status-cursor run-fn]
-    [:div (str @prog-atm)]
+    (when (:developer @atoms/settings-cursor)
+      [:div (str @prog-atm)])
     [slide-stainer.onscreen-keyboard/onscreen-keyboard osk-atm]]))
 
 (defcard-rg procedure-edit-card
