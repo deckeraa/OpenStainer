@@ -199,7 +199,7 @@
   (fn []
     [:div
      [:div {:class "header"}
-      [:h1 "OpenStain"]
+      [:h1 "OpenStainer"]
       [:h2 "v1.0.0"]
       (when (> (count (filter true? (vals @atoms/alarms-cursor))) 0)
         [svg/bell {:class "bell" :on-click #(swap! atoms/screen-cursor conj :settings)} "white" 36])
