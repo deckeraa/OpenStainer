@@ -81,6 +81,16 @@
      [:h2 "Kiosk mode"]
      [:button {:on-click #(http/post "http://localhost:8000/exit_kiosk_mode")} "Restart in non-kiosk mode"]]))
 
+(defn developer-mode-control []
+  (fn []
+    [:div
+     [:h2 "Developer mode"]
+     [:input {:type "checkbox"
+              :on-click (fn [e]
+                          (swap! atoms/settings-cursor (fn [atm] (assoc atm :developer (not (:developer atm))))))
+              :checked (get-in @atoms/settings-cursor [:developer])}]
+     [:label "Display program state information"]]))
+
 (defn settings-control [ratom back-fn]
   (fn []
     [:div
@@ -92,4 +102,5 @@
      [jar-jog-control]
      [up-down-control]
      [kiosk-control]
+     [developer-mode-control]
      ]))

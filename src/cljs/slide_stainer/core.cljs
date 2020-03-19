@@ -236,7 +236,8 @@
          #(swap! atoms/screen-cursor pop) ;; TODO make this stop the currently running staining procedure (maybe?)
          ])
       (when (= :settings (peek @atoms/screen-cursor)) [slide-stainer.settings/settings-control ratom #(swap! atoms/screen-cursor pop)])
-      [:div {} (str @ratom)]]
+      (when (:developer @atoms/settings-cursor)
+        [:div {} (str @ratom)])]
      ]))
 
 (def queries-to-run
