@@ -165,7 +165,7 @@
     (remove (fn [[idx itm]] (= n idx)) $)
     (mapv (fn [[idx itm]] itm) $)))
 
-(defn run-button [procedure-run-status-cursor prog-atm run-fn]
+(defn run-button [style procedure-run-status-cursor prog-atm run-fn]
   (fn []
     [:button {:on-click (fn [e]
                           (println "run-button: " procedure-run-status-cursor)
@@ -178,8 +178,8 @@
                                            (reset! procedure-run-status-cursor (get-in resp [:runStatus]))
                                            (println "run-fn: " run-fn)
                                            (when run-fn (run-fn @prog-atm))
-                                           )}))
-                          )
+                                           )})))
+              :style (or style {})
               } "Run"]))
 
 (defn procedure-steps [prog-atm procedure-run-status-cursor run-fn]
@@ -216,15 +216,22 @@
         [:button {:on-click (fn [e] (swap! steps-cursor conj {}))} "+ Add step"]]
        [:div {:class "repeat-control-div"}
         [up-down-field "Repeat: " repeat-cursor]]
-       
-       [:button {:on-click (slide-stainer.graphql/graphql-fn
-                            {:query save-query
-                             :handler-fn (fn [resp]
-                                           (println "Save button's response" resp)
-                                           (when resp (reset! prog-atm (:saveProcedure resp))))})} "Save"]
-       [run-button procedure-run-status-cursor prog-atm run-fn]
-       [:button {:on-click (fn [e] (go (let [resp (<! (http/post (str "http://localhost:8000/delete_procedure/" (:_id @prog-atm))))]
-                                         (println "Deleted resp: " resp))))} "Delete"]
+
+       [:div {:style {:display :flex
+                      :justify-content :space-between}}
+        [:button {:on-click (fn [e] (go (let [resp (<! (http/post (str "http://localhost:8000/delete_procedure/" (:_id @prog-atm))))]
+                                          (println "Deleted resp: " resp))))
+                  :title "Delete procedure"} [svg/trash {} "white" "40px"]]
+        [:div
+         [:button {:on-click (slide-stainer.graphql/graphql-fn
+                              {:query save-query
+                               :handler-fn (fn [resp]
+                                             (println "Save button's response" resp)
+                                             (when resp (reset! prog-atm (:saveProcedure resp))))})} "Save"]
+         [run-button procedure-run-status-cursor prog-atm run-fn]]
+
+
+        ]
        ])))
 
 (defn program-creation
@@ -241,7 +248,8 @@
                     (println "Change handler called: " new-val)
                     (swap! prog-atm (fn [x] (assoc x :name new-val))))
        :value (:name @prog-atm)
-       :size 40}]]
+       :size 40}]
+     ]
     [jar-contents prog-atm]
     [procedure-steps prog-atm procedure-run-status-cursor run-fn]
     (when (:developer @atoms/settings-cursor)
