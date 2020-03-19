@@ -85,7 +85,7 @@
                                           (assoc $ :substance new-substance)
                                           (assoc $ :jarNumber (inc (.indexOf option-list new-substance))))))))}
        (map-indexed (fn [idx option] ^{:key idx} [:option {:value option} option])
-                    (if (empty? substance) (cons "" option-list) option-list))])))
+                    (distinct (if (empty? substance) (cons "" option-list) option-list)))])))
 
 (defn jar-selector [option-list step-cursor]
   (fn [option-list step-cursor]
