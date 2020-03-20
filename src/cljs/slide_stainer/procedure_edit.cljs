@@ -182,7 +182,7 @@
               :style (or style {})
               } "Run"]))
 
-(defn procedure-steps [prog-atm procedure-run-status-cursor run-fn]
+(defn procedure-steps [prog-atm procedure-run-status-cursor run-fn back-fn]
   (fn []
     (let [steps-cursor (reagent/cursor prog-atm [:procedureSteps])
           repeat-cursor (reagent/cursor prog-atm [:repeat])
@@ -220,7 +220,8 @@
        [:div {:style {:display :flex
                       :justify-content :space-between}}
         [:button {:on-click (fn [e] (go (let [resp (<! (http/post (str "http://localhost:8000/delete_procedure/" (:_id @prog-atm))))]
-                                          (println "Deleted resp: " resp))))
+                                          (println "Deleted resp: " resp)
+                                          (back-fn))))
                   :title "Delete procedure"} [svg/trash {} "white" "40px"]]
         [:div
          [:button {:on-click (slide-stainer.graphql/graphql-fn
@@ -251,7 +252,7 @@
        :size 40}]
      ]
     [jar-contents prog-atm]
-    [procedure-steps prog-atm procedure-run-status-cursor run-fn]
+    [procedure-steps prog-atm procedure-run-status-cursor run-fn back-fn]
     (when (:developer @atoms/settings-cursor)
       [:div (str @prog-atm)])
     [slide-stainer.onscreen-keyboard/onscreen-keyboard osk-atm]]))
