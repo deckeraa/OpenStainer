@@ -9,7 +9,7 @@
    [slide-stainer.graphql :as graphql]
    [slide-stainer.periodic-updater]
    [slide-stainer.settings]
-   [slide-stainer.program-creation]
+   [slide-stainer.procedure-edit]
    [slide-stainer.procedure-selection]
    [slide-stainer.procedure-run])
   (:require-macros
@@ -205,19 +205,13 @@
         [svg/bell {:class "bell" :on-click #(swap! atoms/screen-cursor conj :settings)} "white" 36])
       [svg/cog {:class "cog" :on-click #(swap! atoms/screen-cursor conj :settings)} "white" 36]]
      [:div {:class "body"}
-      [:div {:class "button-bar"}
-       ;; [:button {:on-click #(replace-current-screen atoms/screen-cursor :jog)} "Jog"]
-       ;; [:button {:on-click #(replace-current-screen atoms/screen-cursor :procedure-selection)} "Procedure Selection"]
-       ;; [:button {:on-click #(replace-current-screen atoms/screen-cursor :program-creation)} "Program Creation"]
-       ;; [:button {:on-click #(replace-current-screen atoms/screen-cursor :procedure-run)} "Procedure Run Status"]
-       ]
       (when (= :jog (peek @atoms/screen-cursor)) [jog-control ratom])
       (when (= :procedure-selection (peek @atoms/screen-cursor))
         [slide-stainer.procedure-selection/procedure-selection atoms/procedure-list-cursor atoms/procedure-cursor
-         #(swap! atoms/screen-cursor conj :program-creation)
+         #(swap! atoms/screen-cursor conj :procedure-edit)
          ])
-      (when (= :program-creation (peek @atoms/screen-cursor))
-        [slide-stainer.program-creation/program-creation
+      (when (= :procedure-edit (peek @atoms/screen-cursor))
+        [slide-stainer.procedure-edit/procedure-edit
          atoms/procedure-cursor
          atoms/procedure-run-status-cursor
          #(swap! atoms/screen-cursor pop)

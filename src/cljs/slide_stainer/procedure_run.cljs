@@ -7,7 +7,7 @@
             [slide-stainer.svg :as svg]
             [slide-stainer.graphql :as graphql]
             [slide-stainer.onscreen-keyboard :as osk]
-            [slide-stainer.program-creation]
+            [slide-stainer.procedure-edit]
             [cljs-time.core :as time]
             [cljs-time.format :as format])
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
@@ -81,7 +81,7 @@
                                         (println "pause_procedure " resp))))} "Pause"]
       [:button {:on-click (fn [e] (go (let [resp (<! (http/post "http://localhost:8000/resume_procedure"))]
                                         (println "resume_procedure " resp))))} "Resume"]
-      [slide-stainer.program-creation/run-button procedure-run-status-cursor procedure-cursor nil]
+      [slide-stainer.procedure-edit/run-button procedure-run-status-cursor procedure-cursor nil]
       ])))
 
 (defcard-rg procedure-run-status-card

@@ -1,4 +1,4 @@
-(ns slide-stainer.program-creation
+(ns slide-stainer.procedure-edit
   (:require [reagent.core :as reagent]
             [cljs-http.client :as http]
             [devcards.core :refer-macros [deftest defcard-rg]]
@@ -234,8 +234,8 @@
         ]
        ])))
 
-(defn program-creation
-  ([] (program-creation sample-program-atom (reagent/atom {}) nil nil))
+(defn procedure-edit
+  ([] (procedure-edit sample-program-atom (reagent/atom {}) nil nil))
   ([prog-atm procedure-run-status-cursor back-fn run-fn]
    [:div
     [:div {:class "nav-header"}
@@ -257,4 +257,4 @@
     [slide-stainer.onscreen-keyboard/onscreen-keyboard osk-atm]]))
 
 (defcard-rg procedure-edit-card
-  [program-creation])
+  [procedure-edit])

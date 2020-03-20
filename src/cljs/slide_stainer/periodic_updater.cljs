@@ -5,7 +5,7 @@
    [cljs-http.client :as http]
    [clojure.edn :as edn]
    [slide-stainer.graphql :as graphql]
-   [slide-stainer.program-creation]
+   [slide-stainer.procedure-edit]
    [slide-stainer.procedure-selection]
    [slide-stainer.procedure-run])
   (:require-macros
