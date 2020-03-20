@@ -371,6 +371,30 @@ impl Mutation {
 	procedure_by_id(parse_result.unwrap().id)
     }
 
+    fn delete_procedure(id: String, rev: String) -> FieldResult<Vec<Procedure>> {
+	let client = reqwest::blocking::Client::new();
+	let url : &str = &format!("http://localhost:5984/slide_stainer/{}?rev={}",id,rev).to_string();
+	let resp = client.delete(url).send();
+
+	if resp.is_err() {
+	    return Err(juniper::FieldError::new(format!("Unable to communicate with CouchDB server"),graphql_value!({"internal_error":"Unable to communicate with CouchDB server"})));
+	}
+	let resp = resp.unwrap();
+	if resp.status() != 200 {
+	    return Err(juniper::FieldError::new(format!("Recieved status {} and text {:?} from CouchDB when attempting to delete.",resp.status(),resp.text()),graphql_value!({"internal_error":"Unable to delete from CouchDB"})));
+	}
+	println!("delete_procedure text: {:?}", resp.text());
+	
+	let resp = reqwest::blocking::get("http://localhost:5984/slide_stainer/_design/procedures/_view/procedures?include_docs=true");
+	if resp.is_ok() {
+	    let view_result = resp.unwrap().json::<ViewResult<Procedure>>().unwrap();
+	    let v : Vec<Procedure> = view_result.rows.into_iter().map(|row| row.doc ).collect();
+	    println!("Returning procedures: {:?}",v);
+	    return Ok(v);
+	}
+	return Ok(vec![]); // TODO probably something better to do than return an empty array
+    }
+
     // fn home(pi_state: State<SharedPi>) -> FieldResult<> {
     // 	{
     // 	    let pi_mutex = &mut pi_state.inner();
@@ -403,14 +427,14 @@ fn graphiql() -> rocket::response::content::Html<String> {
     juniper_rocket::graphiql_source("/graphql")
 }
 
-#[rocket::post("/delete_procedure/<id>")]
-fn delete_procedure(id: String) -> String {
-    let client = reqwest::blocking::Client::new();
-    let url : &str = &format!("http://localhost:5984/slide_stainer/{}",id).to_string();
-    let resp = client.delete(url);
-    println!("delete_procedure resp: {:?}",resp);
-    "true".to_string()
-}
+// #[rocket::post("/delete_procedure/<id>")]
+// fn delete_procedure(id: String) -> String {
+//     let client = reqwest::blocking::Client::new();
+//     let url : &str = &format!("http://localhost:5984/slide_stainer/{}",id).to_string();
+//     let resp = client.delete(url);
+//     println!("delete_procedure resp: {:?}",resp);
+//     "true".to_string()
+// }
 
 #[derive(Debug, PartialEq, Eq)]
 enum MoveResult {
@@ -1001,7 +1025,7 @@ fn main() {
 		graphiql,
 		post_graphql_handler,
 		couch,
-		delete_procedure,
+		// delete_procedure,
 		run_procedure,
 		pause_procedure,
 		resume_procedure,

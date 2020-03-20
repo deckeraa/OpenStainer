@@ -219,9 +219,14 @@
 
        [:div {:style {:display :flex
                       :justify-content :space-between}}
-        [:button {:on-click (fn [e] (go (let [resp (<! (http/post (str "http://localhost:8000/delete_procedure/" (:_id @prog-atm))))]
-                                          (println "Deleted resp: " resp)
-                                          (back-fn))))
+        [:button {:on-click (slide-stainer.graphql/graphql-fn
+                             {:query (str "mutation{deleteProcedure(id:\"" (:_id @prog-atm) \"",rev:\"" (:_rev @prog-atm) "\"){_id,name,runs}}")
+                              :handler-fn (fn [resp]
+                                            (println "Delete button's response" resp)
+                                            (back-fn))})
+                  ;; (fn [e] (go (let [resp (<! (http/post (str "http://localhost:8000/delete_procedure/" (:_id @prog-atm) "?rev=" (:_rev @prog-atm))))]
+                            ;;               (println "Deleted resp: " resp)
+                            ;;               (back-fn))))
                   :title "Delete procedure"} [svg/trash {} "white" "40px"]]
         [:div
          [:button {:on-click (slide-stainer.graphql/graphql-fn
