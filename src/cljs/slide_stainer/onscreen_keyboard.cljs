@@ -41,9 +41,12 @@
                 :on-click focus-fn
                 :on-blur blur-fn
                 :on-change (fn [e]
-                             (reset! input-atm (-> e .-target .-value))
-                             (println "on-change" args)
-                             (when (:on-change args) ((:on-change args) @input-atm)))
+                             (println "on-change what's in the input-atm" @input-atm)
+                             (let [before @input-atm
+                                   change-fn (:on-change args)]
+                               (reset! input-atm (-> e .-target .-value))
+                               (println "on-change" args)
+                               (when change-fn (change-fn @input-atm before input-atm))))
                 :on-key-down (fn [e]
                                (when (= RETURN_KEY_CODE (-> e .-keyCode))
                                  (blur-fn)))

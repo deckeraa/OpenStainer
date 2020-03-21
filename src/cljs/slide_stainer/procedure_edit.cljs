@@ -120,6 +120,36 @@
   (is (= [1 "01"] (parse-and-pad "1")))
   (is (= [0 "00"] (parse-and-pad ""))))
 
+(defn rotate-seconds [old-time new-time]
+  (let [[o1 o2] (vec old-time)
+        [n1 n2 n3] (vec new-time)]
+    (cond
+      ;; case 1: they appended to the end of the string
+      (and (= o1 n1) (= o2 n2))
+      (str n2 n3)
+      ;; case 2: they appended to the beginning of the string
+      (and (= o1 n2) (= o2 n3))
+      (str n1 n2)
+      ;; case 3: they appended to the middle of the string
+      (and (= o1 n1) (= o2 n3))
+      (str n1 n2)
+      ;; case 4: they deleted the second character
+      (and (= o1 n1) (= n2 nil))
+      (str "0" n1)
+      ;; case 5: they deleted the first character
+      (and (= o2 n1) (= n2 nil))
+      (str n1 "0")
+      :default
+      [o1 o2 n1 n2 n3])))
+
+(deftest test-rotate-seconds
+  (is (= (rotate-seconds "12" "123") "23"))
+  (is (= (rotate-seconds "01" "012") "12"))
+  (is (= (rotate-seconds "10" "210") "21"))
+  (is (= (rotate-seconds "10" "120") "12"))
+  (is (= (rotate-seconds "10" "1")   "01"))
+  (is (= (rotate-seconds "21" "1")   "10")))
+
 (defn time-display [step-cursor]
   (let [time_in_seconds (:timeInSeconds @step-cursor)
         minutes (Math/floor (/  time_in_seconds 60))
@@ -135,18 +165,21 @@
        [osk/osk-input osk-atm
         {:type "text" :value @minutes-atm
          :size 2
-         :on-change (fn [new-minutes] 
-                      (println new-minutes (type new-minutes))
-                      (when (re-matches #"[0-9]*" new-minutes)
-                        (reset! minutes-atm new-minutes)))
+         :on-change (fn [new-minutes old-minutes input-atm] 
+                      (println ":on-change" new-minutes old-minutes)
+                      (when (not (re-matches #"[0-9]*" new-minutes))
+                        (reset! input-atm old-minutes)))
          :on-blur (fn [_] (update-seconds))}]
        ":"
        [osk/osk-input osk-atm
         {:type "text" :value @seconds-atm
                 :size 2
-         :on-change (fn [new-seconds]
-                      (when (re-matches #"^[0-9]{0,2}$" new-seconds)
-                        (reset! seconds-atm new-seconds)))
+         :on-change (fn [new-seconds old-seconds input-atm]
+                      ;; filter out non-numeric input
+                      (when (not (re-matches #"[0-9]*" new-seconds))
+                        (reset! input-atm old-seconds))
+                      ;; rotate seconds as appropriate
+                      (reset! input-atm (rotate-seconds old-seconds new-seconds)))
          :on-blur (fn [_]
                     (let [parsed-seconds (parse-and-pad @seconds-atm)]
                       (reset! seconds-atm (second parsed-seconds))
