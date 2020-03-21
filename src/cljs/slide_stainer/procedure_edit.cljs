@@ -234,12 +234,8 @@
                               {:query save-query 
                                :handler-fn (fn [resp raw-resp]
                                              (if (= 200 (:status raw-resp))
-                                               (toaster-oven/add-toast [:div {}
-                                                                        [svg/check {:style {:display :inline-block :padding "8px"}} "green" 32]
-                                                                        "Saved successfully."])
-                                               (toaster-oven/add-toast [:div {}
-                                                                        [svg/x {:style {:display :inline-block :padding "8px"}} "red" 32]
-                                                                        "Couldn't save."]))
+                                               (toaster-oven/add-toast "Saved successfully." svg/check "green")
+                                               (toaster-oven/add-toast "Couldn't save." svg/x "red"))
                                              (println "Save button's response" resp)
                                              (when resp (reset! prog-atm (:saveProcedure resp))))})} "Save"]
          [run-button procedure-run-status-cursor prog-atm run-fn]]

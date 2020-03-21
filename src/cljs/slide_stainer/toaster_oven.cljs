@@ -9,25 +9,30 @@
 
 (def toasting-time (* 5 1000))
 
-(defn add-toast [toast]
-  (swap! atoms/toaster-cursor (fn [atm]
-                                (as-> atm $
-                                  (assoc $ :toasts (conj (:toasts $) toast))
-                                  (assoc $ :toast-count (inc (:toast-count $))))))
-  ;; add timeout
-  (js/setTimeout (fn []
-                   (swap! atoms/toaster-cursor (fn [atm]
-                                                 (as-> atm $
+(defn add-toast
+  ([toast]
+   (swap! atoms/toaster-cursor (fn [atm]
+                                 (as-> atm $
+                                   (assoc $ :toasts (conj (:toasts $) toast))
+                                   (assoc $ :toast-count (inc (:toast-count $))))))
+   ;; add timeout
+   (js/setTimeout (fn []
+                    (swap! atoms/toaster-cursor (fn [atm]
+                                                  (as-> atm $
                                         ; decrement the counter, which is used to make it so that everytime a toast is
                                         ; added, the timer is "reset" without needing to do any js timer shenaningans
-                                                   (assoc $ :toast-count (dec (:toast-count $)))
+                                                    (assoc $ :toast-count (dec (:toast-count $)))
                                         ; if we're the last timer out there, go ahead and clear out the current toasts
-                                                   (if (= 0 (:toast-count $))
-                                                     (do
-                                                       (assoc $ :old-toasts (conj (:old-toasts $) toast))
-                                                       (assoc $ :toasts []))
-                                                     $)))))
-                 toasting-time)
+                                                    (if (= 0 (:toast-count $))
+                                                      (do
+                                                        (assoc $ :old-toasts (conj (:old-toasts $) toast))
+                                                        (assoc $ :toasts []))
+                                                      $)))))
+                  toasting-time))
+  ([toast-msg icon-fn color]
+   (add-toast [:div {}
+               [icon-fn {:style {:display :inline-block :padding "8px"}} color 32]
+               toast-msg]))
   )
 
 (defn get-toasts []
