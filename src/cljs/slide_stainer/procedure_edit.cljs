@@ -7,7 +7,8 @@
             [slide-stainer.svg :as svg]
             [slide-stainer.graphql :as graphql]
             [slide-stainer.onscreen-keyboard :as osk]
-            [slide-stainer.atoms :as atoms])
+            [slide-stainer.atoms :as atoms]
+            [slide-stainer.toaster-oven :as toaster-oven])
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
 
 (def number-of-jars 6)
@@ -230,8 +231,15 @@
                   :title "Delete procedure"} [svg/trash {} "white" "40px"]]
         [:div
          [:button {:on-click (slide-stainer.graphql/graphql-fn
-                              {:query save-query
-                               :handler-fn (fn [resp]
+                              {:query save-query 
+                               :handler-fn (fn [resp raw-resp]
+                                             (if (= 200 (:status raw-resp))
+                                               (toaster-oven/add-toast [:div {}
+                                                                        [svg/check {:style {:display :inline-block :padding "8px"}} "green" 32]
+                                                                        "Saved successfully."])
+                                               (toaster-oven/add-toast [:div {}
+                                                                        [svg/x {:style {:display :inline-block :padding "8px"}} "red" 32]
+                                                                        "Couldn't save."]))
                                              (println "Save button's response" resp)
                                              (when resp (reset! prog-atm (:saveProcedure resp))))})} "Save"]
          [run-button procedure-run-status-cursor prog-atm run-fn]]
