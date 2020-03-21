@@ -11,7 +11,8 @@
    [slide-stainer.settings]
    [slide-stainer.procedure-edit]
    [slide-stainer.procedure-selection]
-   [slide-stainer.procedure-run])
+   [slide-stainer.procedure-run]
+   [slide-stainer.toaster-oven :as toaster-oven])
   (:require-macros
    [cljs.core.async.macros :refer [go go-loop]]
    [devcards.core :refer [defcard defcard-rg]]))
@@ -232,6 +233,7 @@
       (when (= :settings (peek @atoms/screen-cursor)) [slide-stainer.settings/settings-control ratom #(swap! atoms/screen-cursor pop)])
       (when (:developer @atoms/settings-cursor)
         [:div {} (str @ratom)])]
+     [toaster-oven/toaster-control]
      ]))
 
 (def queries-to-run
