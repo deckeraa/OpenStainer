@@ -176,10 +176,9 @@
                 :size 2
          :on-change (fn [new-seconds old-seconds input-atm]
                       ;; filter out non-numeric input
-                      (when (not (re-matches #"[0-9]*" new-seconds))
-                        (reset! input-atm old-seconds))
-                      ;; rotate seconds as appropriate
-                      (reset! input-atm (rotate-seconds old-seconds new-seconds)))
+                      (if (not (re-matches #"[0-9]*" new-seconds))
+                        (reset! input-atm old-seconds)
+                        (reset! input-atm (rotate-seconds old-seconds new-seconds))))
          :on-blur (fn [_]
                     (let [parsed-seconds (parse-and-pad @seconds-atm)]
                       (reset! seconds-atm (second parsed-seconds))

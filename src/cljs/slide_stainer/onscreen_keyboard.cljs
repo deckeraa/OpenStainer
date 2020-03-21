@@ -90,7 +90,8 @@ and returns the properly shifted string."
      ^{:key val}
      [:button {:on-click (fn [e]
                            (when (and input-atm el-atm)
-                             (let [cursor-pos (.-selectionStart @el-atm)]
+                             (let [cursor-pos (.-selectionStart @el-atm)
+                                   before @input-atm]
                                (if special-click-handler ; if we have a special handler (for example, Backspace)...
                                  (special-click-handler osk-atm e input-atm el-atm cursor-pos) ; ... then run that ...
                                  (swap! input-atm (fn [v] ; ... otherwise, insert val at the cursor position
@@ -99,7 +100,7 @@ and returns the properly shifted string."
                                                          (subs v cursor-pos (count v))))))
                                (when (:args @osk-atm)
                                  (when-let [change-fn (get-in @osk-atm [:args :on-change])] 
-                                   (change-fn @input-atm))))))
+                                   (change-fn @input-atm before input-atm))))))
                :on-mouse-down (fn [e] ; try to avoid the event from bubbling so far as to take focus away from the input field
                                 (.preventDefault e))}
       (if icon
