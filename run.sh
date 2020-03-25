@@ -1,21 +1,17 @@
 #!/bin/bash
 
-# CouchDB should already be running (started in /etc/rc.local).
+# CouchDB should already be running (started in /etc/rc.local before this gets called).
 
 cd /home/pi/code/slide-stainer
 
-# Start Real-time Motion Rust Micro-service
+# Start Rust web server
 sudo ./target/debug/rmrm &
 
-# Start the Clojure web & GraphQL server
-# java -jar ./target/slide-stainer-0.1.0-SNAPSHOT-standalone.jar &
-
 # Turn off power saving and the screen saver
-# xset -dpms
-# xset s off
-# xset s noblank
+xset -dpms
+xset s off
+xset s noblank
 
 unclutter &
 
-# Open up the web app in Chromium
-# chromium-browser http://localhost:8000/index.html &
+# The web app gets opened up in /etc/xdg/lxsession/LXDE-pi/autostart when the graphical session starts
