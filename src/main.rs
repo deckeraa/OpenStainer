@@ -34,6 +34,9 @@ struct Pi {
     stepper_x: Stepper,
     stepper_z: Stepper,
     estop: gpio::sysfs::SysFsGpioInput,
+    green_button: gpio::sysfs::SysFsGpioInput,
+    red_light: gpio::sysfs::SysFsGpioOutput,
+    green_light: gpio::sysfs::SysFsGpioOutput,
     current_procedure: Option<Procedure>,
     run_status: Option<ProcedureRunStatus>,
 }
@@ -76,6 +79,7 @@ enum ProcedureExecutionStateEnum {
     Completed,
 }
 
+#[derive(Debug)]
 struct ProcedureExecutionState {
     atm: AtomicProcedureExecutionStateEnum,
 }
@@ -573,6 +577,7 @@ fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, is_h
         // check estop
         if opt_pes.is_none() && bool::from(pi.estop.read_value().unwrap()) {
             hit_e_stop = true;
+	    println!("Hit estop!");
             break;
         }
 	if opt_pes.is_some() {
@@ -656,6 +661,10 @@ fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, is_h
 
 fn home(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
     let ret_one = move_steps(pi, AxisDirection::Z, true, 160000, true, None);
+    println!("Result of first home move {:?}",ret_one);
+    if ret_one == MoveResult::HitEStop || ret_one == MoveResult::FailedToHome{
+	return MoveResult::FailedToHome;
+    }
     let ret_two = move_steps(pi, AxisDirection::X, false, 320000, true, None);
     if ret_one == MoveResult::HitLimitSwitch && ret_two == MoveResult::HitLimitSwitch {
         move_to_up_position(pi, opt_pes);
@@ -700,6 +709,7 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 	    current_cycle_number: 0,
 	    run_state: ProcedureExecutionStateEnum::Running,
 	});
+	pi.red_light.set_high().expect("Couldn't turn on estop light.");
     }
 
     let num_repeats = match proc.repeat {
@@ -768,6 +778,7 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 	    return format! {"Stopped due to e-stop being hit."}
 	}
 	pi.run_status = None;
+	pi.red_light.set_low().expect("Couldn't turn off estop light.");
     }
     
     format! {"run_procedure return value TODO"}
@@ -954,6 +965,9 @@ fn exit_kiosk_mode() -> String {
 fn main() {
     let shared_pi = Mutex::new(Pi {
         estop: gpio::sysfs::SysFsGpioInput::open(25).unwrap(),
+	green_button: gpio::sysfs::SysFsGpioInput::open(18).unwrap(),
+	red_light: gpio::sysfs::SysFsGpioOutput::open(24).unwrap(),
+	green_light: gpio::sysfs::SysFsGpioOutput::open(23).unwrap(),
         stepper_x: Stepper {
             ena: gpio::sysfs::SysFsGpioOutput::open(2).unwrap(),
             dir: gpio::sysfs::SysFsGpioOutput::open(4).unwrap(),
