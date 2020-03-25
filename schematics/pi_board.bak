@@ -1,0 +1,166 @@
+EESchema Schematic File Version 2
+LIBS:power
+LIBS:device
+LIBS:switches
+LIBS:relays
+LIBS:motors
+LIBS:transistors
+LIBS:conn
+LIBS:linear
+LIBS:regul
+LIBS:74xx
+LIBS:cmos4000
+LIBS:adc-dac
+LIBS:memory
+LIBS:xilinx
+LIBS:microcontrollers
+LIBS:dsp
+LIBS:microchip
+LIBS:analog_switches
+LIBS:motorola
+LIBS:texas
+LIBS:intel
+LIBS:audio
+LIBS:interface
+LIBS:digital-audio
+LIBS:philips
+LIBS:display
+LIBS:cypress
+LIBS:siliconi
+LIBS:opto
+LIBS:atmel
+LIBS:contrib
+LIBS:valves
+EELAYER 25 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 1 1
+Title ""
+Date ""
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L Conn_02x20_Odd_Even J?
+U 1 1 5E29DD84
+P 5650 3750
+F 0 "J?" H 5700 4750 50  0000 C CNN
+F 1 "Conn_02x20_Odd_Even" H 5700 2650 50  0000 C CNN
+F 2 "" H 5650 3750 50  0001 C CNN
+F 3 "" H 5650 3750 50  0001 C CNN
+	1    5650 3750
+	1    0    0    -1  
+$EndComp
+Text Label 5250 2850 0    60   ~ 0
+3v3
+Text Label 5150 2950 0    60   ~ 0
+GPIO2
+Text Label 5150 3050 0    60   ~ 0
+GPIO3
+Text Label 5150 3150 0    60   ~ 0
+GPIO4
+Text Label 5250 3250 0    60   ~ 0
+GND
+Text Label 5100 3350 0    60   ~ 0
+GPIO17
+Text Label 5100 3450 0    60   ~ 0
+GPIO27
+Text Label 5100 3550 0    60   ~ 0
+GPIO22
+Text Label 5250 3650 0    60   ~ 0
+3v3
+Text Label 5100 3750 0    60   ~ 0
+GPIO10
+Text Label 5100 3850 0    60   ~ 0
+GPIO9
+Text Label 5100 3950 0    60   ~ 0
+GPIO11
+Text Label 5200 4050 0    60   ~ 0
+GND
+Text Label 5100 4150 0    60   ~ 0
+GPIO0
+Text Label 5100 4250 0    60   ~ 0
+GPIO5
+Text Label 5100 4350 0    60   ~ 0
+GPIO6
+Text Label 5100 4450 0    60   ~ 0
+GPIO13
+Text Label 5100 4550 0    60   ~ 0
+GPIO19
+Text Label 5100 4650 0    60   ~ 0
+GPIO26
+Text Label 5200 4750 0    60   ~ 0
+GND
+Text Label 6000 2850 0    60   ~ 0
+5v
+Text Label 6000 2950 0    60   ~ 0
+5v
+Text Label 6000 3050 0    60   ~ 0
+GND
+Text Label 6000 3150 0    60   ~ 0
+GPIO14
+Text Label 6000 3250 0    60   ~ 0
+GPIO15
+Text Label 6000 3350 0    60   ~ 0
+GPIO18
+Text Label 6000 3450 0    60   ~ 0
+GND
+Text Label 6000 3550 0    60   ~ 0
+GPIO23
+Text Label 6000 3650 0    60   ~ 0
+GPIO24
+Text Label 6000 3750 0    60   ~ 0
+GND
+Text Label 6000 3850 0    60   ~ 0
+GPIO25
+Text Label 6000 3950 0    60   ~ 0
+GPIO8
+Text Label 6000 4050 0    60   ~ 0
+GPIO7
+Text Label 6000 4150 0    60   ~ 0
+GPIO1
+Text Label 6000 4250 0    60   ~ 0
+GND
+Text Label 6000 4350 0    60   ~ 0
+GPIO12
+Text Label 6000 4450 0    60   ~ 0
+GND
+Text Label 6000 4550 0    60   ~ 0
+GPIO16
+Text Label 6000 4650 0    60   ~ 0
+GPIO20
+Text Label 6000 4750 0    60   ~ 0
+GPIO21
+$Comp
+L Conn_01x03_Male J?
+U 1 1 5E29F8C2
+P 7550 2950
+F 0 "J?" H 7550 3150 50  0000 C CNN
+F 1 "X Limit Switch" H 7550 2750 50  0000 C CNN
+F 2 "" H 7550 2950 50  0001 C CNN
+F 3 "" H 7550 2950 50  0001 C CNN
+	1    7550 2950
+	-1   0    0    1   
+$EndComp
+Text Label 7450 2850 0    60   ~ 0
+V
+Text Label 7450 2950 0    60   ~ 0
+S
+Text Label 7450 3050 0    60   ~ 0
+G
+Wire Wire Line
+	5950 2850 7350 2850
+Wire Wire Line
+	5950 3050 7350 3050
+Wire Wire Line
+	5950 3150 7300 3150
+Wire Wire Line
+	7300 3150 7300 2950
+Wire Wire Line
+	7300 2950 7350 2950
+$EndSCHEMATC
