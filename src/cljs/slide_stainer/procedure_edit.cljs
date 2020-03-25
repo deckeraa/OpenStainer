@@ -198,7 +198,7 @@
     (remove (fn [[idx itm]] (= n idx)) $)
     (mapv (fn [[idx itm]] itm) $)))
 
-(defn run-button [style procedure-run-status-cursor prog-atm run-fn]
+(defn run-button [procedure-run-status-cursor prog-atm run-fn]
   (fn []
     [:button {:on-click (fn [e]
                           (println "run-button: " procedure-run-status-cursor)
@@ -212,7 +212,6 @@
                                            (println "run-fn: " run-fn)
                                            (when run-fn (run-fn @prog-atm))
                                            )})))
-              :style (or style {})
               } "Run"]))
 
 (defn procedure-steps [prog-atm procedure-run-status-cursor run-fn back-fn]

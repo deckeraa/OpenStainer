@@ -217,7 +217,7 @@
          atoms/procedure-run-status-cursor
          #(swap! atoms/screen-cursor pop)
          (fn [procedure]
-           (println "Running run-fn")
+           (println "Running run-fn " ratom)
            (swap! ratom (fn [v] (-> v
                                     (assoc :current-procedure procedure)
                                     )))
