@@ -765,8 +765,9 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 		    }
 		    thread::sleep(time::Duration::from_millis(10));
 		}
-		println!("Exited loop B");
 	    }
+	    println!("Exited loop B");
+
 	    //pi.run_status.current_procedure_step_start_instant = Instant::now();
 	    let mut start_instant = Instant::now();
 	    let mut us_remaining : u128 = (step.time_in_seconds * 1000 * 1000).try_into().unwrap();
@@ -774,24 +775,41 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 	    // sleep until it's time to move again
 	    println!("Entering loop C");
 	    while us_remaining > 0 {
-		// update the timer controls
-		println!("us_remaining before: {:?}",us_remaining);
-		let elapsed_us = start_instant.elapsed().as_micros();
-		start_instant = Instant::now();
-		if elapsed_us > us_remaining { // avoid attempts to subtract with overflow
-		    us_remaining = 0;
-		}
-		else {
-		    us_remaining = us_remaining - elapsed_us;
-		}
-		println!("us_remaining after: {:?}",us_remaining);
+		if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Running {
+		    // update the timer controls
+		    let elapsed_us = start_instant.elapsed().as_micros();
+		    start_instant = Instant::now();
+		    if elapsed_us > us_remaining { // avoid attempts to subtract with overflow
+			us_remaining = 0;
+		    }
+		    else {
+			us_remaining = us_remaining - elapsed_us;
+		    }
 
-		// update the PES to inform the client how many seconds are remaining
-		pes.seconds_remaining.store((us_remaining / (1000 * 1000)).try_into().unwrap(), Ordering::Relaxed);
-
-		// TODO handle run/pause buttons
-		
-		thread::sleep(time::Duration::from_millis(200));
+		    // update the PES to inform the client how many seconds are remaining
+		    pes.seconds_remaining.store((us_remaining / (1000 * 1000)).try_into().unwrap(), Ordering::Relaxed);
+		}
+		// grab the lock
+		{
+		    let pi = &mut *pi_mutex.lock().unwrap();
+		    // check stop button
+		    if bool::from(pi.estop.read_value().unwrap()) {
+			pes.atm.store(ProcedureExecutionStateEnum::Paused, Ordering::Relaxed);
+		    }
+		    
+		    if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Paused {
+			// handle run/pause buttons
+			pi.green_light.set_high().expect("Couldn't turn green light on");
+			pi.red_light.set_low().expect("Couldn't turn red light off");
+			if bool::from(pi.green_button.read_value().unwrap()) {
+			    pes.atm.store(ProcedureExecutionStateEnum::Running, Ordering::Relaxed);
+			    pi.green_light.set_low().expect("Couldn't turn green light off");
+			    pi.red_light.set_high().expect("Couldn't turn red light back on");
+			    start_instant = Instant::now();
+			}
+		    }
+		}
+		thread::sleep(time::Duration::from_millis(20));
 	    }
 
 	    // // sleep until it's time to move again
