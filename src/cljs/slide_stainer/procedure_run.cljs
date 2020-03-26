@@ -75,7 +75,7 @@
                                  [:td (inc idx)]
                                  [:td (:substance step)]
                                  [:td
-                                  (if (and current-step? (> 0 seconds-remaining))
+                                  (if (and current-step? (> seconds-remaining 0))
                                     (format-time-in-seconds seconds-remaining)
                                     (format-time-in-seconds (:timeInSeconds step)))
                                   ]

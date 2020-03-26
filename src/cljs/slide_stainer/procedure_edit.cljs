@@ -18,8 +18,8 @@
    :type :procedure
    :jarContents ["Hematoxylin" "Tap water" "70% ethanol/1% HCI" "Tap water" "Eosin"]
    :procedure_steps
-   [{:substance "Hematoxylin" :time_in_seconds (* 25 60) :jarNumber 1}
-    {:substance "Tap water" :time_in_seconds 150 :jarNumber 2}]})
+   [{:substance "Hematoxylin" :timeInSeconds (* 25 60) :jarNumber 1}
+    {:substance "Tap water" :timeInSeconds 150 :jarNumber 2}]})
 
 (def sample-program-atom (reagent/atom sample-program))
 (def osk-atm (reagent/atom {}))
@@ -158,6 +158,7 @@
         padded-seconds (if (= 1 (count seconds)) (str 0 seconds) seconds)
         seconds-atm (reagent/atom padded-seconds)
         update-seconds (fn []
+                         (println "calling update-seconds" @minutes-atm @seconds-atm)
                          (swap! step-cursor assoc :timeInSeconds (+ (* 60 (first (parse-and-pad @minutes-atm)))
                                                                       (first (parse-and-pad @seconds-atm)))))]
     (fn [step-cursor]
@@ -166,9 +167,9 @@
         {:type "text" :value @minutes-atm
          :size 2
          :on-change (fn [new-minutes old-minutes input-atm] 
-                      (println ":on-change" new-minutes old-minutes)
                       (when (not (re-matches #"[0-9]*" new-minutes))
-                        (reset! input-atm old-minutes)))
+                        (reset! input-atm old-minutes))
+                      (reset! minutes-atm @input-atm))
          :on-blur (fn [_] (update-seconds))}]
        ":"
        [osk/osk-input osk-atm
@@ -178,7 +179,8 @@
                       ;; filter out non-numeric input
                       (if (not (re-matches #"[0-9]*" new-seconds))
                         (reset! input-atm old-seconds)
-                        (reset! input-atm (rotate-seconds old-seconds new-seconds))))
+                        (reset! input-atm (rotate-seconds old-seconds new-seconds)))
+                      (reset! seconds-atm @input-atm))
          :on-blur (fn [_]
                     (let [parsed-seconds (parse-and-pad @seconds-atm)]
                       (reset! seconds-atm (second parsed-seconds))
