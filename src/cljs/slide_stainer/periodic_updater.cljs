@@ -40,3 +40,18 @@
                                            (println "Setting timeout for next periodic-updater.")
                                            (js/setTimeout (partial periodic-updater screen-cursor queries-to-run (mod (inc seconds) 5)) (* 5 1000))
                                            )}))))))
+
+(defn fast-rest-updater
+  ([screen-cursor queries-to-run]
+   (let [screen (peek @screen-cursor)
+         query-fn (get-in queries-to-run [screen :rest-fn])
+         handler-fn (get-in queries-to-run [screen :rest-handler-fn])]
+     (if (nil? query-fn)
+       (js/setTimeout (partial fast-rest-updater screen-cursor queries-to-run)
+                              50)
+       (when query-fn
+         (go (let [raw-resp (<! (query-fn))]
+               (let [resp (:body raw-resp)]
+                 (if handler-fn (handler-fn resp raw-resp))
+                 (js/setTimeout (partial fast-rest-updater screen-cursor queries-to-run)
+                                50)))))))))

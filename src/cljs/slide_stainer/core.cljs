@@ -244,14 +244,24 @@
           :should-run? (fn [] (empty? @atoms/settings-cursor))}
    ;; :always {:query-fn (fn [] (str "{state{alarms{" graphql/alarm-keys "}}}"))
    ;;          :handler-fn (fn [resp] (reset! atoms/alarms-cursor (get-in resp [:state :alarms])))}
-   :procedure-run {:query-fn slide-stainer.procedure-run/refresh-query-fn
+   :procedure-run {:rest-fn slide-stainer.procedure-run/rest-fn
+                   :rest-handler-fn slide-stainer.procedure-run/rest-handler-fn
+                   :query-fn slide-stainer.procedure-run/refresh-query-fn
                    :handler-fn (partial slide-stainer.procedure-run/refresh-handler-fn atoms/procedure-cursor atoms/procedure-run-status-cursor)}
    :settings {:query-fn slide-stainer.settings/refresh-query-fn :handler-fn slide-stainer.settings/refresh-handler-fn}})
 
-;; start the updater
+;; start the updaters
 (defonce periodic-updater-instance
   (js/setTimeout (fn [] (slide-stainer.periodic-updater/periodic-updater
                          atoms/screen-cursor queries-to-run))
+                 (* 1 1000)))
+
+(defonce rest-updater-instance
+  (js/setTimeout (fn [] (slide-stainer.periodic-updater/fast-rest-updater
+                         atoms/screen-cursor
+                         {:procedure-run {:rest-fn slide-stainer.procedure-run/rest-fn
+                                          :rest-handler-fn (partial slide-stainer.procedure-run/rest-handler-fn
+                                                                    atoms/procedure-cursor atoms/procedure-run-status-cursor)}}))
                  (* 1 1000)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

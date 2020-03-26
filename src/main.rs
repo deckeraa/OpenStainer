@@ -106,6 +106,12 @@ fn read_procedure_status(pes: State<ProcedureExecutionState>) -> String {
     format! {"/read {:?}", pes.atm.load(Ordering::Relaxed)}
 }
 
+#[rocket::get("/seconds_remaining")]
+fn seconds_remaining(pes: State<ProcedureExecutionState>) -> String {
+    let pes = pes.inner();
+    format! {"{}", pes.seconds_remaining.load(Ordering::Relaxed)}
+}
+
 #[derive(juniper::GraphQLObject, Debug, Serialize, Deserialize, Clone)]
 #[graphql(description="A single step in a staining procedure.")]
 struct ProcedureStep {
@@ -1071,6 +1077,7 @@ fn main() {
 		pause_procedure,
 		resume_procedure,
 		read_procedure_status,
+		seconds_remaining,
 		exit_kiosk_mode,
             ],)
 	.mount("/",StaticFiles::from("./resources/public/"))

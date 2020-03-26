@@ -36,6 +36,13 @@
 (defn refresh-handler-fn [procedure-cursor procedure-run-status-cursor resp]
   (reset! procedure-run-status-cursor (get-in resp [:runStatus])))
 
+(defn rest-fn []
+  (http/get "http://localhost:8000/seconds_remaining")
+  )
+
+(defn rest-handler-fn [procedure-cursor procedure-run-status-cursor resp raw-resp]
+  (swap! procedure-run-status-cursor assoc :seconds-remaining (js/parseInt resp)))
+
 (defn format-time-in-seconds [seconds]
   (let [min (Math/floor (/ seconds 60))
         sec (as-> (rem seconds 60) $
@@ -57,21 +64,20 @@
        (when back-fn [svg/chevron-left {:class "chevron-left" :on-click back-fn} "blue" 36])
        [:h1 (:name @procedure-cursor)]]
       [:table
-       [:tbody [:tr [:th ""] [:th "Step #"] [:th "Substance"] [:th "Time"] [:th "Jar #"]]
+       [:tbody [:tr [:th ""] [:th "Step #"] [:th "Substance"] [:th "Total Time"] [:th "Jar #"]]
         (doall (map-indexed (fn [idx step]
                               (let [current-step? (= (inc idx) (:currentProcedureStepNumber @procedure-run-status-cursor))
-                                    current-start-time (format/parse (:current_procedure_step_start_time @procedure-run-status-cursor))]
+                                    current-start-time (format/parse (:current_procedure_step_start_time @procedure-run-status-cursor))
+                                    seconds-remaining (:seconds-remaining @procedure-run-status-cursor)]
                                 ^{:key idx}
                                 [:tr
                                  [:td (if current-step? "->" "")]
                                  [:td (inc idx)]
                                  [:td (:substance step)]
-                                 [:td (format-time-in-seconds (:timeInSeconds step))
-;;                                   (if (and current-step?)
-;;       ;                                  (:current_procedure_step_start_time @procedure-run-status-cursor)
-;;                                    ;     (str current-start-time)
-;; ;                                        (str (time/in-seconds (time/interval current-start-time (time/now))))
-                                  ;;                                         (format-time-in-seconds (:time_in_seconds step)))
+                                 [:td
+                                  (if (and current-step? (> 0 seconds-remaining))
+                                    (format-time-in-seconds seconds-remaining)
+                                    (format-time-in-seconds (:timeInSeconds step)))
                                   ]
                                  [:td (:jarNumber step)]]))
                             (:procedureSteps @procedure-cursor)))]]
