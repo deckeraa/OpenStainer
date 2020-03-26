@@ -8,4 +8,4 @@ killall chromium-browse
 # run this as non-root to avoid chromium complaining about needing to run
 # as no-sandbox mode.
 # We pass in DISPLAY=:0.0 since the default display leads to xauth issues when running as non-root.
-su pi -c "DISPLAY=:0.0 chromium-browser http://localhost:8000/index.html"
+su pi -c "DISPLAY=:0.0 chromium-browser http://localhost:8000/index.html --app=localhost"
