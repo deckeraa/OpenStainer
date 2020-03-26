@@ -20,6 +20,7 @@ use rocket_contrib::serve::StaticFiles;
 use rocket_cors::{AllowedHeaders, AllowedOrigins};
 use std::time::{Instant};
 use std::sync::atomic::Ordering;
+use std::sync::atomic::*;
 use atomic_enum::*;
 use std::process::Command;
 
@@ -82,6 +83,7 @@ enum ProcedureExecutionStateEnum {
 #[derive(Debug)]
 struct ProcedureExecutionState {
     atm: AtomicProcedureExecutionStateEnum,
+    seconds_remaining: AtomicU64,
 }
 
 #[rocket::post("/pause_procedure")]
@@ -760,15 +762,37 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 		println!("Exited loop B");
 	    }
 	    //pi.run_status.current_procedure_step_start_instant = Instant::now();
-	    let start_instant = Instant::now();
-	    let seconds_remaining = step.time_in_seconds.try_into().unwrap();
-
+	    let mut start_instant = Instant::now();
+	    let mut us_remaining : u128 = (step.time_in_seconds * 1000 * 1000).try_into().unwrap();
 
 	    // sleep until it's time to move again
 	    println!("Entering loop C");
-	    while start_instant.elapsed().as_secs() < seconds_remaining {
+	    while us_remaining > 0 {
+		// update the timer controls
+		println!("us_remaining before: {:?}",us_remaining);
+		let elapsed_us = start_instant.elapsed().as_micros();
+		start_instant = Instant::now();
+		if elapsed_us > us_remaining { // avoid attempts to subtract with overflow
+		    us_remaining = 0;
+		}
+		else {
+		    us_remaining = us_remaining - elapsed_us;
+		}
+		println!("us_remaining after: {:?}",us_remaining);
+
+		// update the PES to inform the client how many seconds are remaining
+		pes.seconds_remaining.store((us_remaining / (1000 * 1000)).try_into().unwrap(), Ordering::Relaxed);
+
+		// TODO handle run/pause buttons
+		
 		thread::sleep(time::Duration::from_millis(200));
 	    }
+
+	    // // sleep until it's time to move again
+	    // println!("Entering loop C");
+	    // while start_instant.elapsed().as_secs() < seconds_remaining {
+	    // 	thread::sleep(time::Duration::from_millis(200));
+	    // }
 	    println!("Exited loop C");
 	}
     }
@@ -998,7 +1022,7 @@ fn main() {
     });
 
     let atm : AtomicProcedureExecutionStateEnum = AtomicProcedureExecutionStateEnum::new(ProcedureExecutionStateEnum::Running);
-    let pes : ProcedureExecutionState = ProcedureExecutionState { atm: atm, };
+    let pes : ProcedureExecutionState = ProcedureExecutionState { atm: atm, seconds_remaining: AtomicU64::new(0)};
 
     {
 	// initialize enable pins (this is needed since the logic is reversed since it's behind
