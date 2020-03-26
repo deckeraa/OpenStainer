@@ -550,8 +550,7 @@ fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, is_h
     stepper.dir.set_value(forward).expect("Couldn't set dir");
     thread::sleep(time::Duration::from_millis(1));
 
-    let times = generate_wait_times(pulses, 180, 15, 17000);
-    println!("times length {:?}", times.len());
+    let times = generate_wait_times(pulses, 5760, 15, 17000);
     let mut hit_limit_switch = false;
     let mut hit_e_stop = false;
 
