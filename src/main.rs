@@ -28,6 +28,8 @@ const LEFT_POSITION: Inch = 0.35;
 const UP_POSITION: Inch = 3.5;
 const JAR_SPACING: Inch = 1.9;
 
+const COUCHDB_URL: &'static str = "http://localhost:5984/slide_stainer";
+
 type PulseCount = u64;
 type Inch = f64;
 
@@ -271,7 +273,7 @@ type Schema = juniper::RootNode<'static, Query, Mutation>;
 // This code lives outside of Query since the #[juniper::object(Context = SharedPi)] is preventing me from
 // referencing Query::procedure_by_id elsewhere in code.
 fn procedure_by_id(id: String) -> FieldResult<Procedure> {
-	let url : &str = &format!("http://localhost:5984/slide_stainer/{}",id).to_string();
+	let url : &str = &format!("{}/{}",COUCHDB_URL,id).to_string();
 	let resp = reqwest::blocking::get(url);
 	if resp.is_ok() {
 	    let parse_result = resp.unwrap().json::<Procedure>();
@@ -313,7 +315,7 @@ impl Query {
     }
 
     fn procedures() -> FieldResult<Vec<Procedure>> {
-	let resp = reqwest::blocking::get("http://localhost:5984/slide_stainer/_design/procedures/_view/procedures?include_docs=true");
+	let resp = reqwest::blocking::get(reqwest::Url::parse(format!("{}/_design/procedures/_view/procedures?include_docs=true",COUCHDB_URL).as_str()).unwrap());
 	if resp.is_ok() {
 	    let view_result = resp.unwrap().json::<ViewResult<Procedure>>().unwrap();
 	    let v : Vec<Procedure> = view_result.rows.into_iter().map(|row| row.doc ).collect();
@@ -361,7 +363,7 @@ impl Mutation {
 	}
 	let body = body.unwrap();
 	println!("save_procedure body: {:?}",body);
-	let resp = client.post("http://localhost:5984/slide_stainer/")
+	let resp = client.post(COUCHDB_URL)//"http://localhost:5984/slide_stainer/")
 	//.body(body) // .body(body)
 	    .json(&procedure)
 	    .send();
@@ -385,7 +387,7 @@ impl Mutation {
 
     fn delete_procedure(id: String, rev: String) -> FieldResult<Vec<Procedure>> {
 	let client = reqwest::blocking::Client::new();
-	let url : &str = &format!("http://localhost:5984/slide_stainer/{}?rev={}",id,rev).to_string();
+	let url : &str = &format!("{}/{}?rev={}",COUCHDB_URL,id,rev).to_string();
 	let resp = client.delete(url).send();
 
 	if resp.is_err() {
@@ -397,7 +399,7 @@ impl Mutation {
 	}
 	println!("delete_procedure text: {:?}", resp.text());
 	
-	let resp = reqwest::blocking::get("http://localhost:5984/slide_stainer/_design/procedures/_view/procedures?include_docs=true");
+	let resp = reqwest::blocking::get(reqwest::Url::parse(format!("{}/_design/procedures/_view/procedures?include_docs=true",COUCHDB_URL).as_str()).unwrap());
 	if resp.is_ok() {
 	    let view_result = resp.unwrap().json::<ViewResult<Procedure>>().unwrap();
 	    let v : Vec<Procedure> = view_result.rows.into_iter().map(|row| row.doc ).collect();
@@ -993,7 +995,7 @@ fn pos(pi: State<SharedPi>, axis: AxisDirection) -> String {
 
 #[get("/couch")]
 fn couch() -> String {
-    let resp = reqwest::blocking::get("http://localhost:5984/slide_stainer/_design/procedures/_view/procedures?include_docs=true");
+    let resp = reqwest::blocking::get(reqwest::Url::parse(format!("{}/_design/procedures/_view/procedures?include_docs=true",COUCHDB_URL).as_str()).unwrap());
     if resp.is_ok() {
 	let json = resp.unwrap().json::<ViewResult<Procedure>>().unwrap();
 	let s : String = serde_json::to_string(&json).unwrap();
