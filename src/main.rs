@@ -521,7 +521,7 @@ fn generate_wait_times(
     times
 }
 
-fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, is_homing: bool, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
+fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, is_homing: bool, opt_pes: Option<&ProcedureExecutionState>, skip_soft_estop_check: bool) -> MoveResult {
     let stepper = match axis {
         AxisDirection::X => &mut pi.stepper_x,
         AxisDirection::Z => &mut pi.stepper_z,
@@ -540,8 +540,8 @@ fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, is_h
         ThreadSchedulePolicy::Realtime(RealtimeThreadSchedulePolicy::Fifo),
     );
     match ret {
-        Ok(v) => println!("Ok: {:?}", v),
-        Err(e) => println!("Err: {:?}", e),
+        Ok(v) => println!("Real Time thread priority set: {:?}", v),
+        Err(e) => println!("Real Time thread priority not set: {:?}", e),
     }
 
     // Enable and set the direction
@@ -551,6 +551,7 @@ fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, is_h
     thread::sleep(time::Duration::from_millis(1));
 
     let times = generate_wait_times(pulses, 180, 15, 17000);
+    println!("times length {:?}", times.len());
     let mut hit_limit_switch = false;
     let mut hit_e_stop = false;
 
@@ -586,14 +587,14 @@ fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, is_h
         if  bool::from(pi.estop.read_value().unwrap()) {
             hit_e_stop = true;
 	    println!("Hit estop!");
-	    if opt_pes.is_some() {
+	    if opt_pes.is_some() && !skip_soft_estop_check {
 		opt_pes.unwrap().atm.store(ProcedureExecutionStateEnum::Paused, Ordering::Relaxed);
 		pi.red_light.set_low().expect("Couldn't run off red light.");
 	    }
             break;
         }
 	// check the software estop
-	if opt_pes.is_some() {
+	if opt_pes.is_some() && !skip_soft_estop_check{
 	    let state = opt_pes.unwrap().atm.load(Ordering::Relaxed); // == ProcedureExecutionStateEnum::Paused;
 	    if state == ProcedureExecutionStateEnum::Paused || state == ProcedureExecutionStateEnum::Stopped {
 		hit_e_stop = true;
@@ -620,7 +621,7 @@ fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, is_h
         ThreadSchedulePolicy::Normal(NormalThreadSchedulePolicy::Normal),
     );
     match ret {
-        Ok(v) => println!("Ok: {:?}", v),
+        Ok(v) => println!("Dropped real-time thread priority: {:?}", v),
         Err(e) => println!("Err: {:?}", e),
     }
 
@@ -673,12 +674,12 @@ fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, is_h
 // }
 
 fn home(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
-    let ret_one = move_steps(pi, AxisDirection::Z, true, 160000, true, None);
+    let ret_one = move_steps(pi, AxisDirection::Z, true, 160000, true, None, false);
     println!("Result of first home move {:?}",ret_one);
     if ret_one == MoveResult::HitEStop || ret_one == MoveResult::FailedToHome{
 	return MoveResult::FailedToHome;
     }
-    let ret_two = move_steps(pi, AxisDirection::X, false, 320000, true, None);
+    let ret_two = move_steps(pi, AxisDirection::X, false, 320000, true, None, false);
     if ret_one == MoveResult::HitLimitSwitch && ret_two == MoveResult::HitLimitSwitch {
         move_to_up_position(pi, opt_pes);
         move_to_left_position(pi, opt_pes);
@@ -846,7 +847,7 @@ fn move_by_pulses(
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
     let pes = pes.inner();
-    let ret = move_steps(pi, axis, forward, pulses, false, Some(pes));
+    let ret = move_steps(pi, axis, forward, pulses, false, Some(pes), false);
     format! {"{:?}",ret}
 }
 
@@ -857,11 +858,11 @@ fn move_by_inches(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>
     let stepper = get_stepper(pi, &axis);
     let pulses = inches_to_pulses(inches, stepper);
     let pes = pes.inner();
-    let ret = move_steps(pi, axis, forward, pulses, false, Some(pes));
+    let ret = move_steps(pi, axis, forward, pulses, false, Some(pes), false);
     format! {"{:?}",ret}
 }
 
-fn move_to_pos(pi: &mut Pi, axis: AxisDirection, inches: Inch, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
+fn move_to_pos(pi: &mut Pi, axis: AxisDirection, inches: Inch, opt_pes: Option<&ProcedureExecutionState>, skip_soft_estop_check: bool) -> MoveResult {
     println!("move_to_pos axis: {}  inches: {}", axis, inches);
     let is_not_homed = get_stepper(pi, &axis).pos.is_none();
     
@@ -881,7 +882,7 @@ fn move_to_pos(pi: &mut Pi, axis: AxisDirection, inches: Inch, opt_pes: Option<&
     } else {
         cur_pos - dest_pos
     };
-    move_steps(pi, axis, forward, pulses, false, opt_pes)
+    move_steps(pi, axis, forward, pulses, false, opt_pes, skip_soft_estop_check)
 }
 
 #[post("/move_to_pos/<axis>/<inches>")]
@@ -889,12 +890,12 @@ fn move_to_pos_handler(pi_state: State<SharedPi>, pes: State<ProcedureExecutionS
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
     let pes = pes.inner();
-    let ret = move_to_pos(pi, axis, inches, Some(pes));
+    let ret = move_to_pos(pi, axis, inches, Some(pes), false);
     format! {"{:?}",ret}
 }
 
 fn move_to_up_position(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
-    move_to_pos(pi, AxisDirection::Z, UP_POSITION, opt_pes)
+    move_to_pos(pi, AxisDirection::Z, UP_POSITION, opt_pes, true)
 }
 
 #[post("/move_to_up_position")]
@@ -907,7 +908,7 @@ fn move_to_up_position_handler(pi_state: State<SharedPi>, pes: State<ProcedureEx
 }
 
 fn move_to_down_position(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
-    move_to_pos(pi, AxisDirection::Z, 0.0, opt_pes)
+    move_to_pos(pi, AxisDirection::Z, 0.0, opt_pes, true)
 }
 
 #[post("/move_to_down_position")]
@@ -920,7 +921,7 @@ fn move_to_down_position_handler(pi_state: State<SharedPi>, pes: State<Procedure
 }
 
 fn move_to_left_position(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
-    move_to_pos(pi, AxisDirection::X, LEFT_POSITION, opt_pes)
+    move_to_pos(pi, AxisDirection::X, LEFT_POSITION, opt_pes, false)
 }
 
 #[post("/move_to_left_position")]
@@ -954,7 +955,8 @@ fn move_to_jar(pi: &mut Pi, jar_number: i32, opt_pes: Option<&ProcedureExecution
             pi,
             AxisDirection::X,
             LEFT_POSITION + JAR_SPACING * (jar_number - 1) as f64,
-	    opt_pes
+	    opt_pes,
+	    false
 	);
 	if ret == MoveResult::HitLimitSwitch
             || ret == MoveResult::HitEStop
