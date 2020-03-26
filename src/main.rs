@@ -575,11 +575,16 @@ fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, is_h
         }
 
         // check estop
-        if opt_pes.is_none() && bool::from(pi.estop.read_value().unwrap()) {
+        if  bool::from(pi.estop.read_value().unwrap()) {
             hit_e_stop = true;
 	    println!("Hit estop!");
+	    if opt_pes.is_some() {
+		opt_pes.unwrap().atm.store(ProcedureExecutionStateEnum::Paused, Ordering::Relaxed);
+		pi.red_light.set_low().expect("Couldn't run off red light.");
+	    }
             break;
         }
+	// check the software estop
 	if opt_pes.is_some() {
 	    let state = opt_pes.unwrap().atm.load(Ordering::Relaxed); // == ProcedureExecutionStateEnum::Paused;
 	    if state == ProcedureExecutionStateEnum::Paused || state == ProcedureExecutionStateEnum::Stopped {
@@ -731,32 +736,28 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 		run_status.current_procedure_step_number = (index + 1).try_into().unwrap();
 		//pi.run_status.current_procedure_step_number = pi.run_status.current_procedure_step_number
 		println!("Step: {:?}",step);
-		// check to see if we're paused
-		if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Paused {
-		    let _ret = move_to_up_position( pi, None );
-		    let mut state = pes.atm.load(Ordering::Relaxed);
-		    while state == ProcedureExecutionStateEnum::Paused {
-			thread::sleep(time::Duration::from_millis(200));
-			state = pes.atm.load(Ordering::Relaxed);
-		    }
-		}
-		// move to the first jar
+		// move to the jar
 		let mut got_to_jar = false;
+		println!("Entering loop B");
 		while !got_to_jar {
 		    if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Running {
 			let ret = move_to_jar( pi, step.jar_number, Some(&pes) );
 			if ret == MoveResult::MovedFullDistance {
 			    got_to_jar = true;
-			}
-			else if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Paused {
-			}
-			else if ret == MoveResult::HitEStop {
-			    return format! {"Stopped due to e-stop being hit."}
-			    //let _ret = move_to_up_position( pi, None );
+			    break;
 			}
 		    }
-		    thread::sleep(time::Duration::from_millis(200));
+		    if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Paused {
+			pi.green_light.set_high().expect("Couldn't turn green light on");
+			if bool::from(pi.green_button.read_value().unwrap()) {
+			    pes.atm.store(ProcedureExecutionStateEnum::Running, Ordering::Relaxed);
+			    pi.green_light.set_low().expect("Couldn't turn green light off");
+			    pi.red_light.set_high().expect("Couldn't turn red light back on");
+			}
+		    }
+		    thread::sleep(time::Duration::from_millis(10));
 		}
+		println!("Exited loop B");
 	    }
 	    //pi.run_status.current_procedure_step_start_instant = Instant::now();
 	    let start_instant = Instant::now();
@@ -764,9 +765,11 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 
 
 	    // sleep until it's time to move again
+	    println!("Entering loop C");
 	    while start_instant.elapsed().as_secs() < seconds_remaining {
 		thread::sleep(time::Duration::from_millis(200));
 	    }
+	    println!("Exited loop C");
 	}
     }
 
@@ -780,7 +783,7 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 	pi.run_status = None;
 	pi.red_light.set_low().expect("Couldn't turn off estop light.");
     }
-    
+    println!("========= Done running procedure ========");
     format! {"run_procedure return value TODO"}
 }
 
