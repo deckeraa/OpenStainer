@@ -34,14 +34,19 @@
   )
 
 (defn refresh-handler-fn [procedure-cursor procedure-run-status-cursor resp]
-  (reset! procedure-run-status-cursor (get-in resp [:runStatus])))
+  (swap! procedure-run-status-cursor (fn [atm]
+                                       (as-> atm $
+                                         (assoc $ :currentProcedureStepNumber (get-in resp [:runStatus :currentProcedureStepNumber]))
+                                         (assoc $ :currentCycleNumber (get-in resp [:runStatus :currentCycleNumber]))))))
 
 (defn rest-fn []
   (http/get "http://localhost:8000/seconds_remaining")
   )
 
 (defn rest-handler-fn [procedure-cursor procedure-run-status-cursor resp raw-resp]
-  (swap! procedure-run-status-cursor assoc :seconds-remaining (js/parseInt resp)))
+  (let [seconds-remaining (js/parseInt resp)]
+    (when (not (nil? seconds-remaining))
+      (swap! procedure-run-status-cursor assoc :seconds-remaining seconds-remaining))))
 
 (defn format-time-in-seconds [seconds]
   (let [min (Math/floor (/ seconds 60))
