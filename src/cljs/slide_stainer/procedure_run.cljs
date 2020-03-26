@@ -68,7 +68,7 @@
       [:div {:class "nav-header"}
        (when back-fn [svg/chevron-left {:class "chevron-left" :on-click back-fn} "blue" 36])
        [:h1 (:name @procedure-cursor)]]
-      [:table
+      [:table {:class "procedure-run-status"}
        [:tbody [:tr [:th ""] [:th "Step #"] [:th "Substance"] [:th "Total Time"] [:th "Jar #"]]
         (doall (map-indexed (fn [idx step]
                               (let [current-step? (= (inc idx) (:currentProcedureStepNumber @procedure-run-status-cursor))
@@ -76,7 +76,7 @@
                                     seconds-remaining (:seconds-remaining @procedure-run-status-cursor)]
                                 ^{:key idx}
                                 [:tr
-                                 [:td (if current-step? "->" "")]
+                                 [:td (if current-step? [svg/right-arrow {} "black" "48px"] "")]
                                  [:td (inc idx)]
                                  [:td (:substance step)]
                                  [:td
@@ -92,7 +92,7 @@
                                         (println "pause_procedure " resp))))} "Pause"]
       [:button {:on-click (fn [e] (go (let [resp (<! (http/post "http://localhost:8000/resume_procedure"))]
                                         (println "resume_procedure " resp))))} "Resume"]
-      [slide-stainer.procedure-edit/run-button procedure-run-status-cursor procedure-cursor nil]
+;      [slide-stainer.procedure-edit/run-button procedure-run-status-cursor procedure-cursor nil]
       ])))
 
 (defcard-rg procedure-run-status-card

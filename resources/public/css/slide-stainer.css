@@ -198,3 +198,7 @@ button:active {
     padding: 10px;
     margin: 0px;
 }
+
+.procedure-run-status {
+    font-size: 28px;
+}
