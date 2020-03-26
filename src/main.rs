@@ -706,8 +706,15 @@ fn home_handler(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>) 
 
 #[post("/run_procedure/<id>")]
 fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>, id: String) -> String {
-    let pi_mutex = &mut pi_state.inner();
     let pes = pes.inner();
+    if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Running ||
+	pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Paused {
+	    println!("Already running a procedure. Exiting.");
+	    return "Already running a procedure. Exiting.".to_string();
+	}
+
+    let pi_mutex = &mut pi_state.inner();
+
     pes.atm.store(ProcedureExecutionStateEnum::Running, Ordering::Relaxed);
 
     // load the procedure
@@ -833,6 +840,7 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 	pi.run_status = None;
 	pi.red_light.set_low().expect("Couldn't turn off estop light.");
     }
+    pes.atm.store(ProcedureExecutionStateEnum::Completed, Ordering::Relaxed);
     println!("========= Done running procedure ========");
     format! {"run_procedure return value TODO"}
 }
@@ -1048,7 +1056,7 @@ fn main() {
 	run_status: None,
     });
 
-    let atm : AtomicProcedureExecutionStateEnum = AtomicProcedureExecutionStateEnum::new(ProcedureExecutionStateEnum::Running);
+    let atm : AtomicProcedureExecutionStateEnum = AtomicProcedureExecutionStateEnum::new(ProcedureExecutionStateEnum::NotStarted);
     let pes : ProcedureExecutionState = ProcedureExecutionState { atm: atm, seconds_remaining: AtomicU64::new(0)};
 
     {
