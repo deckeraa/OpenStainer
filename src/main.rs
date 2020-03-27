@@ -225,9 +225,13 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 	
 	pi.run_status = None;
 	pi.red_light.set_low().expect("Couldn't turn off estop light.");
+
+	pes.atm.store(ProcedureExecutionStateEnum::Completed, Ordering::Relaxed);
+	let inc_result : FieldResult<Procedure> = increment_run_count(&mut proc);
+	if inc_result.is_ok() {
+	    pi.current_procedure = Some(inc_result.unwrap());
+	}
     }
-    pes.atm.store(ProcedureExecutionStateEnum::Completed, Ordering::Relaxed);
-    let _inc_result : FieldResult<Procedure> = increment_run_count(&mut proc);
     println!("========= Done running procedure ========");
     format! {"run_procedure return value TODO"}
 }
