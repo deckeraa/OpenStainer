@@ -23,39 +23,11 @@ use rocket_cors::{AllowedHeaders, AllowedOrigins};
 use std::time::{Instant};
 use std::sync::atomic::Ordering;
 use std::sync::atomic::*;
-use atomic_enum::*;
+
 use std::process::Command;
 pub use crate::structs_and_consts::*;
 
-const UP_POSITION: Inch = 3.5;
-const JAR_SPACING: Inch = 1.9;
 
-const COUCHDB_URL: &'static str = "http://localhost:5984/slide_stainer";
-
-type PulseCount = u64;
-
-struct Pi {
-    stepper_x: Stepper,
-    stepper_z: Stepper,
-    estop: gpio::sysfs::SysFsGpioInput,
-    green_button: gpio::sysfs::SysFsGpioInput,
-    red_light: gpio::sysfs::SysFsGpioOutput,
-    green_light: gpio::sysfs::SysFsGpioOutput,
-    current_procedure: Option<Procedure>,
-    run_status: Option<ProcedureRunStatus>,
-}
-
-struct Stepper {
-    ena: gpio::sysfs::SysFsGpioOutput,
-    dir: gpio::sysfs::SysFsGpioOutput,
-    pul: gpio::sysfs::SysFsGpioOutput,
-    limit_switch_low: Option<gpio::sysfs::SysFsGpioInput>,
-    limit_switch_high: Option<gpio::sysfs::SysFsGpioInput>,
-    pos: Option<PulseCount>,
-    position_limit: Inch,
-    pulses_per_revolution: u64,
-    travel_distance_per_turn: Inch,
-}
 
 // #[derive(juniper::GraphQLObject, Debug, Serialize, Deserialize, Clone)]
 // struct State {
@@ -73,21 +45,7 @@ struct Stepper {
 //     }
 // }
 
-#[atomic_enum]
-#[derive(PartialEq,juniper::GraphQLEnum, Serialize, Deserialize)]
-enum ProcedureExecutionStateEnum {
-    NotStarted,
-    Paused,
-    Stopped,
-    Running,
-    Completed,
-}
 
-#[derive(Debug)]
-struct ProcedureExecutionState {
-    atm: AtomicProcedureExecutionStateEnum,
-    seconds_remaining: AtomicU64,
-}
 
 #[rocket::post("/pause_procedure")]
 fn pause_procedure(pes: State<ProcedureExecutionState>) -> String {
@@ -115,117 +73,7 @@ fn seconds_remaining(pes: State<ProcedureExecutionState>) -> String {
     format! {"{}", pes.seconds_remaining.load(Ordering::Relaxed)}
 }
 
-#[derive(juniper::GraphQLObject, Debug, Serialize, Deserialize, Clone)]
-#[graphql(description="A single step in a staining procedure.")]
-struct ProcedureStep {
-    #[graphql(description="The substance contained in the jar.")]
-    substance: String,
-    #[graphql(description="The time (in seconds) to immerse the slide in the staining jar.")]
-    time_in_seconds: i32,
-    #[graphql(description="The one-indexed jar number in which the slide is to be immersed.")]
-    jar_number: i32,
-}
 
-#[derive(juniper::GraphQLInputObject, Debug, Serialize, Deserialize, Clone)]
-#[graphql(description="A single step in a staining procedure.")]
-struct ProcedureStepInputObject {
-    #[graphql(description="The substance contained in the jar.")]
-    substance: String,
-    #[graphql(description="The time (in seconds) to immerse the slide in the staining jar.")]
-    time_in_seconds: i32,
-    #[graphql(description="The one-indexed jar number in which the slide is to be immersed.")]
-    jar_number: i32,
-}
-
-#[derive(juniper::GraphQLObject, Debug, Serialize, Deserialize, Clone)]
-#[graphql(description="A staining procedure")]
-struct Procedure {
-    #[serde(rename="_id")]
-    #[graphql(name="_id", description="The _id of the procedure.")]
-    id: String,
-    
-    #[graphql(name="_rev", description="The CouchDB _rev of the procedure.")]
-    #[serde(rename="_rev")]
-    rev: String,
-    
-    #[graphql(name="type", description="The CouchDB type of the procedure. Will always be :procedure.")]
-    #[serde(rename="type")]
-    type_: String,
-    
-    #[graphql(description="Name of the procedure.")]
-    name: String,
-    
-    #[graphql(description="List of contents of what substanc is in jar")]
-    jar_contents: Vec<String>,
-
-    #[graphql(description="A list of steps in the staining procedure.")]
-    procedure_steps: Vec<ProcedureStep>,
-    
-    #[graphql(description="Number of times to repeat a given procedure for a single run.")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    repeat: Option<i32>,
-
-    #[graphql(description="Number of times this procedure has ever been run.")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    runs: Option<i32>,
-}
-
-#[derive(juniper::GraphQLInputObject, Debug, Serialize, Deserialize, Clone)]
-#[graphql(description="A staining procedure")]
-struct ProcedureInputObject {
-    #[graphql(name="_id", description="The CouchDB _id of the procedure.")]
-    #[serde(rename="_id", skip_serializing_if = "Option::is_none")]
-    id: Option<String>,
-    
-    #[graphql(name="_rev", description="The CouchDB _rev of the procedure.")]
-    #[serde(rename="_rev", skip_serializing_if = "Option::is_none")]
-    rev: Option<String>,
-    
-    #[graphql(name="type", description="The CouchDB type of the procedure. Will always be :procedure.")]
-    #[serde(rename="type")]
-    type_: String,
-    
-    #[graphql(description="Name of the procedure.")]
-    name: String,
-    
-    #[graphql(description="List of contents of what substanc is in jar")]
-    jar_contents: Vec<String>,
-
-    #[graphql(description="A list of steps in the staining procedure.")]
-    procedure_steps: Vec<ProcedureStepInputObject>,
-    
-    #[graphql(description="Number of times to repeat a given procedure for a single run.")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    repeat: Option<i32>,
-
-    #[graphql(description="Number of times this procedure has ever been run.")]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    runs: Option<i32>,
-}
-
-#[derive(juniper::GraphQLObject, Debug, Serialize, Deserialize, Clone)]
-struct ProcedureRunStatus {
-    // TODO make sure I come back and decide if these can be nil and make sure the description is updated.
-    // #[graphql(description="CouchDB ID of the currently running procedure. Nil if no procedure is running.")]
-    // current_procedure_id : String,
-    
-    // #[graphql(description="Name of the currently running procedure. Nil if no procedure is running.")]
-    // current_procedure_name : String,
-    
-    #[graphql(description="One-indexed number of the current procedure step in the currently running procedure. Nil if no procedure is running.")]
-    current_procedure_step_number : i32,
-
-    //#[serde(skip)]
-    //current_procedure_step_start_instant: Instant,
-    
-    // #[graphql(description="Start time of the current procedure step in the currently running procedure. Nil if no procedure is running or if the slide holder is currently en route to a staining jar.")]
-    // current_procedure_step_seconds_remaining: String,
-    
-    #[graphql(description="The cycle number, one-indexed, of how many times the procedure has been repeated in a single run.")]
-    current_cycle_number: i32,
-
-    run_state: ProcedureExecutionStateEnum,
-}
 
 // impl ProcedureRunStatus {
 //     fn run_state() -> ProcedureExecutionStateEnum {
