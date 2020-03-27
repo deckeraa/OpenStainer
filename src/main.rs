@@ -5,14 +5,13 @@ extern crate rocket;
 
 mod structs_and_consts;
 mod graphql;
+mod motion;
 
 use gpio::{GpioIn, GpioOut};
-use rocket::http::{RawStr, Method};
-use rocket::request::FromParam;
+use rocket::http::{Method};
 use rocket::State;
 use std::convert::TryFrom;
 use std::convert::TryInto;
-use std::fmt;
 use std::sync::Mutex;
 use std::{thread, time};
 use thread_priority::*;
@@ -25,6 +24,7 @@ use std::sync::atomic::*;
 use std::process::Command;
 pub use crate::structs_and_consts::*;
 pub use crate::graphql::*;
+pub use crate::motion::*;
 
 #[rocket::post("/pause_procedure")]
 fn pause_procedure(pes: State<ProcedureExecutionState>) -> String {
@@ -50,165 +50,6 @@ fn read_procedure_status(pes: State<ProcedureExecutionState>) -> String {
 fn seconds_remaining(pes: State<ProcedureExecutionState>) -> String {
     let pes = pes.inner();
     format! {"{}", pes.seconds_remaining.load(Ordering::Relaxed)}
-}
-
-#[derive(juniper::GraphQLObject, Debug)]
-#[graphql(description="A axis of motion on the device.")]
-struct Axis {
-    position_inches: String,
-}
-
-#[derive(juniper::GraphQLObject, Debug)]
-struct Settings {
-    developer: bool,
-}
-
-//type Schema = juniper::RootNode<'static, Query, EmptyMutation<SharedPi>>;
-type Schema = juniper::RootNode<'static, Query, Mutation>;
-
-struct Query;
-#[juniper::object(Context = SharedPi)]
-impl Query {
-    fn apiVersion() -> &'static str {
-        "1.0"
-    }
-
-    fn settings() -> FieldResult<Settings> {
-	let settings = Settings { developer: true };
-	println!("Returning settings: {:?}",settings);
-	Ok(settings)
-    }
-
-    fn axis(context: &SharedPi, id: AxisDirection) -> FieldResult<Axis> {
-	println!("axis id: {:?}",id);
-        let pi = &mut *context.lock().unwrap();
-	let stepper = get_stepper( pi, &id );
-	let position_inches = match stepper.pos {
-             Some(v) => format!("{}", pulses_to_inches(v, &stepper)),
-             None => "Not homed".to_string(),
- 	};
-	let axis = Axis {position_inches: position_inches};
-	println!("Returning axis: {:?}",axis);
-        
-        Ok(axis)
-    }
-
-    fn procedures() -> FieldResult<Vec<Procedure>> {
-	let resp = reqwest::blocking::get(reqwest::Url::parse(format!("{}/_design/procedures/_view/procedures?include_docs=true",COUCHDB_URL).as_str()).unwrap());
-	if resp.is_ok() {
-	    let view_result = resp.unwrap().json::<ViewResult<Procedure>>().unwrap();
-	    let v : Vec<Procedure> = view_result.rows.into_iter().map(|row| row.doc ).collect();
-	    println!("Returning procedures: {:?}",v);
-	    return Ok(v);
-	}
-	return Ok(vec![]); // TODO probably something better to do than return an empty array
-    }
-
-    fn procedure_by_id(id: String) -> FieldResult<Procedure> {
-	procedure_by_id(id)
-    }
-
-    fn current_procedure(shared_pi: &SharedPi) -> FieldResult<Option<Procedure>> {
-	let pi = &mut *shared_pi.lock().unwrap();
-	Ok(pi.current_procedure.clone())
-	// match pi.current_procedure {
-        //      Some(v) => Ok(v),
-        //      None => Err(juniper::FieldError::new(format!("No current procedure"),graphql_value!({ "internal_error": "Couldn't parse response from CouchDB"})));
- 	// }
-    }
-
-    fn run_status(shared_pi: &SharedPi) -> FieldResult<Option<ProcedureRunStatus>> {
-	let pi = &mut *shared_pi.lock().unwrap();
-	println!("run_status: {:?}", pi.run_status);
-	let run_status_opt = pi.run_status.clone();
-	if run_status_opt.is_none() {
-	    return Ok(None);
-	}
-	let run_status = run_status_opt.unwrap();
-	//run_status.run_state = ProcedureExecutionStateEnum::Paused;
-	Ok(Some(run_status))
-    }
-}
-
-#[rocket::post("/graphql", data = "<request>")]
-fn post_graphql_handler(
-    pi_state: State<SharedPi>,
-    request: juniper_rocket::GraphQLRequest,
-    schema: State<Schema>,
-) -> juniper_rocket::GraphQLResponse {
-    // let pi_mutex = &mut pi_state.inner();
-    // {
-    //     let context = &mut *context_mutex.lock().unwrap();
-    //     context.a_bool = !context.a_bool;
-    //     std::mem::drop(context);
-    // }
-    println!("GraphQLRequest {:?}",request.operation_names());
-    request.execute(&schema, &pi_state)
-}
-
-#[get("/graphiql")]
-fn graphiql() -> rocket::response::content::Html<String> {
-    juniper_rocket::graphiql_source("/graphql")
-}
-
-// #[rocket::post("/delete_procedure/<id>")]
-// fn delete_procedure(id: String) -> String {
-//     let client = reqwest::blocking::Client::new();
-//     let url : &str = &format!("http://localhost:5984/slide_stainer/{}",id).to_string();
-//     let resp = client.delete(url);
-//     println!("delete_procedure resp: {:?}",resp);
-//     "true".to_string()
-// }
-
-#[derive(Debug, PartialEq, Eq)]
-enum MoveResult {
-    MovedFullDistance,
-    HitLimitSwitch,
-    HitEStop,
-    FailedDueToNotHomed,
-    FailedToHome,
-}
-
-#[derive(juniper::GraphQLEnum, Debug)]
-enum AxisDirection {
-    X,
-    Z,
-}
-
-impl<'r> FromParam<'r> for AxisDirection {
-    type Error = &'r RawStr;
-
-    fn from_param(param: &'r RawStr) -> Result<Self, Self::Error> {
-        match param.as_str() {
-            "x" => Ok(AxisDirection::X),
-            "z" => Ok(AxisDirection::Z),
-            _ => Err(param),
-        }
-    }
-}
-
-impl fmt::Display for AxisDirection {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            AxisDirection::X => write!(f, "x"),
-            AxisDirection::Z => write!(f, "z"),
-        }
-    }
-}
-
-fn get_stepper<'a>(pi: &'a mut Pi, axis: &AxisDirection) -> &'a mut Stepper {
-    match axis {
-        AxisDirection::X => &mut pi.stepper_x,
-        AxisDirection::Z => &mut pi.stepper_z,
-    }
-}
-
-fn inches_to_pulses(inches: Inch, stepper: &Stepper) -> PulseCount {
-    (stepper.pulses_per_revolution as f64 * inches / stepper.travel_distance_per_turn) as u64
-}
-
-fn pulses_to_inches(pulses: PulseCount, stepper: &Stepper) -> Inch {
-    pulses as f64 * stepper.travel_distance_per_turn / stepper.pulses_per_revolution as f64
 }
 
 fn generate_wait_times(

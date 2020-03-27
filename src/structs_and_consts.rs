@@ -4,6 +4,9 @@ use std::sync::atomic::*;
 use std::sync::Mutex;
 use juniper::FieldResult;
 use juniper::graphql_value;
+use std::fmt;
+use rocket::request::FromParam;
+use rocket::http::RawStr;
 
 pub type Inch = f64;
 pub type PulseCount = u64;
@@ -185,3 +188,57 @@ pub fn procedure_by_id(id: String) -> FieldResult<Procedure> {
 	return Err(juniper::FieldError::new("No procedure with that ID found.",
 					    graphql_value!({ "internal_error": "No procedure with that ID found."})))
     }
+
+#[derive(juniper::GraphQLObject, Debug)]
+#[graphql(description="A axis of motion on the device.")]
+pub struct Axis {
+    pub position_inches: String,
+}
+
+#[derive(juniper::GraphQLObject, Debug)]
+pub struct Settings {
+    pub developer: bool,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum MoveResult {
+    MovedFullDistance,
+    HitLimitSwitch,
+    HitEStop,
+    FailedDueToNotHomed,
+    FailedToHome,
+}
+
+#[derive(juniper::GraphQLEnum, Debug)]
+pub enum AxisDirection {
+    X,
+    Z,
+}
+
+impl<'r> FromParam<'r> for AxisDirection {
+    type Error = &'r RawStr;
+
+    fn from_param(param: &'r RawStr) -> Result<Self, Self::Error> {
+        match param.as_str() {
+            "x" => Ok(AxisDirection::X),
+            "z" => Ok(AxisDirection::Z),
+            _ => Err(param),
+        }
+    }
+}
+
+impl fmt::Display for AxisDirection {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AxisDirection::X => write!(f, "x"),
+            AxisDirection::Z => write!(f, "z"),
+        }
+    }
+}
+
+pub fn get_stepper<'a>(pi: &'a mut Pi, axis: &AxisDirection) -> &'a mut Stepper {
+    match axis {
+        AxisDirection::X => &mut pi.stepper_x,
+        AxisDirection::Z => &mut pi.stepper_z,
+    }
+}
