@@ -206,9 +206,22 @@ pub struct Axis {
     pub position_inches: String,
 }
 
-#[derive(juniper::GraphQLObject, Debug)]
+#[derive(juniper::GraphQLObject, Debug, Serialize, Deserialize)]
 pub struct Settings {
     pub developer: bool,
+}
+
+#[derive(juniper::GraphQLInputObject, Debug, Serialize, Deserialize)]
+pub struct SettingsInputObject {
+    pub developer: bool,
+}
+
+impl From<Settings> for SettingsInputObject {
+    fn from(settings: Settings) -> Self {
+	SettingsInputObject {
+	    developer: settings.developer,
+	}
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]

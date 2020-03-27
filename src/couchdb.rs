@@ -25,7 +25,7 @@ pub struct CouchDBPOSTResponse {
     pub rev: String,
 }
 
-// convenience function for generation juniper::FieldError
+// convenience function for generating juniper::FieldError
 pub fn juniper_err<T>(message: String) -> FieldResult<T>{
     Err(juniper::FieldError::new(message.clone(),graphql_value!({ "internal_error": message})))
 }
@@ -107,15 +107,23 @@ pub fn delete_procedure(id: String, rev: String) -> FieldResult<Vec<Procedure>> 
     return procedures();
 }
 
-// pub fn settings() -> FieldResult<Settings> {
-//     let url : &str = &format!("{}/settings",COUCHDB_URL).to_string();
-//     let resp = reqwest::blocking::get(url);
-//     if resp.is_ok() {
-// 	let parse_result = resp.unwrap().json::<Settings>();
-// 		if parse_result.is_err() {
-// 	    return juniper_err::<Procedure>(format!("Couldn't parse response from CouchDB: {:?}",parse_result.err()));
-// 	}
-// 	let proc = parse_result.unwrap();
-// 	return Ok(proc);
-//     }
-// }
+pub fn settings() -> FieldResult<Settings> {
+    get_doc::<Settings>("settings".to_string())
+}
+
+pub fn save_settings(settings_input_object: SettingsInputObject) -> FieldResult<Settings> {
+    let client = reqwest::blocking::Client::new();
+    let resp = client.post(COUCHDB_URL)
+	.json(&settings_input_object)
+	.send();
+    if resp.is_err() {
+	return juniper_err::<Settings>("Unable to connect with CouchDB.".to_string());
+    }
+    let unwrapped = resp.unwrap();
+    let parse_result = unwrapped.json::<CouchDBPOSTResponse>();
+    if parse_result.is_err() {
+	return juniper_err::<Settings>(format!("Couldn't parse response from CouchDB: {:?}",parse_result.err()));
+    }
+
+    settings()
+}

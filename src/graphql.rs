@@ -16,9 +16,7 @@ impl Query {
     }
 
     fn settings() -> FieldResult<Settings> {
-	let settings = Settings { developer: true }; // TODO retrieve actual value
-	println!("Returning settings: {:?}",settings);
-	Ok(settings)
+	crate::couchdb::settings()
     }
 
     fn axis(context: &SharedPi, id: AxisDirection) -> FieldResult<Axis> {
@@ -69,6 +67,10 @@ impl Mutation {
 
     fn delete_procedure(id: String, rev: String) -> FieldResult<Vec<Procedure>> {
 	crate::couchdb::delete_procedure(id,rev)
+    }
+
+    fn save_settings(settings_input_object: SettingsInputObject) -> FieldResult<Settings> {
+	crate::couchdb::save_settings(settings_input_object)
     }
 }
 
