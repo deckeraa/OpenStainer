@@ -675,12 +675,12 @@ fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, is_h
 // }
 
 fn home(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
-    let ret_one = move_steps(pi, AxisDirection::Z, true, 160000, true, None, false);
+    let ret_one = move_steps(pi, AxisDirection::Z, true, 160000, true, opt_pes, false);
     println!("Result of first home move {:?}",ret_one);
     if ret_one == MoveResult::HitEStop || ret_one == MoveResult::FailedToHome{
 	return MoveResult::FailedToHome;
     }
-    let ret_two = move_steps(pi, AxisDirection::X, false, 320000, true, None, false);
+    let ret_two = move_steps(pi, AxisDirection::X, false, 320000, true, opt_pes, false);
     if ret_one == MoveResult::HitLimitSwitch && ret_two == MoveResult::HitLimitSwitch {
         move_to_up_position(pi, opt_pes);
         move_to_left_position(pi, opt_pes);
@@ -758,6 +758,7 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 		println!("Entering loop B");
 		while !got_to_jar {
 		    if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Running {
+			println!("============== Running move_to_jar {:?} ", step.jar_number);
 			let ret = move_to_jar( pi, step.jar_number, Some(&pes) );
 			if ret == MoveResult::MovedFullDistance {
 			    got_to_jar = true;
