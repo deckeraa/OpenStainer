@@ -259,7 +259,8 @@
 (defonce rest-updater-instance
   (js/setTimeout (fn [] (slide-stainer.periodic-updater/fast-rest-updater
                          atoms/screen-cursor
-                         {:procedure-run {:rest-fn slide-stainer.procedure-run/rest-fn
+                         {:procedure-run {:run-query-fn (partial slide-stainer.procedure-run/run-query-fn atoms/procedure-run-status-cursor)
+                                          :rest-fn  slide-stainer.procedure-run/rest-fn
                                           :rest-handler-fn (partial slide-stainer.procedure-run/rest-handler-fn
                                                                     atoms/procedure-cursor atoms/procedure-run-status-cursor)}}))
                  (* 1 1000)))

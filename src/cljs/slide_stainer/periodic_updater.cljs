@@ -44,14 +44,14 @@
 (defn fast-rest-updater
   ([screen-cursor queries-to-run]
    (let [screen (peek @screen-cursor)
+         run-query-fn (get-in queries-to-run [screen :run-query-fn])
          query-fn (get-in queries-to-run [screen :rest-fn])
          handler-fn (get-in queries-to-run [screen :rest-handler-fn])]
-     (if (nil? query-fn)
+     (if (and query-fn run-query-fn (run-query-fn))
+       (go (let [raw-resp (<! (query-fn))]
+             (let [resp (:body raw-resp)]
+               (if handler-fn (handler-fn resp raw-resp))
+               (js/setTimeout (partial fast-rest-updater screen-cursor queries-to-run)
+                              500))))
        (js/setTimeout (partial fast-rest-updater screen-cursor queries-to-run)
-                              500)
-       (when query-fn
-         (go (let [raw-resp (<! (query-fn))]
-               (let [resp (:body raw-resp)]
-                 (if handler-fn (handler-fn resp raw-resp))
-                 (js/setTimeout (partial fast-rest-updater screen-cursor queries-to-run)
-                                500)))))))))
+                              500)))))

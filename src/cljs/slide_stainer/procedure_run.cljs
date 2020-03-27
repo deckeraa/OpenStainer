@@ -39,9 +39,11 @@
                                          (assoc $ :currentProcedureStepNumber (get-in resp [:runStatus :currentProcedureStepNumber]))
                                          (assoc $ :currentCycleNumber (get-in resp [:runStatus :currentCycleNumber]))))))
 
+(defn run-query-fn [procedure-run-status-cursor]
+  (not (nil? (:currentCycleNumber @procedure-run-status-cursor))))
+
 (defn rest-fn []
-  (http/get "http://localhost:8000/seconds_remaining")
-  )
+  (http/get "http://localhost:8000/seconds_remaining"))
 
 (defn rest-handler-fn [procedure-cursor procedure-run-status-cursor resp raw-resp]
   (let [seconds-remaining (js/parseInt resp)]
