@@ -25,57 +25,45 @@ pub struct CouchDBPOSTResponse {
     pub rev: String,
 }
 
-// This code lives outside of Query since the #[juniper::object(Context = SharedPi)] is preventing me from
-// referencing Query::procedure_by_id elsewhere in code.
+// convenience function for generation juniper::FieldError
+pub fn juniper_err<T>(message: String) -> FieldResult<T>{
+    Err(juniper::FieldError::new(message.clone(),graphql_value!({ "internal_error": message})))
+}
+
 pub fn procedure_by_id(id: String) -> FieldResult<Procedure> {
     let url : &str = &format!("{}/{}",COUCHDB_URL,id).to_string();
     let resp = reqwest::blocking::get(url);
     if resp.is_ok() {
 	let parse_result = resp.unwrap().json::<Procedure>();
 	if parse_result.is_err() {
-	    return Err(juniper::FieldError::new(format!("Couldn't parse response from CouchDB: {:?}",parse_result.err()),graphql_value!({ "internal_error": "Couldn't parse response from CouchDB"})));
+	    return juniper_err::<Procedure>(format!("Couldn't parse response from CouchDB: {:?}",parse_result.err()));
 	}
 	let proc = parse_result.unwrap();
 	return Ok(proc);
     }
-    return Err(juniper::FieldError::new("No procedure with that ID found.",
-					graphql_value!({ "internal_error": "No procedure with that ID found."})))
+    return juniper_err::<Procedure>("No procedure with that ID found.".to_string());
 }
 
-fn save_procedure(procedure: Procedure) -> FieldResult<Procedure> {
+pub fn save_procedure(procedure: Procedure) -> FieldResult<Procedure> {
     save_procedure_input_object( ProcedureInputObject::from(procedure) )
 }
 
-fn save_procedure_input_object(procedure: ProcedureInputObject) -> FieldResult<Procedure> {
-	let client = reqwest::blocking::Client::new();
-	let body = serde_json::to_string(&procedure);
-	if body.is_err() {
-	    return Err(juniper::FieldError::new("Unable to parse the input object.",
-						graphql_value!({ "internal_error": "Unable to parse the input object."})));
-	}
-	let body = body.unwrap();
-	println!("save_procedure body: {:?}",body);
-	let resp = client.post(COUCHDB_URL)//"http://localhost:5984/slide_stainer/")
-	//.body(body) // .body(body)
-	    .json(&procedure)
-	    .send();
-	if resp.is_err() {
-	    return Err(juniper::FieldError::new("Unable to connect with CouchDB.",
-						graphql_value!({ "internal_error": "Unable to connect with CouchDB."})));
-	}
-	//let resp = resp.unwrap();
-	println!("save_procedure resp: {:?}",resp);
-	let unwrapped = resp.unwrap();
-//	println!("save_procedure resp.text(): {:?}",unwrapped.text());
-	let parse_result = unwrapped.json::<CouchDBPOSTResponse>();//resp.unwrap().json::<Procedure>();
-	//let parse_result = Err("hard-coded");
-	if parse_result.is_err() {
-//	    return Err(juniper::FieldError::new("Couldn't parse response from CouchDB",graphql_value!({ "internal_error": "Couldn't parse response from CouchDB"})));
-	    return Err(juniper::FieldError::new(format!("Couldn't parse response from CouchDB: {:?}",parse_result.err()),graphql_value!({ "internal_error": "Couldn't parse response from CouchDB"})));
-	}
-
-	procedure_by_id(parse_result.unwrap().id)
+pub fn save_procedure_input_object(procedure: ProcedureInputObject) -> FieldResult<Procedure> {
+    let client = reqwest::blocking::Client::new();
+    let resp = client.post(COUCHDB_URL)
+	.json(&procedure)
+	.send();
+    if resp.is_err() {
+	return juniper_err::<Procedure>("Unable to connect with CouchDB.".to_string());
     }
+    let unwrapped = resp.unwrap();
+    let parse_result = unwrapped.json::<CouchDBPOSTResponse>();
+    if parse_result.is_err() {
+	return juniper_err::<Procedure>(format!("Couldn't parse response from CouchDB: {:?}",parse_result.err()));
+    }
+
+    procedure_by_id(parse_result.unwrap().id)
+}
 
 pub fn increment_run_count( proc: &mut Procedure) -> FieldResult<Procedure> {
     // increment the number of runs
@@ -87,7 +75,27 @@ pub fn increment_run_count( proc: &mut Procedure) -> FieldResult<Procedure> {
 
     // save the updated procedure
     return save_procedure(proc.clone());
+}
 
-    // TODO
-    //return Err(juniper::FieldError::new(format!("TODO"),graphql_value!({ "internal_error": "Couldn't parse response from CouchDB"})));
+pub fn delete_procedure(id: String, rev: String) -> FieldResult<Vec<Procedure>> {
+    let client = reqwest::blocking::Client::new();
+    let url : &str = &format!("{}/{}?rev={}",COUCHDB_URL,id,rev).to_string();
+    let resp = client.delete(url).send();
+
+    if resp.is_err() {
+	return juniper_err::<Vec<Procedure>>(format!("Unable to communicate with CouchDB server"));
+    }
+    let resp = resp.unwrap();
+    if resp.status() != 200 {
+	return juniper_err::<Vec<Procedure>>(format!("Recieved status {} and text {:?} from CouchDB when attempting to delete.",resp.status(),resp.text()));
+    }
+    
+    let resp = reqwest::blocking::get(reqwest::Url::parse(format!("{}/_design/procedures/_view/procedures?include_docs=true",COUCHDB_URL).as_str()).unwrap());
+    if resp.is_ok() {
+	let view_result = resp.unwrap().json::<ViewResult<Procedure>>().unwrap();
+	let v : Vec<Procedure> = view_result.rows.into_iter().map(|row| row.doc ).collect();
+	println!("Returning procedures: {:?}",v);
+	return Ok(v);
+    }
+    return juniper_err::<Vec<Procedure>>("Unable to retrive list of procedures after delete.".to_string());
 }
