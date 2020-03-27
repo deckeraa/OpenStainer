@@ -287,17 +287,6 @@ fn pos(pi: State<SharedPi>, axis: AxisDirection) -> String {
     }
 }
 
-#[get("/couch")]
-fn couch() -> String {
-    let resp = reqwest::blocking::get(reqwest::Url::parse(format!("{}/_design/procedures/_view/procedures?include_docs=true",COUCHDB_URL).as_str()).unwrap());
-    if resp.is_ok() {
-	let json = resp.unwrap().json::<ViewResult<Procedure>>().unwrap();
-	let s : String = serde_json::to_string(&json).unwrap();
-	return s;
-    }
-    return "Couldn't query the view".to_string();
-}
-
 #[post("/exit_kiosk_mode")]
 fn exit_kiosk_mode() -> String {
     let mut command = Command::new("./exit_kiosk_mode.sh");
@@ -372,7 +361,6 @@ fn main() {
         .mount(
             "/",
             routes![
-//                index,
                 home_handler,
                 pos,
                 move_by_pulses,
@@ -384,8 +372,6 @@ fn main() {
                 move_to_jar_handler,
 		graphiql,
 		post_graphql_handler,
-		couch,
-		// delete_procedure,
 		run_procedure,
 		pause_procedure,
 		resume_procedure,
