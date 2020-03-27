@@ -1,31 +1,10 @@
 pub use crate::structs_and_consts::*;
 pub use crate::motion::*;
+pub use crate::couchdb::*;
 
 use juniper::{FieldResult};
 use juniper::graphql_value;
-use serde::*;
 use rocket::State;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct SingleViewResultWithIncludeDocs<T> {
-    pub id: String,
-    pub key: String,
-    pub doc: T,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ViewResult<T> {
-    pub total_rows: i64,
-    pub offset: i64,
-    pub rows: Vec<SingleViewResultWithIncludeDocs<T>>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct CouchDBPOSTResponse {
-    pub ok: bool,
-    pub id: String,
-    pub rev: String,
-}
 
 pub type Schema = juniper::RootNode<'static, Query, Mutation>;
 

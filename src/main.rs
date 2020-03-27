@@ -77,7 +77,7 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
     // load the procedure
     let proc : FieldResult<Procedure> = procedure_by_id(id);
     if proc.is_err() { return format! {"Couldn't find procedure with that ID."}; }
-    let proc = proc.unwrap();
+    let mut proc = proc.unwrap();
 
     {
 	let pi = &mut *pi_mutex.lock().unwrap();
@@ -227,6 +227,7 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 	pi.red_light.set_low().expect("Couldn't turn off estop light.");
     }
     pes.atm.store(ProcedureExecutionStateEnum::Completed, Ordering::Relaxed);
+    let _inc_result : FieldResult<Procedure> = increment_run_count(&mut proc);
     println!("========= Done running procedure ========");
     format! {"run_procedure return value TODO"}
 }

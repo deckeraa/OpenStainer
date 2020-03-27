@@ -66,6 +66,17 @@ pub struct ProcedureStepInputObject {
     pub jar_number: i32,
 }
 
+impl From<ProcedureStep> for ProcedureStepInputObject {
+
+    fn from(proc: ProcedureStep) -> Self {
+	ProcedureStepInputObject {
+	    substance : proc.substance,
+	    time_in_seconds: proc.time_in_seconds,
+	    jar_number: proc.jar_number,
+	}
+    }
+}
+
 #[derive(juniper::GraphQLObject, Debug, Serialize, Deserialize, Clone)]
 #[graphql(description="A staining procedure")]
 pub struct Procedure {
@@ -130,6 +141,26 @@ pub struct ProcedureInputObject {
     #[graphql(description="Number of times this procedure has ever been run.")]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub runs: Option<i32>,
+}
+
+impl From<Procedure> for ProcedureInputObject {
+
+    fn from(proc: Procedure) -> Self {
+	let mut procedure_steps : Vec<ProcedureStepInputObject> = Vec::new();
+	for step in proc.procedure_steps {
+	    procedure_steps.push(ProcedureStepInputObject::from(step));
+	}
+	ProcedureInputObject {
+	    id : Some(proc.id),
+	    rev : Some(proc.rev),
+	    type_ : proc.type_,
+	    name : proc.name,
+	    jar_contents : proc.jar_contents.clone(),
+	    procedure_steps : procedure_steps,
+	    repeat : proc.repeat,
+	    runs : proc.runs,
+	}
+    }
 }
 
 #[derive(juniper::GraphQLObject, Debug, Serialize, Deserialize, Clone)]
