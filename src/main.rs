@@ -189,10 +189,32 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
     // End of procedure, so move to the up position
     {
 	let pi = &mut *pi_mutex.lock().unwrap();
-	let ret = move_to_up_position( pi, None );
-	if ret == MoveResult::HitEStop {
-	    return format! {"Stopped due to e-stop being hit."}
+	// let ret = move_to_up_position( pi, None );
+	// if ret == MoveResult::HitEStop {
+	//     return format! {"Stopped due to e-stop being hit."}
+	// }
+	let mut got_to_up = false;
+	while !got_to_up {
+	    if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Running {
+		println!("============== Running move_to_up ");
+		//let ret = move_to_jar( pi, step.jar_number, Some(&pes) );
+		let ret = move_to_up_position( pi, Some(&pes));
+		if ret == MoveResult::MovedFullDistance {
+		    got_to_up = true;
+		    break;
+		}
+	    }
+	    if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Paused {
+		pi.green_light.set_high().expect("Couldn't turn green light on");
+		if bool::from(pi.green_button.read_value().unwrap()) {
+		    pes.atm.store(ProcedureExecutionStateEnum::Running, Ordering::Relaxed);
+		    pi.green_light.set_low().expect("Couldn't turn green light off");
+		    pi.red_light.set_high().expect("Couldn't turn red light back on");
+		}
+	    }
+	    thread::sleep(time::Duration::from_millis(10));
 	}
+	
 	pi.run_status = None;
 	pi.red_light.set_low().expect("Couldn't turn off estop light.");
     }
