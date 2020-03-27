@@ -102,7 +102,7 @@ pub fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, 
         if  bool::from(pi.estop.read_value().unwrap()) {
             hit_e_stop = true;
 	    println!("Hit estop!");
-	    if opt_pes.is_some() && !skip_soft_estop_check {
+	    if opt_pes.is_some() { 
 		opt_pes.unwrap().atm.store(ProcedureExecutionStateEnum::Paused, Ordering::Relaxed);
 		pi.red_light.set_low().expect("Couldn't run off red light.");
 	    }
