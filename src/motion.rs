@@ -202,12 +202,12 @@ pub fn move_to_pos(pi: &mut Pi, axis: AxisDirection, inches: Inch, opt_pes: Opti
     move_steps(pi, axis, forward, pulses, false, opt_pes, skip_soft_estop_check)
 }
 
-pub fn move_to_up_position(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
-    move_to_pos(pi, AxisDirection::Z, UP_POSITION, opt_pes, true)
+pub fn move_to_up_position(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>, skip_soft_estop_check: bool) -> MoveResult {
+    move_to_pos(pi, AxisDirection::Z, UP_POSITION, opt_pes, skip_soft_estop_check)
 }
 
-pub fn move_to_down_position(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
-    move_to_pos(pi, AxisDirection::Z, 0.0, opt_pes, true)
+pub fn move_to_down_position(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>, skip_soft_estop_check: bool) -> MoveResult {
+    move_to_pos(pi, AxisDirection::Z, 0.0, opt_pes, skip_soft_estop_check)
 }
 
 pub fn move_to_left_position(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
@@ -222,7 +222,7 @@ pub fn home(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -> MoveResul
     }
     let ret_two = move_steps(pi, AxisDirection::X, false, 320000, true, opt_pes, false);
     if ret_one == MoveResult::HitLimitSwitch && ret_two == MoveResult::HitLimitSwitch {
-        move_to_up_position(pi, opt_pes);
+        move_to_up_position(pi, opt_pes, false);
         move_to_left_position(pi, opt_pes);
     }
     ret_two
@@ -239,7 +239,7 @@ fn known_to_be_at_jar_position(pi: &mut Pi, jar_number: i32) -> bool {
 
 pub fn move_to_jar(pi: &mut Pi, jar_number: i32, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
     if !known_to_be_at_jar_position(pi, jar_number) {
-	let ret: MoveResult = move_to_up_position(pi, opt_pes);
+	let ret: MoveResult = move_to_up_position(pi, opt_pes, false);
 	if ret == MoveResult::HitLimitSwitch
             || ret == MoveResult::HitEStop
             || ret == MoveResult::FailedDueToNotHomed
@@ -260,6 +260,6 @@ pub fn move_to_jar(pi: &mut Pi, jar_number: i32, opt_pes: Option<&ProcedureExecu
             return ret;
 	}
     }
-    let ret = move_to_down_position(pi, opt_pes);
+    let ret = move_to_down_position(pi, opt_pes, false);
     ret
 }

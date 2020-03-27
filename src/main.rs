@@ -114,6 +114,8 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 		while !got_to_jar {
 		    if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Running {
 			println!("============== Running move_to_jar {:?} ", step.jar_number);
+			pi.green_light.set_low().expect("Couldn't turn green light off");
+			pi.red_light.set_high().expect("Couldn't turn red light back on");
 			let ret = move_to_jar( pi, step.jar_number, Some(&pes) );
 			if ret == MoveResult::MovedFullDistance {
 			    got_to_jar = true;
@@ -122,6 +124,7 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 		    }
 		    if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Paused {
 			pi.green_light.set_high().expect("Couldn't turn green light on");
+			pi.red_light.set_low().expect("Couldn't turn red light off");
 			if bool::from(pi.green_button.read_value().unwrap()) {
 			    pes.atm.store(ProcedureExecutionStateEnum::Running, Ordering::Relaxed);
 			    pi.green_light.set_low().expect("Couldn't turn green light off");
@@ -198,7 +201,9 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 	    if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Running {
 		println!("============== Running move_to_up ");
 		//let ret = move_to_jar( pi, step.jar_number, Some(&pes) );
-		let ret = move_to_up_position( pi, Some(&pes));
+		pi.green_light.set_low().expect("Couldn't turn green light off");
+		pi.red_light.set_high().expect("Couldn't turn red light back on");
+		let ret = move_to_up_position( pi, Some(&pes), false);
 		if ret == MoveResult::MovedFullDistance {
 		    got_to_up = true;
 		    break;
@@ -206,6 +211,7 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 	    }
 	    if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Paused {
 		pi.green_light.set_high().expect("Couldn't turn green light on");
+		pi.red_light.set_low().expect("Couldn't turn red light off");
 		if bool::from(pi.green_button.read_value().unwrap()) {
 		    pes.atm.store(ProcedureExecutionStateEnum::Running, Ordering::Relaxed);
 		    pi.green_light.set_low().expect("Couldn't turn green light off");
@@ -264,7 +270,7 @@ fn move_to_up_position_handler(pi_state: State<SharedPi>, pes: State<ProcedureEx
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
     let pes = pes.inner();
-    let ret = move_to_up_position(pi, Some(pes));
+    let ret = move_to_up_position(pi, Some(pes), true); // skip_soft_estop_check is set to true so that the user can manually raise the rack while paused
     format! {"{:?}",ret}
 }
 
@@ -273,7 +279,7 @@ fn move_to_down_position_handler(pi_state: State<SharedPi>, pes: State<Procedure
     let pi_mutex = &mut pi_state.inner();
     let pi = &mut *pi_mutex.lock().unwrap();
     let pes = pes.inner();
-    let ret = move_to_down_position(pi, Some(pes));
+    let ret = move_to_down_position(pi, Some(pes), true); // skip_soft_estop_check is set to true so that the user can manually lower the rack while paused
     format! {"{:?}",ret}
 }
 
