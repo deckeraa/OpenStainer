@@ -4,6 +4,7 @@
 extern crate rocket;
 
 mod structs_and_consts;
+mod graphql;
 
 use gpio::{GpioIn, GpioOut};
 use rocket::http::{RawStr, Method};
@@ -16,36 +17,14 @@ use std::sync::Mutex;
 use std::{thread, time};
 use thread_priority::*;
 use juniper::{FieldResult};
-use juniper::graphql_value;
-use serde::*;
 use rocket_contrib::serve::StaticFiles;
 use rocket_cors::{AllowedHeaders, AllowedOrigins};
 use std::time::{Instant};
 use std::sync::atomic::Ordering;
 use std::sync::atomic::*;
-
 use std::process::Command;
 pub use crate::structs_and_consts::*;
-
-
-
-// #[derive(juniper::GraphQLObject, Debug, Serialize, Deserialize, Clone)]
-// struct State {
-//     
-//     current_procedure_run_status: Option<ProcedureRunStatus>,
-// }
-
-// #[juniper::object]
-// impl Stepper {
-//     fn position_inches(&self) -> String {
-// 	match self.pos {
-//             Some(v) => format!("{}", pulses_to_inches(v, self)),
-//             None => "Not homed".to_string(),
-// 	}
-//     }
-// }
-
-
+pub use crate::graphql::*;
 
 #[rocket::post("/pause_procedure")]
 fn pause_procedure(pes: State<ProcedureExecutionState>) -> String {
@@ -73,36 +52,6 @@ fn seconds_remaining(pes: State<ProcedureExecutionState>) -> String {
     format! {"{}", pes.seconds_remaining.load(Ordering::Relaxed)}
 }
 
-
-
-// impl ProcedureRunStatus {
-//     fn run_state() -> ProcedureExecutionStateEnum {
-// 	ProcedureExecutionStateEnum::Paused
-//     }
-	
-// }
-
-#[derive(Debug, Serialize, Deserialize)]
-struct SingleViewResultWithIncludeDocs<T> {
-    id: String,
-    key: String,
-    doc: T,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct ViewResult<T> {
-    total_rows: i64,
-    offset: i64,
-    rows: Vec<SingleViewResultWithIncludeDocs<T>>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct CouchDBPOSTResponse {
-    ok: bool,
-    id: String,
-    rev: String,
-}
-
 #[derive(juniper::GraphQLObject, Debug)]
 #[graphql(description="A axis of motion on the device.")]
 struct Axis {
@@ -114,27 +63,8 @@ struct Settings {
     developer: bool,
 }
 
-type SharedPi = Mutex<Pi>;
 //type Schema = juniper::RootNode<'static, Query, EmptyMutation<SharedPi>>;
 type Schema = juniper::RootNode<'static, Query, Mutation>;
-
-
-// This code lives outside of Query since the #[juniper::object(Context = SharedPi)] is preventing me from
-// referencing Query::procedure_by_id elsewhere in code.
-fn procedure_by_id(id: String) -> FieldResult<Procedure> {
-	let url : &str = &format!("{}/{}",COUCHDB_URL,id).to_string();
-	let resp = reqwest::blocking::get(url);
-	if resp.is_ok() {
-	    let parse_result = resp.unwrap().json::<Procedure>();
-	    if parse_result.is_err() {
-		return Err(juniper::FieldError::new(format!("Couldn't parse response from CouchDB: {:?}",parse_result.err()),graphql_value!({ "internal_error": "Couldn't parse response from CouchDB"})));
-	    }
-	    let proc = parse_result.unwrap();
-	    return Ok(proc);
-	}
-	return Err(juniper::FieldError::new("No procedure with that ID found.",
-					    graphql_value!({ "internal_error": "No procedure with that ID found."})))
-    }
 
 struct Query;
 #[juniper::object(Context = SharedPi)]
@@ -198,75 +128,6 @@ impl Query {
 	//run_status.run_state = ProcedureExecutionStateEnum::Paused;
 	Ok(Some(run_status))
     }
-}
-
-struct Mutation;
-#[juniper::object(Context = SharedPi)]
-impl Mutation {
-    fn save_procedure(procedure: ProcedureInputObject) -> FieldResult<Procedure> {
-	let client = reqwest::blocking::Client::new();
-	let body = serde_json::to_string(&procedure);
-	if body.is_err() {
-	    return Err(juniper::FieldError::new("Unable to parse the input object.",
-						graphql_value!({ "internal_error": "Unable to parse the input object."})));
-	}
-	let body = body.unwrap();
-	println!("save_procedure body: {:?}",body);
-	let resp = client.post(COUCHDB_URL)//"http://localhost:5984/slide_stainer/")
-	//.body(body) // .body(body)
-	    .json(&procedure)
-	    .send();
-	if resp.is_err() {
-	    return Err(juniper::FieldError::new("Unable to connect with CouchDB.",
-						graphql_value!({ "internal_error": "Unable to connect with CouchDB."})));
-	}
-	//let resp = resp.unwrap();
-	println!("save_procedure resp: {:?}",resp);
-	let unwrapped = resp.unwrap();
-//	println!("save_procedure resp.text(): {:?}",unwrapped.text());
-	let parse_result = unwrapped.json::<CouchDBPOSTResponse>();//resp.unwrap().json::<Procedure>();
-	//let parse_result = Err("hard-coded");
-	if parse_result.is_err() {
-//	    return Err(juniper::FieldError::new("Couldn't parse response from CouchDB",graphql_value!({ "internal_error": "Couldn't parse response from CouchDB"})));
-	    return Err(juniper::FieldError::new(format!("Couldn't parse response from CouchDB: {:?}",parse_result.err()),graphql_value!({ "internal_error": "Couldn't parse response from CouchDB"})));
-	}
-
-	procedure_by_id(parse_result.unwrap().id)
-    }
-
-    fn delete_procedure(id: String, rev: String) -> FieldResult<Vec<Procedure>> {
-	let client = reqwest::blocking::Client::new();
-	let url : &str = &format!("{}/{}?rev={}",COUCHDB_URL,id,rev).to_string();
-	let resp = client.delete(url).send();
-
-	if resp.is_err() {
-	    return Err(juniper::FieldError::new(format!("Unable to communicate with CouchDB server"),graphql_value!({"internal_error":"Unable to communicate with CouchDB server"})));
-	}
-	let resp = resp.unwrap();
-	if resp.status() != 200 {
-	    return Err(juniper::FieldError::new(format!("Recieved status {} and text {:?} from CouchDB when attempting to delete.",resp.status(),resp.text()),graphql_value!({"internal_error":"Unable to delete from CouchDB"})));
-	}
-	println!("delete_procedure text: {:?}", resp.text());
-	
-	let resp = reqwest::blocking::get(reqwest::Url::parse(format!("{}/_design/procedures/_view/procedures?include_docs=true",COUCHDB_URL).as_str()).unwrap());
-	if resp.is_ok() {
-	    let view_result = resp.unwrap().json::<ViewResult<Procedure>>().unwrap();
-	    let v : Vec<Procedure> = view_result.rows.into_iter().map(|row| row.doc ).collect();
-	    println!("Returning procedures: {:?}",v);
-	    return Ok(v);
-	}
-	return Ok(vec![]); // TODO probably something better to do than return an empty array
-    }
-
-    // fn home(pi_state: State<SharedPi>) -> FieldResult<> {
-    // 	{
-    // 	    let pi_mutex = &mut pi_state.inner();
-    // 	    let pi = &mut *pi_mutex.lock().unwrap();
-    // 	    let ret = home(pi);
-    // 	    std::mem::drop(pi);
-    // 	}
-    // 	Query::axis(pi_state)
-    // }
 }
 
 #[rocket::post("/graphql", data = "<request>")]
