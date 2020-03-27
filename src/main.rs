@@ -3,6 +3,8 @@
 #[macro_use]
 extern crate rocket;
 
+mod structs_and_consts;
+
 use gpio::{GpioIn, GpioOut};
 use rocket::http::{RawStr, Method};
 use rocket::request::FromParam;
@@ -23,15 +25,14 @@ use std::sync::atomic::Ordering;
 use std::sync::atomic::*;
 use atomic_enum::*;
 use std::process::Command;
+pub use crate::structs_and_consts::*;
 
-const LEFT_POSITION: Inch = 0.35;
 const UP_POSITION: Inch = 3.5;
 const JAR_SPACING: Inch = 1.9;
 
 const COUCHDB_URL: &'static str = "http://localhost:5984/slide_stainer";
 
 type PulseCount = u64;
-type Inch = f64;
 
 struct Pi {
     stepper_x: Stepper,
