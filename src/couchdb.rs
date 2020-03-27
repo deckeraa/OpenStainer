@@ -77,6 +77,16 @@ pub fn increment_run_count( proc: &mut Procedure) -> FieldResult<Procedure> {
     return save_procedure(proc.clone());
 }
 
+pub fn procedures() -> FieldResult<Vec<Procedure>> {
+    let resp = reqwest::blocking::get(reqwest::Url::parse(format!("{}/_design/procedures/_view/procedures?include_docs=true",COUCHDB_URL).as_str()).unwrap());
+    if resp.is_ok() {
+	let view_result = resp.unwrap().json::<ViewResult<Procedure>>().unwrap();
+	let v : Vec<Procedure> = view_result.rows.into_iter().map(|row| row.doc ).collect();
+	return Ok(v);
+    }
+    return juniper_err::<Vec<Procedure>>("Unable to retrive list of procedures after delete.".to_string());
+}
+
 pub fn delete_procedure(id: String, rev: String) -> FieldResult<Vec<Procedure>> {
     let client = reqwest::blocking::Client::new();
     let url : &str = &format!("{}/{}?rev={}",COUCHDB_URL,id,rev).to_string();
@@ -90,12 +100,5 @@ pub fn delete_procedure(id: String, rev: String) -> FieldResult<Vec<Procedure>> 
 	return juniper_err::<Vec<Procedure>>(format!("Recieved status {} and text {:?} from CouchDB when attempting to delete.",resp.status(),resp.text()));
     }
     
-    let resp = reqwest::blocking::get(reqwest::Url::parse(format!("{}/_design/procedures/_view/procedures?include_docs=true",COUCHDB_URL).as_str()).unwrap());
-    if resp.is_ok() {
-	let view_result = resp.unwrap().json::<ViewResult<Procedure>>().unwrap();
-	let v : Vec<Procedure> = view_result.rows.into_iter().map(|row| row.doc ).collect();
-	println!("Returning procedures: {:?}",v);
-	return Ok(v);
-    }
-    return juniper_err::<Vec<Procedure>>("Unable to retrive list of procedures after delete.".to_string());
+    return procedures();
 }

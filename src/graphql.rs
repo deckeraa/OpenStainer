@@ -16,7 +16,7 @@ impl Query {
     }
 
     fn settings() -> FieldResult<Settings> {
-	let settings = Settings { developer: true };
+	let settings = Settings { developer: true }; // TODO retrieve actual value
 	println!("Returning settings: {:?}",settings);
 	Ok(settings)
     }
@@ -36,14 +36,7 @@ impl Query {
     }
 
     fn procedures() -> FieldResult<Vec<Procedure>> {
-	let resp = reqwest::blocking::get(reqwest::Url::parse(format!("{}/_design/procedures/_view/procedures?include_docs=true",COUCHDB_URL).as_str()).unwrap());
-	if resp.is_ok() {
-	    let view_result = resp.unwrap().json::<ViewResult<Procedure>>().unwrap();
-	    let v : Vec<Procedure> = view_result.rows.into_iter().map(|row| row.doc ).collect();
-	    println!("Returning procedures: {:?}",v);
-	    return Ok(v);
-	}
-	return Ok(vec![]); // TODO probably something better to do than return an empty array
+	crate::couchdb::procedures()
     }
 
     fn procedure_by_id(id: String) -> FieldResult<Procedure> {
@@ -85,7 +78,6 @@ pub fn post_graphql_handler(
     request: juniper_rocket::GraphQLRequest,
     schema: State<Schema>,
 ) -> juniper_rocket::GraphQLResponse {
-    println!("GraphQLRequest {:?}",request.operation_names());
     request.execute(&schema, &pi_state)
 }
 
