@@ -159,8 +159,9 @@ pub fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, 
 
     if !hit_limit_switch {
         println!(
-            "Updating pi.stepper_x.pos to {:?}",
-            Some(if forward { v + pulses } else { v - pulses })
+            "Moved {} pulses, updating pi.stepper_x.pos to {:?}",
+	    moved_pulses,
+            Some(if forward { v + moved_pulses } else { v - moved_pulses })
         );
         stepper.pos = Some(if forward {
             v + moved_pulses
