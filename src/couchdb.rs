@@ -30,18 +30,22 @@ pub fn juniper_err<T>(message: String) -> FieldResult<T>{
     Err(juniper::FieldError::new(message.clone(),graphql_value!({ "internal_error": message})))
 }
 
-pub fn procedure_by_id(id: String) -> FieldResult<Procedure> {
+pub fn get_doc<T: serde::de::DeserializeOwned>(id: String) -> FieldResult<T> {
     let url : &str = &format!("{}/{}",COUCHDB_URL,id).to_string();
     let resp = reqwest::blocking::get(url);
     if resp.is_ok() {
-	let parse_result = resp.unwrap().json::<Procedure>();
+	let parse_result = resp.unwrap().json::<T>();
 	if parse_result.is_err() {
-	    return juniper_err::<Procedure>(format!("Couldn't parse response from CouchDB: {:?}",parse_result.err()));
+	    return juniper_err::<T>(format!("Couldn't parse response from CouchDB: {:?}",parse_result.err()));
 	}
 	let proc = parse_result.unwrap();
 	return Ok(proc);
     }
-    return juniper_err::<Procedure>("No procedure with that ID found.".to_string());
+    return juniper_err::<T>("No procedure with that ID found.".to_string());
+}
+
+pub fn procedure_by_id(id: String) -> FieldResult<Procedure> {
+    get_doc::<Procedure>(id)
 }
 
 pub fn save_procedure(procedure: Procedure) -> FieldResult<Procedure> {
@@ -102,3 +106,16 @@ pub fn delete_procedure(id: String, rev: String) -> FieldResult<Vec<Procedure>> 
     
     return procedures();
 }
+
+// pub fn settings() -> FieldResult<Settings> {
+//     let url : &str = &format!("{}/settings",COUCHDB_URL).to_string();
+//     let resp = reqwest::blocking::get(url);
+//     if resp.is_ok() {
+// 	let parse_result = resp.unwrap().json::<Settings>();
+// 		if parse_result.is_err() {
+// 	    return juniper_err::<Procedure>(format!("Couldn't parse response from CouchDB: {:?}",parse_result.err()));
+// 	}
+// 	let proc = parse_result.unwrap();
+// 	return Ok(proc);
+//     }
+// }
