@@ -1,4 +1,5 @@
 pub use crate::structs_and_consts::*;
+pub use crate::couchdb::*;
 
 use gpio::{GpioIn, GpioOut};
 use std::{thread, time};

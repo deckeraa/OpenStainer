@@ -6,6 +6,7 @@ extern crate rocket;
 mod structs_and_consts;
 mod graphql;
 mod motion;
+mod couchdb;
 
 use gpio::{GpioIn, GpioOut};
 use rocket::http::{Method};
@@ -23,6 +24,7 @@ use std::process::Command;
 pub use crate::structs_and_consts::*;
 pub use crate::graphql::*;
 pub use crate::motion::*;
+pub use crate::couchdb::*;
 
 #[rocket::post("/pause_procedure")]
 fn pause_procedure(pes: State<ProcedureExecutionState>) -> String {
