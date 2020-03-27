@@ -50,20 +50,6 @@ fn seconds_remaining(pes: State<ProcedureExecutionState>) -> String {
     format! {"{}", pes.seconds_remaining.load(Ordering::Relaxed)}
 }
 
-fn home(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
-    let ret_one = move_steps(pi, AxisDirection::Z, true, 160000, true, opt_pes, false);
-    println!("Result of first home move {:?}",ret_one);
-    if ret_one == MoveResult::HitEStop || ret_one == MoveResult::FailedToHome{
-	return MoveResult::FailedToHome;
-    }
-    let ret_two = move_steps(pi, AxisDirection::X, false, 320000, true, opt_pes, false);
-    if ret_one == MoveResult::HitLimitSwitch && ret_two == MoveResult::HitLimitSwitch {
-        move_to_up_position(pi, opt_pes);
-        move_to_left_position(pi, opt_pes);
-    }
-    ret_two
-}
-
 #[post("/home")]
 fn home_handler(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>) -> String {
     let pi_mutex = &mut pi_state.inner();
@@ -71,13 +57,6 @@ fn home_handler(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>) 
     let pes = pes.inner();
     let ret = home(pi, Some(pes));
     format! {"{:?}",ret}
-    // let ret_one = move_steps(pi, AxisDirection::Z, true, 160000, true);
-    // let ret_two = move_steps(pi, AxisDirection::X, false, 320000, true);
-    // if ret_one == MoveResult::HitLimitSwitch && ret_two == MoveResult::HitLimitSwitch {
-    //     move_to_up_position(pi);
-    //     move_to_left_position(pi);
-    // }
-    // format! {"{:?} {:?}",ret_one,ret_two}
 }
 
 #[post("/run_procedure/<id>")]
@@ -248,28 +227,6 @@ fn move_by_inches(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>
     format! {"{:?}",ret}
 }
 
-fn move_to_pos(pi: &mut Pi, axis: AxisDirection, inches: Inch, opt_pes: Option<&ProcedureExecutionState>, skip_soft_estop_check: bool) -> MoveResult {
-    println!("move_to_pos axis: {}  inches: {}", axis, inches);
-    let is_not_homed = get_stepper(pi, &axis).pos.is_none();
-    
-    if is_not_homed {
-	let ret = home(pi, opt_pes);
-	if ret == MoveResult::FailedToHome {
-	    return MoveResult::FailedDueToNotHomed;
-	}
-    }
-    
-    let stepper = get_stepper(pi, &axis);
-    let cur_pos = stepper.pos.unwrap();
-    let dest_pos = inches_to_pulses(inches, stepper);
-    let forward = cur_pos < dest_pos;
-    let pulses = if cur_pos < dest_pos {
-        dest_pos - cur_pos
-    } else {
-        cur_pos - dest_pos
-    };
-    move_steps(pi, axis, forward, pulses, false, opt_pes, skip_soft_estop_check)
-}
 
 #[post("/move_to_pos/<axis>/<inches>")]
 fn move_to_pos_handler(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>, axis: AxisDirection, inches: Inch) -> String {
@@ -278,10 +235,6 @@ fn move_to_pos_handler(pi_state: State<SharedPi>, pes: State<ProcedureExecutionS
     let pes = pes.inner();
     let ret = move_to_pos(pi, axis, inches, Some(pes), false);
     format! {"{:?}",ret}
-}
-
-fn move_to_up_position(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
-    move_to_pos(pi, AxisDirection::Z, UP_POSITION, opt_pes, true)
 }
 
 #[post("/move_to_up_position")]
@@ -293,10 +246,6 @@ fn move_to_up_position_handler(pi_state: State<SharedPi>, pes: State<ProcedureEx
     format! {"{:?}",ret}
 }
 
-fn move_to_down_position(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
-    move_to_pos(pi, AxisDirection::Z, 0.0, opt_pes, true)
-}
-
 #[post("/move_to_down_position")]
 fn move_to_down_position_handler(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>) -> String {
     let pi_mutex = &mut pi_state.inner();
@@ -306,10 +255,6 @@ fn move_to_down_position_handler(pi_state: State<SharedPi>, pes: State<Procedure
     format! {"{:?}",ret}
 }
 
-fn move_to_left_position(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
-    move_to_pos(pi, AxisDirection::X, LEFT_POSITION, opt_pes, false)
-}
-
 #[post("/move_to_left_position")]
 fn move_to_left_position_handler(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>) -> String {
     let pi_mutex = &mut pi_state.inner();
@@ -317,42 +262,6 @@ fn move_to_left_position_handler(pi_state: State<SharedPi>, pes: State<Procedure
     let pes = pes.inner();
     let ret = move_to_left_position(pi, Some(pes));
     format! {"{:?}",ret}
-}
-
-fn known_to_be_at_jar_position(pi: &mut Pi, jar_number: i32) -> bool {
-    if pi.stepper_x.pos.is_none() {
-	return false;
-    }
-    let current_inches : Inch = pulses_to_inches(pi.stepper_x.pos.unwrap(), &pi.stepper_x);
-    let target_inches  : Inch = LEFT_POSITION + JAR_SPACING * (jar_number - 1) as f64;
-    (target_inches - current_inches).abs() < 0.1
-}
-
-fn move_to_jar(pi: &mut Pi, jar_number: i32, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
-    if !known_to_be_at_jar_position(pi, jar_number) {
-	let ret: MoveResult = move_to_up_position(pi, opt_pes);
-	if ret == MoveResult::HitLimitSwitch
-            || ret == MoveResult::HitEStop
-            || ret == MoveResult::FailedDueToNotHomed
-	{
-            return ret;
-	}
-	let ret = move_to_pos(
-            pi,
-            AxisDirection::X,
-            LEFT_POSITION + JAR_SPACING * (jar_number - 1) as f64,
-	    opt_pes,
-	    false
-	);
-	if ret == MoveResult::HitLimitSwitch
-            || ret == MoveResult::HitEStop
-            || ret == MoveResult::FailedDueToNotHomed
-	{
-            return ret;
-	}
-    }
-    let ret = move_to_down_position(pi, opt_pes);
-    ret
 }
 
 #[post("/move_to_jar/<jar_number>")]
@@ -398,8 +307,6 @@ fn exit_kiosk_mode() -> String {
     };
     format!("{:?} {}",command, result)
 }
-
-
 
 fn main() {
     let shared_pi = Mutex::new(Pi {

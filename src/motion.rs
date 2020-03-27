@@ -178,3 +178,88 @@ pub fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, 
     }
     MoveResult::MovedFullDistance
 }
+
+pub fn move_to_pos(pi: &mut Pi, axis: AxisDirection, inches: Inch, opt_pes: Option<&ProcedureExecutionState>, skip_soft_estop_check: bool) -> MoveResult {
+    println!("move_to_pos axis: {}  inches: {}", axis, inches);
+    let is_not_homed = get_stepper(pi, &axis).pos.is_none();
+    
+    if is_not_homed {
+	let ret = home(pi, opt_pes);
+	if ret == MoveResult::FailedToHome {
+	    return MoveResult::FailedDueToNotHomed;
+	}
+    }
+    
+    let stepper = get_stepper(pi, &axis);
+    let cur_pos = stepper.pos.unwrap();
+    let dest_pos = inches_to_pulses(inches, stepper);
+    let forward = cur_pos < dest_pos;
+    let pulses = if cur_pos < dest_pos {
+        dest_pos - cur_pos
+    } else {
+        cur_pos - dest_pos
+    };
+    move_steps(pi, axis, forward, pulses, false, opt_pes, skip_soft_estop_check)
+}
+
+pub fn move_to_up_position(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
+    move_to_pos(pi, AxisDirection::Z, UP_POSITION, opt_pes, true)
+}
+
+pub fn move_to_down_position(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
+    move_to_pos(pi, AxisDirection::Z, 0.0, opt_pes, true)
+}
+
+pub fn move_to_left_position(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
+    move_to_pos(pi, AxisDirection::X, LEFT_POSITION, opt_pes, false)
+}
+
+pub fn home(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
+    let ret_one = move_steps(pi, AxisDirection::Z, true, 160000, true, opt_pes, false);
+    println!("Result of first home move {:?}",ret_one);
+    if ret_one == MoveResult::HitEStop || ret_one == MoveResult::FailedToHome{
+	return MoveResult::FailedToHome;
+    }
+    let ret_two = move_steps(pi, AxisDirection::X, false, 320000, true, opt_pes, false);
+    if ret_one == MoveResult::HitLimitSwitch && ret_two == MoveResult::HitLimitSwitch {
+        move_to_up_position(pi, opt_pes);
+        move_to_left_position(pi, opt_pes);
+    }
+    ret_two
+}
+
+fn known_to_be_at_jar_position(pi: &mut Pi, jar_number: i32) -> bool {
+    if pi.stepper_x.pos.is_none() {
+	return false;
+    }
+    let current_inches : Inch = pulses_to_inches(pi.stepper_x.pos.unwrap(), &pi.stepper_x);
+    let target_inches  : Inch = LEFT_POSITION + JAR_SPACING * (jar_number - 1) as f64;
+    (target_inches - current_inches).abs() < 0.1
+}
+
+pub fn move_to_jar(pi: &mut Pi, jar_number: i32, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
+    if !known_to_be_at_jar_position(pi, jar_number) {
+	let ret: MoveResult = move_to_up_position(pi, opt_pes);
+	if ret == MoveResult::HitLimitSwitch
+            || ret == MoveResult::HitEStop
+            || ret == MoveResult::FailedDueToNotHomed
+	{
+            return ret;
+	}
+	let ret = move_to_pos(
+            pi,
+            AxisDirection::X,
+            LEFT_POSITION + JAR_SPACING * (jar_number - 1) as f64,
+	    opt_pes,
+	    false
+	);
+	if ret == MoveResult::HitLimitSwitch
+            || ret == MoveResult::HitEStop
+            || ret == MoveResult::FailedDueToNotHomed
+	{
+            return ret;
+	}
+    }
+    let ret = move_to_down_position(pi, opt_pes);
+    ret
+}
