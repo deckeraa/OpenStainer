@@ -95,7 +95,8 @@
   (fn []
     [:div
      [:div {:class "nav-header"}
-      [svg/chevron-left {:class "chevron-left" :on-click back-fn} "blue" 36]
+      [:button {:class "round-button" :on-click back-fn}
+        [svg/chevron-left {:class "chevron-left" } "white" 36]]
       [:h1 "Settings"]]
  ;    [alarms atoms/alarms-cursor]
      [positions-and-home atoms/stepperX-cursor atoms/stepperZ-cursor]
