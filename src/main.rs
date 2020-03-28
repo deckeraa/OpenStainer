@@ -111,16 +111,14 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 		//pi.run_status.current_procedure_step_number = pi.run_status.current_procedure_step_number
 		println!("Step: {:?}",step);
 		// move to the jar
-		let mut got_to_jar = false;
 		println!("Entering loop B");
-		while !got_to_jar {
+		loop {
 		    if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Running {
 			println!("============== Running move_to_jar {:?} ", step.jar_number);
 			pi.green_light.set_low().expect("Couldn't turn green light off");
 			pi.red_light.set_high().expect("Couldn't turn red light back on");
 			let ret = move_to_jar( pi, step.jar_number, Some(&pes) );
 			if ret == MoveResult::MovedFullDistance {
-			    got_to_jar = true;
 			    break;
 			}
 		    }
@@ -198,8 +196,7 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 	// if ret == MoveResult::HitEStop {
 	//     return format! {"Stopped due to e-stop being hit."}
 	// }
-	let mut got_to_up = false;
-	while !got_to_up {
+	loop {
 	    if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Running {
 		println!("============== Running move_to_up ");
 		//let ret = move_to_jar( pi, step.jar_number, Some(&pes) );
@@ -207,7 +204,6 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 		pi.red_light.set_high().expect("Couldn't turn red light back on");
 		let ret = move_to_up_position( pi, Some(&pes), false);
 		if ret == MoveResult::MovedFullDistance {
-		    got_to_up = true;
 		    break;
 		}
 	    }
