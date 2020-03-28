@@ -127,3 +127,49 @@ pub fn save_settings(settings_input_object: SettingsInputObject) -> FieldResult<
 
     settings()
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct ViewsProcedures {
+    map: String
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct DesignDocumentViews {
+    procedures: ViewsProcedures
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct DesignDocument {
+    #[serde(rename="_id")]
+    id: Option<String>,
+    
+    #[serde(rename="_rev")]
+    rev: Option<String>,
+    
+    views: DesignDocumentViews,
+    language: String,
+}
+
+pub fn install_views() -> String {
+    // TODO this is a one-time install. Once the document exists, this won't update the doc since it doesn't have
+    // the _id and _rev attributes from the existing doc on the db.
+    // However, this suffices for the present need of storing the view functions in source-controlled code.
+    let doc = DesignDocument {
+	id: None,
+	rev: None,
+	views: DesignDocumentViews {
+	    procedures: ViewsProcedures {
+		map: "function (doc) { if(doc.type == \'procedure\') { emit(doc._id, doc.name); } }".to_string(),
+	    }
+	},
+	language: "javascript".to_string(),
+    };
+    
+    
+    let client = reqwest::blocking::Client::new();
+    let resp = client.post(COUCHDB_URL)
+	.json(&doc)
+	.send();
+    return format!("{:?}",resp);
+}
+
