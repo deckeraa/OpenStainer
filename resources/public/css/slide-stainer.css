@@ -6,6 +6,11 @@
     list-style: none;
 }
 
+.procedure_selection ul li {
+    background-color: white;
+    margin: 10px;
+}
+
 .procedure_selection li:hover {
     background-color: orange;
 }
@@ -88,8 +93,13 @@
 /* Body styles */
 .body {
     position: absolute;
-    top: 64px;
+    top: 52px;
+    left: 0px;
     width: 100%;
+}
+
+.body-background {
+    background-color: #f9f0ea;
 }
 
 select {
@@ -102,7 +112,7 @@ button {
     background-color: #af5f23;
     margin: 1px;
     padding: 15px;
-    box-shadow: 2px 3px 5px #0000005c;
+    box-shadow: 4px 3px 5px #0000005c;
     font-size: 32px;
 }
 
@@ -120,14 +130,18 @@ button:active {
 
 /* Procedure Selection */
 .procedure_selection li {
-    box-shadow: 2px 3px 5px #0000005c;
+    box-shadow: 3px 6px 5px 0px #0000005c;
     width: 80%;
     padding: 10px;
     margin: 3px;
 }
 
 .procedure_selection .new-procedure-button {
-    background-color: #af5f23;   
+    background-color: #af5f23;
+    color: white;
+    font-size: 32px;
+    margin-top: 20px;
+    text-align: center;
 }
 
 .procedure_selection h3 {

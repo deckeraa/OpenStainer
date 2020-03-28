@@ -205,7 +205,7 @@
       (when (> (count (filter true? (vals @atoms/alarms-cursor))) 0)
         [svg/bell {:class "bell" :on-click #(swap! atoms/screen-cursor conj :settings)} "white" 36])
       [svg/cog {:class "cog" :on-click #(swap! atoms/screen-cursor conj :settings)} "white" 36]]
-     [:div {:class "body"}
+     [:div {:class "body body-background"}
       (when (= :jog (peek @atoms/screen-cursor)) [jog-control ratom])
       (when (= :procedure-selection (peek @atoms/screen-cursor))
         [slide-stainer.procedure-selection/procedure-selection atoms/procedure-list-cursor atoms/procedure-cursor
