@@ -1,4 +1,8 @@
 (ns slide-stainer.svg
+  "Contains reagent components that generate various SVGs.
+   Most of these are based off of the Open Iconic library ( https://github.com/iconic/open-iconic/ ). 
+   To the extent required by the Open Font License ( https://github.com/iconic/open-iconic/blob/master/FONT-LICENSE ),
+  this code is available under the Open Font License. Otherwise, it is under the GPL v3, as is the rest of the project."
   (:require
    [reagent.core :as reagent]
    [devcards.core])
