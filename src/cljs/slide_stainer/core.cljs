@@ -230,14 +230,26 @@
          atoms/procedure-run-status-cursor
          #(swap! atoms/screen-cursor pop) ;; TODO make this stop the currently running staining procedure (maybe?)
          ])
-      (when (= :settings (peek @atoms/screen-cursor)) [slide-stainer.settings/settings-control ratom #(swap! atoms/screen-cursor pop)])
+      (when (= :settings (peek @atoms/screen-cursor))
+        [slide-stainer.settings/settings-control
+         ratom
+         (fn []
+           ((graphql/graphql-fn {:query (str "mutation{saveSettings(settings:"
+                                             (-> @atoms/settings-cursor
+                                                 (graphql/jsonify)
+                                                 (graphql/remove-quotes-from-keys))
+                                             "){" graphql/settings-keys "}}")
+                                 :handler-fn (fn [resp]
+                                               (when (:settings resp)
+                                                 (reset! atoms/settings-cursor (:settings resp))))}))
+           (swap! atoms/screen-cursor pop))])
       (when (:developer @atoms/settings-cursor)
         [:div {} (str @ratom)])]
      [toaster-oven/toaster-control]
      ]))
 
 (def queries-to-run
-  {:init {:query-fn (fn [] (str "{settings{developer},procedures{_id,name,runs}}"))
+  {:init {:query-fn (fn [] (str "{settings{" graphql/settings-keys "},procedures{_id,name,runs}}"))
           :handler-fn (fn [resp]
                         (reset! atoms/settings-cursor (:settings resp))
                         (reset! atoms/procedure-list-cursor (:procedures resp)))

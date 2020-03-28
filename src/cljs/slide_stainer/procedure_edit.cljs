@@ -29,17 +29,6 @@
                                     (name x)
                                     x)) sample-program))
 
-(defn remove-quotes-from-keys
-  "This removes quotes from the keyword in a JSON string to make it compatible with GraphQL."
-  [s]
-  (clojure.string/replace s #"\"(\w+)\":" "$1:"))
-
-(deftest remove-quotes-from-keys-test
-  (is (= (remove-quotes-from-keys "{\"name\":\"foo\"}") "{name:\"foo\"}")))
-
-(defn jsonify [s]
-  (.stringify js/JSON (clj->js s)))
-
 (defn rename-substance [prog-atm jarNumber new-substance]
   "Don't forget that jarNumber is 1-indexed."
   (swap! prog-atm (fn [prog]
@@ -223,8 +212,8 @@
           substance-options (:jarContents @prog-atm)
           save-query (str "mutation{saveProcedure(procedure:"
                      (-> @prog-atm
-                         (jsonify)
-                         (remove-quotes-from-keys))
+                         (graphql/jsonify)
+                         (graphql/remove-quotes-from-keys))
                      "){" graphql/procedure-keys "}}")]
       [:div
        

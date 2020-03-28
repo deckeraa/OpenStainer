@@ -1,8 +1,9 @@
 (ns slide-stainer.graphql
   (:require
    [reagent.core :as reagent]
-   [devcards.core]
    [cljs-http.client :as http]
+   [devcards.core :refer-macros [deftest defcard-rg]]
+   [cljs.test :refer-macros [is testing run-tests]]
    [clojure.edn :as edn]
    )
   (:require-macros
@@ -30,6 +31,19 @@
 
 (def alarm-keys "limit_switch_hit_unexpectedly,homing_failed")
 (def alarms-subquery (str "alarms{" alarm-keys "}"))
+
+(def settings-keys "_id,_rev,developer")
+
+(defn remove-quotes-from-keys
+  "This removes quotes from the keyword in a JSON string to make it compatible with GraphQL."
+  [s]
+  (clojure.string/replace s #"\"(\w+)\":" "$1:"))
+
+(deftest remove-quotes-from-keys-test
+  (is (= (remove-quotes-from-keys "{\"name\":\"foo\"}") "{name:\"foo\"}")))
+
+(defn jsonify [s]
+  (.stringify js/JSON (clj->js s)))
 
 (defn graphql-fn [{query :query query-fn :query-fn handler-fn :handler-fn variable-fn :variable-fn :as args}]
   (fn []

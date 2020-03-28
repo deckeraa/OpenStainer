@@ -3,7 +3,6 @@ pub use crate::motion::*;
 pub use crate::couchdb::*;
 
 use juniper::{FieldResult};
-use juniper::graphql_value;
 use rocket::State;
 
 pub type Schema = juniper::RootNode<'static, Query, Mutation>;
@@ -69,8 +68,8 @@ impl Mutation {
 	crate::couchdb::delete_procedure(id,rev)
     }
 
-    fn save_settings(settings_input_object: SettingsInputObject) -> FieldResult<Settings> {
-	crate::couchdb::save_settings(settings_input_object)
+    fn save_settings(settings: SettingsInputObject) -> FieldResult<Settings> {
+	crate::couchdb::save_settings(settings)
     }
 }
 

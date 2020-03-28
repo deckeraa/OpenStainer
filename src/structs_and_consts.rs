@@ -208,17 +208,37 @@ pub struct Axis {
 
 #[derive(juniper::GraphQLObject, Debug, Serialize, Deserialize)]
 pub struct Settings {
+    #[serde(rename="_id")]
+    #[graphql(name="_id", description="The _id of the settings doc.")]
+    pub id: String,
+    
+    #[graphql(name="_rev", description="The CouchDB _rev of the settings doc.")]
+    #[serde(rename="_rev")]
+    pub rev: String,
+
+    #[graphql(description="The developer flag.")]
     pub developer: bool,
 }
 
 #[derive(juniper::GraphQLInputObject, Debug, Serialize, Deserialize)]
 pub struct SettingsInputObject {
+    #[serde(rename="_id")]
+    #[graphql(name="_id", description="The _id of the settings doc.")]
+    pub id: String,
+    
+    #[graphql(name="_rev", description="The CouchDB _rev of the settings doc.")]
+    #[serde(rename="_rev")]
+    pub rev: String,
+
+    #[graphql(description="The developer flag.")]
     pub developer: bool,
 }
 
 impl From<Settings> for SettingsInputObject {
     fn from(settings: Settings) -> Self {
 	SettingsInputObject {
+	    id: settings.id,
+	    rev: settings.rev,
 	    developer: settings.developer,
 	}
     }
