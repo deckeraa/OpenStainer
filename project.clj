@@ -27,16 +27,10 @@
                  [com.andrewmcveigh/cljs-time "0.5.2"]
                  ]
 
-  :main slide-stainer.core
-
   :min-lein-version "2.5.3"
-
-  :source-paths ["src/clj"]
 
   :plugins [[lein-cljsbuild "1.1.4"]
             [lein-ring "0.12.5"]]
-
-  :ring {:handler slide-stainer.core/app}
   
   :clean-targets ^{:protect false} ["resources/public/js"]
 
