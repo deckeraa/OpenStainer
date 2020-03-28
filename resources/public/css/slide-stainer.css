@@ -215,6 +215,7 @@ button:active {
 
 .procedure-run-status {
     font-size: 28px;
+    text-align: center;
 }
 
 /* Procedure Definition */
@@ -229,6 +230,10 @@ button:active {
 
 .substance-selector {
     width: 20em;
+}
+
+.field_indent {
+    margin-left: 100px;
 }
 
 .step-delete-button {

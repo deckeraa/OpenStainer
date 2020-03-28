@@ -47,7 +47,7 @@
 (defn jar-contents [prog-atm]
   [:div
    [:h2 "Jar Contents"]
-   [:div {:style {:display :flex :justify-content :center :width "100%"}}
+   [:div {:class "field_indent"}
     [:table [:tbody [:tr [:th "Jar #"] [:th "Substance"]]
              (map-indexed (fn [idx substance]
                             ^{:key idx}
@@ -282,7 +282,7 @@
      [:h1 "Procedure Definition"]]
     [:div
      [:h2 "Procedure Name"]
-     [:div {:style {:display :flex :justify-content :center :width "100%"}}
+     [:div {:class "field_indent"}
       [osk/osk-input osk-atm
        {:on-change (fn [new-val]
                      (println "Change handler called: " new-val)

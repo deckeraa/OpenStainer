@@ -72,25 +72,29 @@
        [:button {:class "round-button" :on-click back-fn}
         [svg/chevron-left {:class "chevron-left" } "white" 36]])
        [:h1 (:name @procedure-cursor)]]
-      [:table {:class "procedure-run-status"}
-       [:tbody [:tr [:th ""] [:th "Step #"] [:th "Substance"] [:th "Total Time"] [:th "Jar #"]]
-        (doall (map-indexed (fn [idx step]
-                              (let [current-step? (= (inc idx) (:currentProcedureStepNumber @procedure-run-status-cursor))
-                                    current-start-time (format/parse (:current_procedure_step_start_time @procedure-run-status-cursor))
-                                    seconds-remaining (:seconds-remaining @procedure-run-status-cursor)]
-                                ^{:key idx}
-                                [:tr
-                                 [:td (if current-step? [svg/right-arrow {} "black" "48px"] "")]
-                                 [:td (inc idx)]
-                                 [:td (:substance step)]
-                                 [:td
-                                  (if (and current-step? (> seconds-remaining 0))
-                                    (format-time-in-seconds seconds-remaining)
-                                    (format-time-in-seconds (:timeInSeconds step)))
-                                  ]
-                                 [:td (:jarNumber step)]]))
-                            (:procedureSteps @procedure-cursor)))]]
-      [:p {} (str "Cycle " (:currentCycleNumber @procedure-run-status-cursor) " of " (or (:repeat @procedure-cursor) 1))]
+      [:div {:style {:display :flex :align-items :center :width "100%" :flex-direction :column}}
+       [:table {:class "procedure-run-status"}
+        [:tbody [:tr [:th ""] [:th "Step #"] [:th "Substance"] [:th "Total Time"] [:th "Jar #"]]
+         (doall (map-indexed (fn [idx step]
+                               (let [current-step? (= (inc idx) (:currentProcedureStepNumber @procedure-run-status-cursor))
+                                     current-start-time (format/parse (:current_procedure_step_start_time @procedure-run-status-cursor))
+                                     seconds-remaining (:seconds-remaining @procedure-run-status-cursor)]
+                                 ^{:key idx}
+                                 [:tr
+                                  [:td {:style {:min-width "48px"}} (if current-step? [svg/right-arrow {} "black" "48px"] "")]
+                                  [:td (inc idx)]
+                                  [:td (:substance step)]
+                                  [:td
+                                   (if (and current-step? (> seconds-remaining 0))
+                                     (format-time-in-seconds seconds-remaining)
+                                     (format-time-in-seconds (:timeInSeconds step)))
+                                   ]
+                                  [:td (:jarNumber step)]]))
+                             (:procedureSteps @procedure-cursor)))]]
+       [:p {} (str "Cycle "
+                   (or (:currentCycleNumber @procedure-run-status-cursor) 1)
+                   " of "
+                   (or (:repeat @procedure-cursor) 1))]]
       ;; [:button {:on-click (refresh-fn procedure-cursor procedure-run-status-cursor)} "Refresh"]
       [:div {:style {:display :flex :justify-content :space-between :width "100%"} }
        [:button {:on-click (fn [e] (go (let [resp (<! (http/post "http://localhost:8000/stop_procedure"))]
