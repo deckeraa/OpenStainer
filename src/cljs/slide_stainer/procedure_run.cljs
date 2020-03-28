@@ -68,7 +68,9 @@
    (fn []
      [:div {:style {:width "100%"}}
       [:div {:class "nav-header"}
-       (when back-fn [svg/chevron-left {:class "chevron-left" :on-click back-fn} "blue" 36])
+       (when back-fn
+       [:button {:class "round-button" :on-click back-fn}
+        [svg/chevron-left {:class "chevron-left" } "white" 36]])
        [:h1 (:name @procedure-cursor)]]
       [:table {:class "procedure-run-status"}
        [:tbody [:tr [:th ""] [:th "Step #"] [:th "Substance"] [:th "Total Time"] [:th "Jar #"]]

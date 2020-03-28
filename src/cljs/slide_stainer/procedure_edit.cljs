@@ -271,7 +271,9 @@
   ([prog-atm procedure-run-status-cursor back-fn run-fn]
    [:div
     [:div {:class "nav-header"}
-     (when back-fn [svg/chevron-left {:class "chevron-left" :on-click back-fn} "blue" 36])
+     (when back-fn
+       [:button {:class "round-button" :on-click back-fn}
+        [svg/chevron-left {:class "chevron-left" } "white" 36]])
      [:h1 "Procedure Definition"]]
     [:div
      [:label "Procedure Name"]
