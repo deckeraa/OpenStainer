@@ -66,7 +66,7 @@
   ([] (procedure-run-status (reagent/atom sample-procedure) (reagent/atom {:currentProcedureStepNumber 2}) nil))
   ([procedure-cursor procedure-run-status-cursor back-fn]
    (fn []
-     [:div
+     [:div {:style {:width "100%"}}
       [:div {:class "nav-header"}
        (when back-fn [svg/chevron-left {:class "chevron-left" :on-click back-fn} "blue" 36])
        [:h1 (:name @procedure-cursor)]]
@@ -90,10 +90,15 @@
                             (:procedureSteps @procedure-cursor)))]]
       [:p {} (str "Cycle " (:currentCycleNumber @procedure-run-status-cursor) " of " (or (:repeat @procedure-cursor) 1))]
       ;; [:button {:on-click (refresh-fn procedure-cursor procedure-run-status-cursor)} "Refresh"]
-      [:button {:on-click (fn [e] (go (let [resp (<! (http/post "http://localhost:8000/pause_procedure"))]
-                                        (println "pause_procedure " resp))))} "Pause"]
-      [:button {:on-click (fn [e] (go (let [resp (<! (http/post "http://localhost:8000/resume_procedure"))]
-                                        (println "resume_procedure " resp))))} "Resume"]
+      [:div {:style {:display :flex :justify-content :space-between :width "100%"} }
+       [:button {:on-click (fn [e] (go (let [resp (<! (http/post "http://localhost:8000/stop_procedure"))]
+                                         (println "stop_procedure " resp))))}
+        "Stop procedure"]
+       [:div 
+        [:button {:on-click (fn [e] (go (let [resp (<! (http/post "http://localhost:8000/pause_procedure"))]
+                                          (println "pause_procedure " resp))))} "Pause"]
+        [:button {:on-click (fn [e] (go (let [resp (<! (http/post "http://localhost:8000/resume_procedure"))]
+                                          (println "resume_procedure " resp))))} "Resume"]]]
 ;      [slide-stainer.procedure-edit/run-button procedure-run-status-cursor procedure-cursor nil]
       ])))
 

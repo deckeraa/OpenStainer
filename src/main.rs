@@ -40,6 +40,13 @@ fn resume_procedure(pes: State<ProcedureExecutionState>) -> String {
     format! {"/pause {:?}", pes.atm.load(Ordering::Relaxed)}
 }
 
+#[rocket::post("/stop_procedure")]
+fn stop_procedure(pes: State<ProcedureExecutionState>) -> String {
+    let pes = pes.inner();
+    pes.atm.store(ProcedureExecutionStateEnum::Stopped, Ordering::Relaxed);
+    format! {"/pause {:?}", pes.atm.load(Ordering::Relaxed)}
+}
+
 #[rocket::get("/read_procedure_status")]
 fn read_procedure_status(pes: State<ProcedureExecutionState>) -> String {
     let pes = pes.inner();
@@ -101,6 +108,9 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 	// loop over steps
 	println!("proc.procedure_steps: {:?}", proc.procedure_steps);
 	for (index,step) in proc.procedure_steps.iter().enumerate() {
+	    if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Stopped {
+		break; // end the procedure if the user stopped it
+	    }
 	    println!("Trying to grab the lock.");
 	    // grab the lock
 	    {
@@ -113,7 +123,8 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 		// move to the jar
 		println!("Entering loop B");
 		loop {
-		    if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Running {
+		    let state = pes.atm.load(Ordering::Relaxed);
+		    if state == ProcedureExecutionStateEnum::Running {
 			println!("============== Running move_to_jar {:?} ", step.jar_number);
 			pi.green_light.set_low().expect("Couldn't turn green light off");
 			pi.red_light.set_high().expect("Couldn't turn red light back on");
@@ -122,6 +133,11 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 			    break;
 			}
 		    }
+		    if state == ProcedureExecutionStateEnum::Stopped {
+			break; // end the procedure if the user stopped it
+		    }
+		    // note: don't replace "pes.atm.load(Ordering::Relaxed)" with "state" in the below line.
+		    // This uses updates to the state in move_to_jar to perform logic."
 		    if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Paused {
 			pi.green_light.set_high().expect("Couldn't turn green light on");
 			pi.red_light.set_low().expect("Couldn't turn red light off");
@@ -164,8 +180,11 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 		    if bool::from(pi.estop.read_value().unwrap()) {
 			pes.atm.store(ProcedureExecutionStateEnum::Paused, Ordering::Relaxed);
 		    }
-		    
-		    if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Paused {
+		    let state = pes.atm.load(Ordering::Relaxed);
+		    if state == ProcedureExecutionStateEnum::Stopped {
+			break;
+		    }
+		    if state == ProcedureExecutionStateEnum::Paused {
 			// handle run/pause buttons
 			pi.green_light.set_high().expect("Couldn't turn green light on");
 			pi.red_light.set_low().expect("Couldn't turn red light off");
@@ -197,12 +216,15 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 	//     return format! {"Stopped due to e-stop being hit."}
 	// }
 	loop {
-	    if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Running {
+	    let state = pes.atm.load(Ordering::Relaxed);
+	    if state == ProcedureExecutionStateEnum::Running ||
+		state == ProcedureExecutionStateEnum::Stopped
+	    {
 		println!("============== Running move_to_up ");
 		//let ret = move_to_jar( pi, step.jar_number, Some(&pes) );
 		pi.green_light.set_low().expect("Couldn't turn green light off");
 		pi.red_light.set_high().expect("Couldn't turn red light back on");
-		let ret = move_to_up_position( pi, Some(&pes), false);
+		let ret = move_to_up_position( pi, Some(&pes), true);
 		if ret == MoveResult::MovedFullDistance {
 		    break;
 		}
@@ -406,6 +428,7 @@ fn main() {
 		run_procedure,
 		pause_procedure,
 		resume_procedure,
+		stop_procedure,
 		read_procedure_status,
 		seconds_remaining,
 		exit_kiosk_mode,
