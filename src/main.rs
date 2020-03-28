@@ -71,11 +71,11 @@ fn home_handler(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>) 
 #[post("/run_procedure/<id>")]
 fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>, id: String) -> String {
     let pes = pes.inner();
-    if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Running ||
-	pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Paused {
-	    println!("Already running a procedure. Exiting.");
-	    return "Already running a procedure. Exiting.".to_string();
-	}
+    println!("In run_procedure, pes: {:?}",pes.atm.load(Ordering::Relaxed));
+    if pes.atm.load(Ordering::Relaxed) == ProcedureExecutionStateEnum::Running {
+	println!("Already running a procedure. Exiting.");
+	return "Already running a procedure. Exiting.".to_string();
+    }
 
     let pi_mutex = &mut pi_state.inner();
 
