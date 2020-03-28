@@ -47,26 +47,27 @@
 (defn jar-contents [prog-atm]
   [:div
    [:h2 "Jar Contents"]
-   [:table [:tbody [:tr [:th "Jar #"] [:th "Substance"]]
-            (map-indexed (fn [idx substance]
-                           ^{:key idx}
-                           [:tr
-                            [:td (inc idx)]
-                            [:td [osk/osk-input osk-atm
-                                  {:on-change (fn [new-val]
-                                                (println "Change handler called: " new-val)
-                                                (rename-substance prog-atm (inc idx) new-val))
-                                   :value substance}]]]
-                                  ;; [:input {:type "text" :value substance
-                             ;;          :on-change (fn [e] (rename-substance prog-atm (inc idx) (-> e .-target .-value)))}]
-                           )
-                         (extend-vector (:jarContents @prog-atm) number-of-jars))]]])
+   [:div {:style {:display :flex :justify-content :center :width "100%"}}
+    [:table [:tbody [:tr [:th "Jar #"] [:th "Substance"]]
+             (map-indexed (fn [idx substance]
+                            ^{:key idx}
+                            [:tr
+                             [:td (inc idx)]
+                             [:td [osk/osk-input osk-atm
+                                   {:on-change (fn [new-val]
+                                                 (println "Change handler called: " new-val)
+                                                 (rename-substance prog-atm (inc idx) new-val))
+                                    :value substance}]]]
+                            ;; [:input {:type "text" :value substance
+                            ;;          :on-change (fn [e] (rename-substance prog-atm (inc idx) (-> e .-target .-value)))}]
+                            )
+                          (extend-vector (:jarContents @prog-atm) number-of-jars))]]]])
 
 (defn substance-selector [option-list step-cursor]
   "Ex: (substance-selector [\"Hematoxylin\" \"Tap water\" \"Eosin\"] \"Eosin\")"
   (fn [option-list step-cursor]
     (let [substance (:substance @step-cursor)]
-      [:select {:name "substance" :value (or substance "")
+      [:select {:name "substance" :value (or substance "") :class "substance-selector"
                 :on-change (fn [e]
                              (let [new-substance (-> e .-target .-value)]
                                (swap! step-cursor
@@ -218,7 +219,8 @@
       [:div
        
        [:h2 "Procedure Steps"]
-       [:div {:class "procedure_steps_table_region"}
+       [:div {:class "procedure_steps_table_region" :style {:display :flex :align-items :center :width "100%"
+                                                            :flex-direction :column}}
         [:table {:class "procedure_steps_table"}
          [:tbody [:tr [:th "Step #"] [:th "Substance"] [:th "Time"] [:th "Jar #"]]
           (map-indexed (fn [idx step]
@@ -234,11 +236,14 @@
                                                                       (println steps)
                                                                       (println idx)
                                                                       (println (drop-nth steps idx))
-                                                                      (drop-nth steps idx))))} "x"]]]))
+                                                                      (drop-nth steps idx))))
+                                           :class "step-delete-button"} "x"]]]))
                        @steps-cursor)]]
-        [:button {:on-click (fn [e] (swap! steps-cursor conj {}))} "+ Add step"]]
+        [:button {:on-click (fn [e] (swap! steps-cursor conj {}))
+                  :style {:max-width "80%"}} "+ Add step"]]
+       [:h2 "Other Options"]
        [:div {:class "repeat-control-div"}
-        [up-down-field "Repeat: " repeat-cursor]]
+        [up-down-field "Number of times to repeat procedure: " repeat-cursor]]
 
        [:div {:style {:display :flex
                       :justify-content :space-between}}
@@ -269,21 +274,21 @@
 (defn procedure-edit
   ([] (procedure-edit sample-program-atom (reagent/atom {}) nil nil))
   ([prog-atm procedure-run-status-cursor back-fn run-fn]
-   [:div
+   [:div {:class "procedure_definition"}
     [:div {:class "nav-header"}
      (when back-fn
        [:button {:class "round-button" :on-click back-fn}
         [svg/chevron-left {:class "chevron-left" } "white" 36]])
      [:h1 "Procedure Definition"]]
     [:div
-     [:label "Procedure Name"]
-     [osk/osk-input osk-atm
-      {:on-change (fn [new-val]
-                    (println "Change handler called: " new-val)
-                    (swap! prog-atm (fn [x] (assoc x :name new-val))))
-       :value (:name @prog-atm)
-       :size 40}]
-     ]
+     [:h2 "Procedure Name"]
+     [:div {:style {:display :flex :justify-content :center :width "100%"}}
+      [osk/osk-input osk-atm
+       {:on-change (fn [new-val]
+                     (println "Change handler called: " new-val)
+                     (swap! prog-atm (fn [x] (assoc x :name new-val))))
+        :value (:name @prog-atm)
+        :size 40}]]]
     [jar-contents prog-atm]
     [procedure-steps prog-atm procedure-run-status-cursor run-fn back-fn]
     (when (:developer @atoms/settings-cursor)

@@ -160,15 +160,6 @@ button:active {
     margin: 2px;
 }
 
-.up-down-field {
-    font-size: 32px;
-}
-
-.up-down-field button {
-    padding: 12px;
-    font-size: 26px;
-}
-
 /* Procedure Creation */
 .procedure_steps_table td,
 .procedure_steps_table div,
@@ -224,4 +215,32 @@ button:active {
 
 .procedure-run-status {
     font-size: 28px;
+}
+
+/* Procedure Definition */
+.procedure_definition h2 {
+    margin-left: 10px;
+}
+
+.procedure_definition select {
+    background-color: white;
+    min-width: 60px;
+}
+
+.substance-selector {
+    width: 20em;
+}
+
+.step-delete-button {
+    margin-left: 60px;
+}
+
+.up-down-field {
+    font-size: 18px;
+}
+
+.up-down-field button {
+    padding: 12px;
+    margin: 0 10px 0 10px;
+    font-size: 26px;
 }
