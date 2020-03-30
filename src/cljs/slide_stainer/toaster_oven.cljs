@@ -32,8 +32,7 @@
   ([toast-msg icon-fn color]
    (add-toast [:div {}
                [icon-fn {:style {:display :inline-block :padding "8px"}} color 32]
-               toast-msg]))
-  )
+               toast-msg])))
 
 (defn get-toasts []
   (:toasts @atoms/toaster-cursor))

@@ -14,6 +14,7 @@ pub const UP_POSITION: Inch = 3.5;
 pub const JAR_SPACING: Inch = 1.9;
 
 pub const COUCHDB_URL: &'static str = "http://localhost:5984/slide_stainer";
+//pub const COUCHDB_URL: &'static str = "http://localhost:5984/slide_stainer_demo";
 
 
 pub struct Stepper {

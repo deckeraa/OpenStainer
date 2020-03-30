@@ -340,6 +340,29 @@ fn pos(pi: State<SharedPi>, axis: AxisDirection) -> String {
     }
 }
 
+#[get("/play_note?<note_hz>&<duration_ms>&<forward>")]
+fn play_note(pi_state: State<SharedPi>, note_hz: f64, duration_ms: u64, forward: bool) -> String {
+    let pi_mutex = &mut pi_state.inner();
+    let pi = &mut *pi_mutex.lock().unwrap();
+    crate::motion::play_note(pi, AxisDirection::X, forward, note_hz, duration_ms, None);
+    "Played note".to_string()
+}
+
+#[get("/move_one_turn_at_freq?<hz>&<forward>&<turns>")]
+fn move_one_turn_at_freq(pi_state: State<SharedPi>, hz: f64, forward: bool, turns :u64) -> String {
+    let pi_mutex = &mut pi_state.inner();
+    let pi = &mut *pi_mutex.lock().unwrap();
+    crate::motion::move_turns_at_freq(pi, AxisDirection::X, forward, hz, turns);
+    "Played note".to_string()
+}
+
+#[get("/run_motor_test?<forward>&<accel_in_hz_per_sec>&<max_hz>&<number_of_turns>")]
+fn run_motor_test(pi_state: State<SharedPi>, forward: bool, accel_in_hz_per_sec: f64, max_hz: f64, number_of_turns: u64) -> String {
+    let pi_mutex = &mut pi_state.inner();
+    let pi = &mut *pi_mutex.lock().unwrap();
+    return crate::motion::run_motor_test(pi, AxisDirection::X, forward, accel_in_hz_per_sec, max_hz, number_of_turns);
+}
+
 #[post("/exit_kiosk_mode")]
 fn exit_kiosk_mode() -> String {
     let mut command = Command::new("./exit_kiosk_mode.sh");
@@ -432,6 +455,9 @@ fn main() {
 		read_procedure_status,
 		seconds_remaining,
 		exit_kiosk_mode,
+		play_note,
+		move_one_turn_at_freq,
+		run_motor_test,
             ],)
 	.mount("/",StaticFiles::from("./resources/public/"))
 	.attach(cors)
