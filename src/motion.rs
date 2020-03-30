@@ -151,12 +151,22 @@ pub fn play_note(pi: &mut Pi, axis: AxisDirection, forward: bool, note_hz: f64, 
     "Finished playing note.".to_string()
 }
 
+// Moves a given number of turns at a certain frequency.
 pub fn move_turns_at_freq(pi: &mut Pi, axis: AxisDirection, forward: bool, note_hz: f64, turns: u64) -> String {
-    play_note(pi, axis, forward, note_hz, 0, Some(turns * 12800));
+    let pulses_per_revolution;
+    {
+	let stepper = match axis {
+            AxisDirection::X => &mut pi.stepper_x,
+            AxisDirection::Z => &mut pi.stepper_z,
+	};
+	pulses_per_revolution = stepper.pulses_per_revolution;
+    }
+    play_note(pi, axis, forward, note_hz, 0, Some(turns * pulses_per_revolution));
     "Moved one turn".to_string()
 }
 
-pub fn run_motor_test(pi: &mut Pi, axis: AxisDirection, forward: bool, accel_in_hz_per_sec: f64, _max_hz: f64, number_of_turns: u64) -> String {
+// Runs a test of a given stepper and acceleration constant.
+pub fn run_motor_test(pi: &mut Pi, axis: AxisDirection, forward: bool, acceleration_constant: f64, number_of_turns: u64) -> String {
     let stepper = match axis {
         AxisDirection::X => &mut pi.stepper_x,
         AxisDirection::Z => &mut pi.stepper_z,
@@ -179,7 +189,7 @@ pub fn run_motor_test(pi: &mut Pi, axis: AxisDirection, forward: bool, accel_in_
     stepper.dir.set_value(forward).expect("Couldn't set dir");
     thread::sleep(time::Duration::from_millis(1));
 
-    let times = generate_wait_times(number_of_turns*4000, accel_in_hz_per_sec);
+    let times = generate_wait_times(number_of_turns*4000, acceleration_constant);
     for t in times.iter() {
         // generate the pulse
         stepper.pul.set_high().expect("Couldn't set pul");
@@ -207,6 +217,7 @@ pub fn run_motor_test(pi: &mut Pi, axis: AxisDirection, forward: bool, accel_in_
     "Finished motor test.".to_string()
 }
 
+// Moves the stepper by a certain number of steps
 pub fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, is_homing: bool, opt_pes: Option<&ProcedureExecutionState>, skip_soft_estop_check: bool) -> MoveResult {
     let stepper = match axis {
         AxisDirection::X => &mut pi.stepper_x,
@@ -230,21 +241,22 @@ pub fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, 
         Err(e) => println!("Real Time thread priority not set: {:?}", e),
     }
 
+    // generate the pulses
+    let times = generate_wait_times(pulses,64_000_000.0);
+
     // Enable and set the direction
     stepper.ena.set_low().expect("Couldn't turn on ena"); // logic is reversed to due transistor
     thread::sleep(time::Duration::from_millis(1));
     stepper.dir.set_value(forward).expect("Couldn't set dir");
     thread::sleep(time::Duration::from_millis(1));
 
-    let times = generate_wait_times(pulses,64_000_000.0);
     let mut hit_limit_switch = false;
     let mut hit_e_stop = false;
 
     let mut moved_pulses = 0;
     for t in times.iter() {
         moved_pulses = moved_pulses + 1;
-        // check limit switch // TODO add calculated limit checks for the other side
-        // check lower limit switch
+        // check limit switch
         if !forward
             && stepper.limit_switch_low.is_some()
             && bool::from(
@@ -350,6 +362,7 @@ pub fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, 
     MoveResult::MovedFullDistance
 }
 
+// Moves to a position given in inches.
 pub fn move_to_pos(pi: &mut Pi, axis: AxisDirection, inches: Inch, opt_pes: Option<&ProcedureExecutionState>, skip_soft_estop_check: bool) -> MoveResult {
     println!("move_to_pos axis: {}  inches: {}", axis, inches);
     let is_not_homed = get_stepper(pi, &axis).pos.is_none();
@@ -399,6 +412,8 @@ pub fn home(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -> MoveResul
     ret_two
 }
 
+// This is used to determine whether or not move_to_jar needs to move to the up position and move over before
+// moving down.
 fn known_to_be_at_jar_position(pi: &mut Pi, jar_number: i32) -> bool {
     if pi.stepper_x.pos.is_none() {
 	return false;
