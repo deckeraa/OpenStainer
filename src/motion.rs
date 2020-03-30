@@ -8,14 +8,20 @@ use std::sync::atomic::Ordering;
 use std::convert::TryFrom;
 use std::convert::TryInto;
 
+// Converts inches to pulses for a given stepper's configuration
 pub fn inches_to_pulses(inches: Inch, stepper: &Stepper) -> PulseCount {
     (stepper.pulses_per_revolution as f64 * inches / stepper.travel_distance_per_turn) as u64
 }
 
+// Converts pulses to inches for a given stepper's configuration
 pub fn pulses_to_inches(pulses: PulseCount, stepper: &Stepper) -> Inch {
     pulses as f64 * stepper.travel_distance_per_turn / stepper.pulses_per_revolution as f64
 }
 
+// Generates an array of wait times to play a note for a given duration.
+// If step_override has a value other than None, then the number of steps passed will be used
+// rather than duration_ms to determine how long to play the note.
+// This is mostly useful for analyzing the potential loss of steps while turning a stepper at a fixed frequency.
 fn generate_note_times(note_hz: f64, duration_ms: u64, step_override: Option<u64>) -> Vec<std::time::Duration> {
     println!("note_hz before round {:?}", note_hz);
     let note_hz = note_hz.round() as u64;
@@ -34,6 +40,11 @@ fn generate_note_times(note_hz: f64, duration_ms: u64, step_override: Option<u64
     times
 }
 
+// Generates an array of wait times to be used to drive the stepper.
+// Size is the number of steps to move the stepper, and a is a constant acceleration to apply.
+// a is in Hz/sec BUT it has a hidden constant coefficient based upon the stepper driver settings.
+// E.g. if you set the stepper driver to 4000 steps/rev, then a is going to need to be different than if
+// it was set to 1600 steps/rev.
 fn generate_wait_times(
     size: u64,
     a: f64,
@@ -42,9 +53,20 @@ fn generate_wait_times(
     // put it in an array that's the right size.
     let mut times = vec![time::Duration::from_nanos(0); size.try_into().unwrap()];
 
+    // We fill up the array with times halfway through and then mirror it to produce the deceleration ramp.
     let halfway = size / 2;
     for i in 1..halfway + 2 {
-	//let calculated_time : f64 = (i as f64).sqrt() / (accel_in_hz_per_ns*steps_per_turn as f64).sqrt();
+	// If we want a constant acceleration, then given steps y, time t and acceleration a, acceleration is
+	// (d^2y / dt^2) = a
+	// Integrating gives us velocity:
+	// dy/dt = at
+	// (For our application we don't care about the +C term resulting from integration).
+	// Integrating once again gives us:
+	// y = (1/2)at^2
+	// When driving a stepper, we have to provide a signal for each pulse.
+	// Thus, we can't pick y values based on t, instead we need to find t for values y = 1,2,3,4,5,6 etc.
+	// Sovled for t: t = sqrt(2y/a).
+	// (We don't care about the negative root since negative t values are nonsensical for our application).
 	let calculated_time : f64 = (1_000_000_000.0/2.0) * (2.0/1.0 as f64).sqrt() * (i as f64 / a).sqrt();
 	let mut selected_time = time::Duration::from_nanos(calculated_time.round() as u64);
 	if selected_time < time::Duration::from_micros(5) {
@@ -52,12 +74,15 @@ fn generate_wait_times(
 	}
         times[usize::try_from(i).unwrap() - 1] = selected_time;
     }
+    // Now mirror the array ot produce the deceleration ramp
     for i in halfway+1..size {
         times[usize::try_from(i).unwrap()] = times[usize::try_from(size - i).unwrap()];
     }
 
-    // now go through and calculation the actual wait time: (t_n+1 - t_n)/2
-    // the 2 is in there because each pulse is divided equally into time with the signal HIGH and LOW.
+    // now go through and calculate the actual wait time: (t_n+1 - t_n)/2
+    // The array above gives us absolute times at which point steps need to occur, this gives us the distance
+    // between times for use in our sleep() function when in the actual motor driving loop.
+    // The 2 is in there because each pulse is divided equally into time with the signal HIGH and LOW.
     let mut wait_times = vec![time::Duration::from_nanos(0); size.try_into().unwrap()];
     for i in 1..halfway + 1{
 	let t_b = times[usize::try_from(i).unwrap()];
@@ -71,6 +96,10 @@ fn generate_wait_times(
     return wait_times;
 }
 
+// Plays a note on a given stepper at a given frequency.
+// If step_override has a value other than None, then the number of steps passed will be used
+// rather than duration_ms to determine how long to play the note.
+// This is mostly useful for analyzing the potential loss of steps while turning a stepper at a fixed frequency.
 pub fn play_note(pi: &mut Pi, axis: AxisDirection, forward: bool, note_hz: f64, duration_ms: u64, step_override: Option<u64>) -> String {
     let stepper = match axis {
         AxisDirection::X => &mut pi.stepper_x,
