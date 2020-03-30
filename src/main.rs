@@ -204,12 +204,6 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 		}
 		thread::sleep(time::Duration::from_millis(20));
 	    }
-
-	    // // sleep until it's time to move again
-	    // println!("Entering loop C");
-	    // while start_instant.elapsed().as_secs() < seconds_remaining {
-	    // 	thread::sleep(time::Duration::from_millis(200));
-	    // }
 	    println!("Exited loop C");
 	}
     }
@@ -217,10 +211,6 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
     // End of procedure, so move to the up position
     {
 	let pi = &mut *pi_mutex.lock().unwrap();
-	// let ret = move_to_up_position( pi, None );
-	// if ret == MoveResult::HitEStop {
-	//     return format! {"Stopped due to e-stop being hit."}
-	// }
 	loop {
 	    let state = pes.atm.load(Ordering::Relaxed);
 	    if state == ProcedureExecutionStateEnum::Running ||
@@ -256,8 +246,7 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 	    pi.current_procedure = Some(inc_result.unwrap());
 	}
     }
-    println!("========= Done running procedure ========");
-    format! {"run_procedure return value TODO"}
+    format! {"run_procedure completed"}
 }
 
 #[post("/move_by_pulses/<axis>/<forward>/<pulses>")]
@@ -369,6 +358,9 @@ fn run_motor_test(pi_state: State<SharedPi>, forward: bool, acceleration_constan
     return crate::motion::run_motor_test(pi, AxisDirection::X, forward, acceleration_constant, number_of_turns);
 }
 
+// This runs a script that closes the current chromium-browser session (running in kiosk mode)
+// and starts a new one not in kiosk mode. This is useful for when a user wishes to access the underlying Raspian OS
+// capabilites of the Pi.
 #[post("/exit_kiosk_mode")]
 fn exit_kiosk_mode() -> String {
     let mut command = Command::new("./exit_kiosk_mode.sh");
@@ -425,8 +417,6 @@ fn main() {
     
     // set up CORS
     let allowed_origins = AllowedOrigins::all();
-
-    // You can also deserialize this
     let cors = rocket_cors::CorsOptions {
         allowed_origins,
         allowed_methods: vec![Method::Get, Method::Put, Method::Post, Method::Delete].into_iter().map(From::from).collect(),
