@@ -19,7 +19,6 @@ impl Query {
     }
 
     fn axis(context: &SharedPi, id: AxisDirection) -> FieldResult<Axis> {
-	println!("axis id: {:?}",id);
         let pi = &mut *context.lock().unwrap();
 	let stepper = get_stepper( pi, &id );
 	let position_inches = match stepper.pos {
@@ -27,7 +26,6 @@ impl Query {
              None => "Not homed".to_string(),
  	};
 	let axis = Axis {position_inches: position_inches};
-	println!("Returning axis: {:?}",axis);
         
         Ok(axis)
     }
@@ -47,7 +45,6 @@ impl Query {
 
     fn run_status(shared_pi: &SharedPi) -> FieldResult<Option<ProcedureRunStatus>> {
 	let pi = &mut *shared_pi.lock().unwrap();
-	println!("run_status: {:?}", pi.run_status);
 	let run_status_opt = pi.run_status.clone();
 	if run_status_opt.is_none() {
 	    return Ok(None);
