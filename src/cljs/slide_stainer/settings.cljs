@@ -26,20 +26,6 @@
   (swap! atoms/stepperZ-cursor (fn [v] (merge v (:stepperZ resp))))
   )
 
-(defn alarm-line [alarmed? label]
-  (fn []
-    [:div {:style {:display :flex :flex-direction :row :align-items :center}}
-     [svg/bell {:style {:margin "5px"}} (if alarmed? "red" "green") 32]
-     label]))
-
-;; (defn alarms [alarms-cursor]
-;;   (fn []
-;;     [:div {:style {:display :flex :flex-direction :column}}
-;;      [:h2 "Alarms"]
-;;      [alarm-line (:homing_failed @alarms-cursor) "Homing failed"]
-;;      [alarm-line (:limit_switch_hit_unexpectedly @alarms-cursor) "Limit switch hit unexpectedly"]
-;;      ]))
-
 (defn positions-and-home [stepperX-cursor stepperZ-cursor]
   (fn []
     (let [position-x (:positionInches @stepperX-cursor)
@@ -58,7 +44,7 @@
         "Home"]
        ])))
 
-(defn jar-jog-control [alarms-cursor]
+(defn jar-jog-control []
   (fn []
     [:div
      [:h2 "Move to jar"]

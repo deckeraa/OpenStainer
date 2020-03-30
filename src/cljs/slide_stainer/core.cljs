@@ -41,40 +41,6 @@
            (println "handler-fn " handler-fn)
            (if handler-fn (handler-fn resp raw-resp)))))))
 
-(def alarms-subquery "alarms{limit_switch_hit_unexpectedly,homing_failed}")
-(def alarms-query (str "{state{" alarms-subquery "}}"))
-
-(defn alarms-query-response-handler [alarms-cursor results]
-  (println "alarms-query-response-handler " results)
-  (reset! alarms-cursor (:alarms results)))
-
-(defn alarms-control [alarms-cursor]
-  (let [auto-loaded? (atom false)
-        load-fn (graphql-click-handler
-                 alarms-query
-                 (fn [resp] (alarms-query-response-handler alarms-cursor (:state resp))))]
-    (fn []
-      (when (and (empty? @alarms-cursor) (not @auto-loaded?))
-        (do
-          (println "Need to auto-load here")
-          (reset! auto-loaded? true))
-        (load-fn))
-      [:div
-       (map (fn [[alarm val]]
-              ^{:key alarm} [:div {:width 300 :style {:background-color (if val "red" "green")}} (str alarm)])
-            @alarms-cursor)
-       [:button {:on-click load-fn} "Refresh"]
-       [:button {:on-click (graphql-click-handler
-                            (str "mutation{clear_alarms{" alarms-subquery "}}")
-                            (fn [resp] (alarms-query-response-handler
-                                        alarms-cursor
-                                        (:clear_alarms resp))))} "Clear alarms"]])))
-
-(defcard-rg alarms-control-card
-  (let [alarms-cursor (reagent/atom {:alarm-one true :alarm-two false})]
-    (fn []
-      [alarms-control alarms-cursor])))
-
 (defn relative-jog-control []
   (let [query-fn (fn [device invert? inc-atm]
                    (str "mutation {move_relative(id:\""
@@ -176,19 +142,16 @@
   [:button {:on-click (graphql/graphql-fn {:query "mutation{drop_motor_lock{motor_lock}}"})} "Drop motor lock"])
 
 (defn jog-control [ratom]
-  (let [alarms-cursor (reagent/cursor ratom [:alarms])]
-    (fn []
-      [:div
-       [relative-jog-control]
-       [position-readout-jog-control :stepperZ]
-       [absolute-jog-control :stepperZ]
-       [position-readout-jog-control :stepperX]
-       [absolute-jog-control :stepperX]
-;       [jar-jog-control alarms-cursor]
-       [home-button]
-       [alarms-control alarms-cursor]
-       [drop-motor-lock-button]
-       ])))
+  (fn []
+    [:div
+     [relative-jog-control]
+     [position-readout-jog-control :stepperZ]
+     [absolute-jog-control :stepperZ]
+     [position-readout-jog-control :stepperX]
+     [absolute-jog-control :stepperX]
+     [home-button]
+     [drop-motor-lock-button]
+     ]))
 
 (defn replace-current-screen [screen-cursor new-screen]
   (swap! screen-cursor (fn [v] (conj (pop v) new-screen))))
@@ -202,8 +165,6 @@
      [:div {:class "header"}
       [:h1 "OpenStainer"]
       [:h2 "v1.0.0"]
-      (when (> (count (filter true? (vals @atoms/alarms-cursor))) 0)
-        [svg/bell {:class "bell" :on-click #(swap! atoms/screen-cursor conj :settings)} "white" 36])
       [svg/cog {:class "cog" :on-click #(swap! atoms/screen-cursor conj :settings)} "white" 36]]
      [:div {:class "body body-background"}
 ;      (when (= :jog (peek @atoms/screen-cursor)) [jog-control ratom])
@@ -254,8 +215,6 @@
                         (reset! atoms/settings-cursor (:settings resp))
                         (reset! atoms/procedure-list-cursor (:procedures resp)))
           :should-run? (fn [] (empty? @atoms/settings-cursor))}
-   ;; :always {:query-fn (fn [] (str "{state{alarms{" graphql/alarm-keys "}}}"))
-   ;;          :handler-fn (fn [resp] (reset! atoms/alarms-cursor (get-in resp [:state :alarms])))}
    :procedure-run {:rest-fn slide-stainer.procedure-run/rest-fn
                    :rest-handler-fn slide-stainer.procedure-run/rest-handler-fn
                    :query-fn slide-stainer.procedure-run/refresh-query-fn

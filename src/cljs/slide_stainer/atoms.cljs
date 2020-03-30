@@ -1,4 +1,6 @@
 (ns slide-stainer.atoms
+  "Defines the global state atom of the app as
+  well as several cursors used to access various elements."
   (:require
    [reagent.core :as reagent]
    [devcards.core])
@@ -7,8 +9,7 @@
    [devcards.core :refer [defcard defcard-rg]]))
 
 (defonce app-state
-  (reagent/atom {:alarms {}
-                 :current-procedure nil
+  (reagent/atom {:current-procedure nil
                  :procedure_run_status {}
                  :screen-stack [:procedure-selection]
                  :stepperX {}
@@ -22,7 +23,6 @@
 (defonce screen-cursor               (reagent/cursor app-state [:screen-stack]))
 (defonce stepperX-cursor             (reagent/cursor app-state [:stepperX]))
 (defonce stepperZ-cursor             (reagent/cursor app-state [:stepperZ]))
-(defonce alarms-cursor               (reagent/cursor app-state [:alarms]))
 (defonce procedure-list-cursor       (reagent/cursor app-state [:procedure-list]))
 (defonce settings-cursor             (reagent/cursor app-state [:settings]))
 (defonce toaster-cursor              (reagent/cursor app-state [:toaster]))

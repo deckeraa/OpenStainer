@@ -29,9 +29,6 @@
 (def run-status-keys
   "currentProcedureStepNumber,currentCycleNumber")
 
-(def alarm-keys "limit_switch_hit_unexpectedly,homing_failed")
-(def alarms-subquery (str "alarms{" alarm-keys "}"))
-
 (def settings-keys "_id,_rev,developer")
 
 (defn remove-quotes-from-keys
