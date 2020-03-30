@@ -387,7 +387,7 @@ fn main() {
             limit_switch_high: None,
             pos: None,
             position_limit: 10.0,
-            pulses_per_revolution: 800,
+            pulses_per_revolution: 4000,
             travel_distance_per_turn: 0.063,
         },
         stepper_z: Stepper {
@@ -398,7 +398,7 @@ fn main() {
             limit_switch_high: Some(gpio::sysfs::SysFsGpioInput::open(15).unwrap()),
             pos: None,
             position_limit: 3.75,
-            pulses_per_revolution: 800,
+            pulses_per_revolution: 4000,
             travel_distance_per_turn: 0.063,
         },
 	current_procedure: None,
