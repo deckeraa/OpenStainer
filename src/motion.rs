@@ -449,12 +449,12 @@ pub fn move_to_left_position(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionSta
 }
 
 pub fn home(pi: &mut Pi, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
-    let ret_one = move_steps(pi, AxisDirection::Z, true, 160000, true, opt_pes, false);
+    let ret_one = move_steps(pi, AxisDirection::Z, true, 160000*4, true, opt_pes, false);
     println!("Result of first home move {:?}",ret_one);
     if ret_one == MoveResult::HitEStop || ret_one == MoveResult::FailedToHome{
 	return MoveResult::FailedToHome;
     }
-    let ret_two = move_steps(pi, AxisDirection::X, false, 320000, true, opt_pes, false);
+    let ret_two = move_steps(pi, AxisDirection::X, false, 320000*4, true, opt_pes, false);
     if ret_one == MoveResult::HitLimitSwitch && ret_two == MoveResult::HitLimitSwitch {
         move_to_up_position(pi, opt_pes, false);
         move_to_left_position(pi, opt_pes);
@@ -474,6 +474,7 @@ fn known_to_be_at_jar_position(pi: &mut Pi, jar_number: i32) -> bool {
 pub fn move_to_jar(pi: &mut Pi, jar_number: i32, opt_pes: Option<&ProcedureExecutionState>) -> MoveResult {
     if !known_to_be_at_jar_position(pi, jar_number) {
 	let ret: MoveResult = move_to_up_position(pi, opt_pes, false);
+	println!("Result of move_to_up_position {:?}", ret);
 	if ret == MoveResult::HitLimitSwitch
             || ret == MoveResult::HitEStop
             || ret == MoveResult::FailedDueToNotHomed
@@ -487,6 +488,7 @@ pub fn move_to_jar(pi: &mut Pi, jar_number: i32, opt_pes: Option<&ProcedureExecu
 	    opt_pes,
 	    false
 	);
+	println!("Result of move_to_pos {:?}", ret);
 	if ret == MoveResult::HitLimitSwitch
             || ret == MoveResult::HitEStop
             || ret == MoveResult::FailedDueToNotHomed
@@ -495,5 +497,6 @@ pub fn move_to_jar(pi: &mut Pi, jar_number: i32, opt_pes: Option<&ProcedureExecu
 	}
     }
     let ret = move_to_down_position(pi, opt_pes, false);
+    println!("Result of move_to_down_position {:?}", ret);
     ret
 }

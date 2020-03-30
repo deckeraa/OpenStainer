@@ -132,6 +132,12 @@ fn run_procedure(pi_state: State<SharedPi>, pes: State<ProcedureExecutionState>,
 			if ret == MoveResult::MovedFullDistance {
 			    break;
 			}
+			if ret == MoveResult::HitLimitSwitch {
+			    println!("move_to_jar hit a limit switch!");
+			    pes.atm.store(ProcedureExecutionStateEnum::Paused, Ordering::Relaxed);
+			    pi.green_light.set_high().expect("Couldn't turn green light on");
+			    pi.red_light.set_low().expect("Couldn't turn red light off");
+			}
 		    }
 		    if state == ProcedureExecutionStateEnum::Stopped {
 			break; // end the procedure if the user stopped it
