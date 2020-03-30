@@ -1,4 +1,6 @@
 (ns slide-stainer.periodic-updater
+  "Defines functions that sends out queries to keep the client in sync with the server.
+  The query can vary based upon the active screen."
   (:require
    [reagent.core :as reagent]
    [devcards.core]
@@ -13,6 +15,16 @@
    [devcards.core :refer [defcard defcard-rg]]))
 
 (defn periodic-updater
+  "Defines a function that sends out periodic queries to keep the client in sync with the server.
+  screen-cursor contains the active screen (see slide-stainer.atoms/screen-cursor).
+  queries-to-run contains a map with the following structure:
+  {:init {:query-fn \"This should be a query runs once to initialize the applications state
+          :handler-fn \"This should be a handler function that uses the results of query-fn to update state.
+          :should-run? \"This should be a boolean function with no parameters, where return true indicates that the initialization query should indeed be run. This is used to allow having the init query-fn only run once.\"
+   \"A screen's keys go here\" {
+                   :query-fn \"A query-fn that updates the particular screen. Only gets run when the screen is active.\"
+                   :handler-fn \"Handler for query-fn\"}
+   }"
   ([screen-cursor queries-to-run]
    (periodic-updater screen-cursor queries-to-run 0))
   ([screen-cursor queries-to-run seconds]
@@ -42,6 +54,7 @@
                                            )}))))))
 
 (defn fast-rest-updater
+  "A faster updater than the periodic updater. This is used primarily to handle updating the seconds remaining in a procedure."
   ([screen-cursor queries-to-run]
    (let [screen (peek @screen-cursor)
          run-query-fn (get-in queries-to-run [screen :run-query-fn])
