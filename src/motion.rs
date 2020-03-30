@@ -104,12 +104,11 @@ fn generate_linear_ramp(start_hz: f64, max_hz: f64, ramp_length_in_turns: f64, n
 fn generate_wait_times_three(
     size: u64,
     a: f64,
-    max_hz: f64,
 ) -> Vec<std::time::Duration> {
     let size = size + 1; // we generate one more tmie than we need for an intermediate array, and then
     // put it in an array that's the right size.
     let mut times = vec![time::Duration::from_nanos(0); size.try_into().unwrap()];
-    println!("generate_wait_times_three. size {} a {} max_hz {}",size,a,max_hz);
+    //println!("generate_wait_times_three. size {} a {} max_hz {}",size,a,max_hz);
 
     let halfway = size / 2;
     for i in 1..halfway + 2 {
@@ -120,14 +119,17 @@ fn generate_wait_times_three(
 	// 	 calculated_time,
 	// 	 (i as f64).sqrt())
 //	    ;
-	let min_time_ns : f64 = 1_000_000_000 as f64 / max_hz as f64;
+	//let min_time_ns : f64 = 1_000_000_000 as f64 / max_hz as f64;
 //	println!("min_time_ns {:?}",min_time_ns);
-	let mut selected_time_ns : f64 = calculated_time;
-	if min_time_ns > selected_time_ns {
-	    selected_time_ns = min_time_ns;
+	let mut selected_time = time::Duration::from_nanos(calculated_time.round() as u64);
+	if selected_time < time::Duration::from_micros(5) {
+	    selected_time = time::Duration::from_micros(5); // minimum size of the signal supported by the stepper driver
 	}
+	// if min_time_ns > selected_time_ns {
+	//     selected_time_ns = min_time_ns;
+	// }
 //	println!("selected time: {:?}", selected_time_ns);
-        times[usize::try_from(i).unwrap() - 1] = time::Duration::from_nanos(selected_time_ns.round() as u64);
+        times[usize::try_from(i).unwrap() - 1] = selected_time;
     }
     for i in halfway+1..size {
         times[usize::try_from(i).unwrap()] = times[usize::try_from(size - i).unwrap()];
@@ -149,11 +151,11 @@ fn generate_wait_times_three(
     return wait_times;
 }
 
-#[test]
-fn test_wait_times() {
-    let expected = vec![time::Duration::from_nanos(1234)];
-    assert_eq!(generate_wait_times_three(50,20000.0,10000.0), expected);
-}
+// #[test]
+// fn test_wait_times() {
+//     let expected = vec![time::Duration::from_nanos(1234)];
+//     assert_eq!(generate_wait_times_three(50,20000.0,10000.0), expected);
+// }
     
     
 
@@ -213,7 +215,7 @@ pub fn move_turns_at_freq(pi: &mut Pi, axis: AxisDirection, forward: bool, note_
     "Moved one turn".to_string()
 }
 
-pub fn run_motor_test(pi: &mut Pi, axis: AxisDirection, forward: bool, accel_in_hz_per_sec: f64, max_hz: f64, number_of_turns: u64) -> String {
+pub fn run_motor_test(pi: &mut Pi, axis: AxisDirection, forward: bool, accel_in_hz_per_sec: f64, _max_hz: f64, number_of_turns: u64) -> String {
     let stepper = match axis {
         AxisDirection::X => &mut pi.stepper_x,
         AxisDirection::Z => &mut pi.stepper_z,
@@ -237,7 +239,7 @@ pub fn run_motor_test(pi: &mut Pi, axis: AxisDirection, forward: bool, accel_in_
     thread::sleep(time::Duration::from_millis(1));
 
     //let times = generate_linear_ramp(start_hz, max_hz, ramp_length_in_turns, number_of_turns );
-    let times = generate_wait_times_three(number_of_turns*4000, accel_in_hz_per_sec, max_hz);
+    let times = generate_wait_times_three(number_of_turns*4000, accel_in_hz_per_sec);
     //println!("times: {:?}", times);
     for t in times.iter() {
         // generate the pulse
@@ -296,7 +298,8 @@ pub fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, 
     thread::sleep(time::Duration::from_millis(1));
 
 //    let times = generate_wait_times(pulses, 1, 5, 17000);
-    let times = generate_wait_times_two(pulses, 400, 17000);
+    //let times = generate_wait_times_two(pulses, 400, 17000);
+    let times = generate_wait_times_three(pulses,64_000_000.0);
     let mut hit_limit_switch = false;
     let mut hit_e_stop = false;
 
