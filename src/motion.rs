@@ -183,13 +183,15 @@ pub fn run_motor_test(pi: &mut Pi, axis: AxisDirection, forward: bool, accelerat
         Err(e) => println!("Real Time thread priority not set: {:?}", e),
     }
 
+    println!("Running for {} steps", number_of_turns*4000);
+    let times = generate_wait_times(number_of_turns*4000, acceleration_constant);
+
     // Enable and set the direction
     stepper.ena.set_low().expect("Couldn't turn on ena"); // logic is reversed to due transistor
     thread::sleep(time::Duration::from_millis(1));
     stepper.dir.set_value(forward).expect("Couldn't set dir");
     thread::sleep(time::Duration::from_millis(1));
 
-    let times = generate_wait_times(number_of_turns*4000, acceleration_constant);
     for t in times.iter() {
         // generate the pulse
         stepper.pul.set_high().expect("Couldn't set pul");
@@ -250,6 +252,7 @@ pub fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, 
     stepper.dir.set_value(forward).expect("Couldn't set dir");
     thread::sleep(time::Duration::from_millis(1));
 
+    let mut limit_switch_debounce = false;
     let mut hit_limit_switch = false;
     let mut hit_e_stop = false;
 
@@ -276,9 +279,17 @@ pub fn move_steps(pi: &mut Pi, axis: AxisDirection, forward: bool, pulses: u64, 
                     .unwrap(),
             )
         {
-            hit_limit_switch = true;
-            break;
+	    if !limit_switch_debounce {
+		limit_switch_debounce = true;
+	    }
+	    else {
+		hit_limit_switch = true;
+		break;
+	    }
         }
+	else { // needs to hit the limit switch two steps in a row for it to count
+	    limit_switch_debounce = false;
+	}
 
         // check estop
         if  bool::from(pi.estop.read_value().unwrap()) {
