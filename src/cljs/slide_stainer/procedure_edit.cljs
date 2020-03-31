@@ -1,4 +1,5 @@
 (ns slide-stainer.procedure-edit
+  "Reagent controls for the screen that allows the user to modify a procedure, a.k.a. the procedure definition screen."
   (:require [reagent.core :as reagent]
             [cljs-http.client :as http]
             [devcards.core :refer-macros [deftest defcard-rg]]
@@ -13,6 +14,7 @@
 
 (def number-of-jars 6)
 
+;; a couple of defs for use with testing/DevCards
 (def sample-program
   {:name "H&E with Harris' Hematoxylin"
    :type :procedure
@@ -20,7 +22,6 @@
    :procedure_steps
    [{:substance "Hematoxylin" :timeInSeconds (* 25 60) :jarNumber 1}
     {:substance "Tap water" :timeInSeconds 150 :jarNumber 2}]})
-
 (def sample-program-atom (reagent/atom sample-program))
 (def osk-atm (reagent/atom {}))
 
@@ -29,9 +30,9 @@
                                     (name x)
                                     x)) sample-program))
 
-(defn rename-substance [prog-atm jarNumber new-substance]
-  "Don't forget that jarNumber is 1-indexed."
-  (swap! prog-atm (fn [prog]
+(defn rename-substance [procedure-cursor jarNumber new-substance]
+  "Renames a substance in the procedure-cursor. Don't forget that jarNumber is 1-indexed."
+  (swap! procedure-cursor (fn [prog]
                     (as-> prog $
                       (assoc-in $ [:jarContents (dec jarNumber)] new-substance)
                       (assoc-in $ [:procedureSteps] (mapv (fn [step]
@@ -44,7 +45,7 @@
 (defn extend-vector [coll n]
   (vec (concat coll (take (- n (count coll)) (repeat "")))))
 
-(defn jar-contents [prog-atm]
+(defn jar-contents [procedure-cursor]
   [:div
    [:h2 "Jar Contents"]
    [:div {:class "field_indent"}
@@ -56,12 +57,12 @@
                              [:td [osk/osk-input osk-atm
                                    {:on-change (fn [new-val]
                                                  (println "Change handler called: " new-val)
-                                                 (rename-substance prog-atm (inc idx) new-val))
+                                                 (rename-substance procedure-cursor (inc idx) new-val))
                                     :value substance}]]]
                             ;; [:input {:type "text" :value substance
-                            ;;          :on-change (fn [e] (rename-substance prog-atm (inc idx) (-> e .-target .-value)))}]
+                            ;;          :on-change (fn [e] (rename-substance procedure-cursor (inc idx) (-> e .-target .-value)))}]
                             )
-                          (extend-vector (:jarContents @prog-atm) number-of-jars))]]]])
+                          (extend-vector (:jarContents @procedure-cursor) number-of-jars))]]]])
 
 (defn substance-selector [option-list step-cursor]
   "Ex: (substance-selector [\"Hematoxylin\" \"Tap water\" \"Eosin\"] \"Eosin\")"
@@ -190,11 +191,11 @@
     (remove (fn [[idx itm]] (= n idx)) $)
     (mapv (fn [[idx itm]] itm) $)))
 
-(defn run-button [procedure-run-status-cursor prog-atm run-fn]
+(defn run-button [procedure-run-status-cursor procedure-cursor run-fn]
   (fn []
     [:button {:on-click (fn [e]
                           (println "run-button: " procedure-run-status-cursor)
-                          (go (let [resp (<! (http/post (str "http://localhost:8000/run_procedure/" (:_id @prog-atm))))]
+                          (go (let [resp (<! (http/post (str "http://localhost:8000/run_procedure/" (:_id @procedure-cursor))))]
                                 (println "run_procedure resp: " resp)))
                           ((graphql/graphql-fn
                             {:query (str "{runStatus{" graphql/run-status-keys "}}")
@@ -202,17 +203,17 @@
                                            (println "Run button resp: " resp  (get-in resp [:runStatus]))
                                            (reset! procedure-run-status-cursor (get-in resp [:runStatus]))
                                            (println "run-fn: " run-fn)
-                                           (when run-fn (run-fn @prog-atm))
+                                           (when run-fn (run-fn @procedure-cursor))
                                            )})))
               } "Run"]))
 
-(defn procedure-steps [prog-atm procedure-run-status-cursor run-fn back-fn]
+(defn procedure-steps [procedure-cursor procedure-run-status-cursor run-fn back-fn]
   (fn []
-    (let [steps-cursor (reagent/cursor prog-atm [:procedureSteps])
-          repeat-cursor (reagent/cursor prog-atm [:repeat])
-          substance-options (:jarContents @prog-atm)
+    (let [steps-cursor (reagent/cursor procedure-cursor [:procedureSteps])
+          repeat-cursor (reagent/cursor procedure-cursor [:repeat])
+          substance-options (:jarContents @procedure-cursor)
           save-query (str "mutation{saveProcedure(procedure:"
-                     (-> @prog-atm
+                     (-> @procedure-cursor
                          (graphql/jsonify)
                          (graphql/remove-quotes-from-keys))
                      "){" graphql/procedure-keys "}}")]
@@ -248,13 +249,10 @@
        [:div {:style {:display :flex
                       :justify-content :space-between}}
         [:button {:on-click (slide-stainer.graphql/graphql-fn
-                             {:query (str "mutation{deleteProcedure(id:\"" (:_id @prog-atm) \"",rev:\"" (:_rev @prog-atm) "\"){_id,name,runs}}")
+                             {:query (str "mutation{deleteProcedure(id:\"" (:_id @procedure-cursor) \"",rev:\"" (:_rev @procedure-cursor) "\"){_id,name,runs}}")
                               :handler-fn (fn [resp]
                                             (println "Delete button's response" resp)
                                             (back-fn))})
-                  ;; (fn [e] (go (let [resp (<! (http/post (str "http://localhost:8000/delete_procedure/" (:_id @prog-atm) "?rev=" (:_rev @prog-atm))))]
-                            ;;               (println "Deleted resp: " resp)
-                            ;;               (back-fn))))
                   :title "Delete procedure"} [svg/trash {} "white" "40px"]]
         [:div
          [:button {:on-click (slide-stainer.graphql/graphql-fn
@@ -264,8 +262,8 @@
                                                (toaster-oven/add-toast "Saved successfully." svg/check "green")
                                                (toaster-oven/add-toast "Couldn't save." svg/x "red"))
                                              (println "Save button's response" resp)
-                                             (when resp (reset! prog-atm (:saveProcedure resp))))})} "Save"]
-         [run-button procedure-run-status-cursor prog-atm run-fn]]
+                                             (when resp (reset! procedure-cursor (:saveProcedure resp))))})} "Save"]
+         [run-button procedure-run-status-cursor procedure-cursor run-fn]]
 
 
         ]
@@ -273,7 +271,7 @@
 
 (defn procedure-edit
   ([] (procedure-edit sample-program-atom (reagent/atom {}) nil nil))
-  ([prog-atm procedure-run-status-cursor back-fn run-fn]
+  ([procedure-cursor procedure-run-status-cursor back-fn run-fn]
    [:div {:class "procedure_definition"}
     [:div {:class "nav-header"}
      (when back-fn
@@ -286,13 +284,13 @@
       [osk/osk-input osk-atm
        {:on-change (fn [new-val]
                      (println "Change handler called: " new-val)
-                     (swap! prog-atm (fn [x] (assoc x :name new-val))))
-        :value (:name @prog-atm)
+                     (swap! procedure-cursor (fn [x] (assoc x :name new-val))))
+        :value (:name @procedure-cursor)
         :size 40}]]]
-    [jar-contents prog-atm]
-    [procedure-steps prog-atm procedure-run-status-cursor run-fn back-fn]
+    [jar-contents procedure-cursor]
+    [procedure-steps procedure-cursor procedure-run-status-cursor run-fn back-fn]
     (when (:developer @atoms/settings-cursor)
-      [:div (str @prog-atm)])
+      [:div (str @procedure-cursor)])
     [slide-stainer.onscreen-keyboard/onscreen-keyboard osk-atm]]))
 
 (defcard-rg procedure-edit-card
