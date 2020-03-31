@@ -12,26 +12,17 @@
             [cljs-time.format :as format])
   (:require-macros [cljs.core.async.macros :refer [go go-loop]]))
 
-;; (def status-query "{state{procedure_run_status{current_procedure_id,current_procedure_name,current_procedure_step_number,current_procedure_step_start_time}}}")
-(def status-query "{runStatus{currentProcedureStepNumber,currentCycleNumber}}")
-
 (def sample-procedure
   {:name "H&E with Harris' Hematoxylin"
    :type :procedure
-   :jar_contents ["Hematoxylin" "Tap water" "70% ethanol/1% HCI" "Tap water" "Eosin"]
-   :procedure_steps
-   [{:substance "Hematoxylin" :time_in_seconds (* 25 60) :jar_number 1}
-    {:substance "Tap water" :time_in_seconds 150 :jar_number 2}]})
+   :jarContents ["Hematoxylin" "Tap water" "70% ethanol/1% HCI" "Tap water" "Eosin"]
+   :procedureSteps
+   [{:substance "Hematoxylin" :timeInSeconds (* 25 60) :jarNumber 1}
+    {:substance "Tap water" :timeInSeconds 150 :jarNumber 2}]})
 
-(defn refresh-fn [procedure-cursor procedure-run-status-cursor] 
-  (graphql/graphql-fn
-   {:query (str "{state{procedure_run_status{" graphql/procedure-run-status-keys "}}}")
-    :handler-fn (fn [resp] (reset! procedure-run-status-cursor (get-in resp [:state :procedure_run_status])))}))
-
+;; screen refresh functions
 (defn refresh-query-fn []
-  status-query
-;  (str "{state{procedure_run_status{" graphql/procedure-run-status-keys "}}}")
-  )
+  "{runStatus{currentProcedureStepNumber,currentCycleNumber}}")
 
 (defn refresh-handler-fn [procedure-cursor procedure-run-status-cursor resp]
   (swap! procedure-run-status-cursor (fn [atm]
@@ -39,6 +30,7 @@
                                          (assoc $ :currentProcedureStepNumber (get-in resp [:runStatus :currentProcedureStepNumber]))
                                          (assoc $ :currentCycleNumber (get-in resp [:runStatus :currentCycleNumber]))))))
 
+;; functions to update the seconds remaining
 (defn run-query-fn [procedure-run-status-cursor]
   (not (nil? (:currentCycleNumber @procedure-run-status-cursor))))
 
@@ -49,6 +41,8 @@
   (let [seconds-remaining (js/parseInt resp)]
     (when (not (nil? seconds-remaining))
       (swap! procedure-run-status-cursor assoc :seconds-remaining seconds-remaining))))
+
+;; Reagent controls and drawing code
 
 (defn format-time-in-seconds [seconds]
   (let [min (Math/floor (/ seconds 60))
@@ -95,7 +89,6 @@
                    (or (:currentCycleNumber @procedure-run-status-cursor) 1)
                    " of "
                    (or (:repeat @procedure-cursor) 1))]]
-      ;; [:button {:on-click (refresh-fn procedure-cursor procedure-run-status-cursor)} "Refresh"]
       [:div {:style {:display :flex :justify-content :space-between :width "100%"} }
        [:button {:on-click (fn [e] (go (let [resp (<! (http/post "http://localhost:8000/stop_procedure"))]
                                          (println "stop_procedure " resp))))}
@@ -105,7 +98,6 @@
                                           (println "pause_procedure " resp))))} "Pause"]
         [:button {:on-click (fn [e] (go (let [resp (<! (http/post "http://localhost:8000/resume_procedure"))]
                                           (println "resume_procedure " resp))))} "Resume"]]]
-;      [slide-stainer.procedure-edit/run-button procedure-run-status-cursor procedure-cursor nil]
       ])))
 
 (defcard-rg procedure-run-status-card
