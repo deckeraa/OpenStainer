@@ -191,8 +191,8 @@
       [:button {:class "round-button" :on-click back-fn}
         [svg/chevron-left {:class "chevron-left" } "white" 36]]
       [:h1 "Settings"]]
-     [motor-test-control]
-     [notes-control]
+     ;; [motor-test-control]
+     ;; [notes-control]
      [positions-and-home atoms/stepperX-cursor atoms/stepperZ-cursor]
      [jar-jog-control]
      [up-down-control]
