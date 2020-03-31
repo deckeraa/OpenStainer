@@ -1,4 +1,5 @@
 (ns slide-stainer.graphql
+  "GraphQL functions for the slide stainer"
   (:require
    [reagent.core :as reagent]
    [cljs-http.client :as http]
@@ -22,10 +23,6 @@
   "_id,_rev,type,name,jarContents,procedureSteps{substance,timeInSeconds,jarNumber},repeat"
   )
 
-(def procedure-run-status-keys
-  ;;  "Contains a comma-delimited string of all keys in the procedure_run_status object"
-  "current_procedure_id,current_procedure_name,current_procedure_step_number,current_procedure_step_start_time,current_cycle_number")
-
 (def run-status-keys
   "currentProcedureStepNumber,currentCycleNumber")
 
@@ -42,7 +39,9 @@
 (defn jsonify [s]
   (.stringify js/JSON (clj->js s)))
 
-(defn graphql-fn [{query :query query-fn :query-fn handler-fn :handler-fn variable-fn :variable-fn :as args}]
+(defn graphql-fn
+  "Runs a GraphQL query and handles the results. You can pass a query as either a string query or as a fn returning a string"
+  [{query :query query-fn :query-fn handler-fn :handler-fn variable-fn :variable-fn :as args}]
   (fn []
     (println (or (if query-fn (query-fn) nil) query))
     (go (let [raw-resp (<! (http/post "http://localhost:8000/graphql"
