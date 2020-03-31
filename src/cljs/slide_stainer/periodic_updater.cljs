@@ -26,8 +26,6 @@
                    :handler-fn \"Handler for query-fn\"}
    }"
   ([screen-cursor queries-to-run]
-   (periodic-updater screen-cursor queries-to-run 0))
-  ([screen-cursor queries-to-run seconds]
    (let [screen (peek @screen-cursor)
          query  (clojure.string/join
                  ","
@@ -39,7 +37,7 @@
                           (when-let [query-fn (get-in queries-to-run [:always :query-fn])] (query-fn))]))]
      (println "Running query in periodic-updater: " query " screen: " screen)
      (if (empty? query)
-       (js/setTimeout (partial periodic-updater screen-cursor queries-to-run (mod (inc seconds) 5)) (* 5 1000))
+       (js/setTimeout (partial periodic-updater screen-cursor queries-to-run) (* 5 1000))
        ((graphql/graphql-fn {:query query
                              :handler-fn (fn [resp]
                                            (println "periodic-resp: " resp)
@@ -50,7 +48,7 @@
                                            (when-let [f (get-in queries-to-run [:always :handler-fn])] (f resp))
                                            (when-let [f (get-in queries-to-run [screen  :handler-fn])] (f resp))
                                            (println "Setting timeout for next periodic-updater.")
-                                           (js/setTimeout (partial periodic-updater screen-cursor queries-to-run (mod (inc seconds) 5)) (* 5 1000))
+                                           (js/setTimeout (partial periodic-updater screen-cursor queries-to-run) (* 5 1000))
                                            )}))))))
 
 (defn fast-rest-updater
